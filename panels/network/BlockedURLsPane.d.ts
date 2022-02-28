@@ -16,7 +16,7 @@ export declare class BlockedURLsPane extends UI.Widget.VBox implements UI.ListWi
     private createEmptyPlaceholder;
     static reset(): void;
     private addButtonClicked;
-    renderItem(pattern: SDK.NetworkManager.BlockedPattern, _editable: boolean): Element;
+    renderItem(pattern: SDK.NetworkManager.BlockedPattern, editable: boolean): Element;
     private togglePattern;
     private toggleEnabled;
     removeItemRequested(pattern: SDK.NetworkManager.BlockedPattern, index: number): void;

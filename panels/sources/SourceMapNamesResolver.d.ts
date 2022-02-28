@@ -38,5 +38,5 @@ export declare class RemoteObject extends SDK.RemoteObject.RemoteObject {
     runtimeModel(): SDK.RuntimeModel.RuntimeModel;
     isNode(): boolean;
 }
-export declare const getScopeResolvedForTest: () => (...arg0: any[]) => any;
-export declare const setScopeResolvedForTest: (scope: (...arg0: any[]) => any) => void;
+export declare const getScopeResolvedForTest: () => (...arg0: any[]) => void;
+export declare const setScopeResolvedForTest: (scope: (...arg0: any[]) => void) => void;

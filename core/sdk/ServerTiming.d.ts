@@ -7,7 +7,7 @@ export declare class ServerTiming {
     static parseHeaders(headers: NameValue[]): ServerTiming[] | null;
     /**
      * TODO(crbug.com/1011811): Instead of using !Object<string, *> we should have a proper type
-     *                          with name, desc and dur properties.
+     *                          with #name, desc and dur properties.
      */
     static createFromHeaderValue(valueString: string): {
         [x: string]: any;

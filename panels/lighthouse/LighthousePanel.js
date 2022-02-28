@@ -6,8 +6,6 @@ import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as EmulationModel from '../../models/emulation/emulation.js';
-/* eslint-disable rulesdir/es_modules_import */
-import reportStyles from '../../third_party/lighthouse/report-assets/report.css.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import * as Emulation from '../emulation/emulation.js';
 import { Events, LighthouseController } from './LighthouseController.js';
@@ -83,10 +81,10 @@ export class LighthousePanel extends UI.Panel.Panel {
         this.controller.addEventListener(Events.PageWarningsChanged, this.refreshWarningsUI.bind(this));
         this.controller.addEventListener(Events.AuditProgressChanged, this.refreshStatusUI.bind(this));
         this.controller.addEventListener(Events.RequestLighthouseStart, _event => {
-            this.startLighthouse();
+            void this.startLighthouse();
         });
         this.controller.addEventListener(Events.RequestLighthouseCancel, _event => {
-            this.cancelLighthouse();
+            void this.cancelLighthouse();
         });
         this.renderToolbar();
         this.auditResultsElement = this.contentElement.createChild('div', 'lighthouse-results-container');
@@ -147,8 +145,7 @@ export class LighthousePanel extends UI.Panel.Panel {
         this.settingsPane.show(this.contentElement);
         this.settingsPane.element.classList.add('lighthouse-settings-pane');
         this.settingsPane.element.appendChild(this.startView.settingsToolbar().element);
-        this.showSettingsPaneSetting =
-            Common.Settings.Settings.instance().createSetting('lighthouseShowSettingsToolbar', false);
+        this.showSettingsPaneSetting = Common.Settings.Settings.instance().createSetting('lighthouseShowSettingsToolbar', false, Common.Settings.SettingStorageType.Synced);
         this.rightToolbar = new UI.Toolbar.Toolbar('', lighthouseToolbarContainer);
         this.rightToolbar.appendSeparator();
         this.rightToolbar.appendToolbarItem(new UI.Toolbar.ToolbarSettingToggle(this.showSettingsPaneSetting, 'largeicon-settings-gear', i18nString(UIStrings.lighthouseSettings)));
@@ -209,15 +206,15 @@ export class LighthousePanel extends UI.Panel.Panel {
             return;
         }
         const reportContainer = this.auditResultsElement.createChild('div', 'lh-vars lh-root lh-devtools');
-        const dom = new LighthouseReport.DOM(this.auditResultsElement.ownerDocument);
+        const dom = new LighthouseReport.DOM(this.auditResultsElement.ownerDocument, reportContainer);
         const renderer = new LighthouseReportRenderer(dom);
         const el = renderer.renderReport(lighthouseResult, reportContainer);
         // Linkifying requires the target be loaded. Do not block the report
         // from rendering, as this is just an embellishment and the main target
         // could take awhile to load.
-        this.waitForMainTargetLoad().then(() => {
-            LighthouseReportRenderer.linkifyNodeDetails(el);
-            LighthouseReportRenderer.linkifySourceLocationDetails(el);
+        void this.waitForMainTargetLoad().then(() => {
+            void LighthouseReportRenderer.linkifyNodeDetails(el);
+            void LighthouseReportRenderer.linkifySourceLocationDetails(el);
         });
         LighthouseReportRenderer.handleDarkMode(el);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -370,7 +367,7 @@ export class LighthousePanel extends UI.Panel.Panel {
     }
     wasShown() {
         super.wasShown();
-        this.registerCSSFiles([lighthousePanelStyles, reportStyles]);
+        this.registerCSSFiles([lighthousePanelStyles]);
     }
 }
 //# sourceMappingURL=LighthousePanel.js.map

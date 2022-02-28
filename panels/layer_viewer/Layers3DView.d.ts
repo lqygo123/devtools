@@ -6,12 +6,12 @@ import * as UI from '../../ui/legacy/legacy.js';
 import type { LayerView, LayerViewHost } from './LayerViewHost.js';
 import { Selection } from './LayerViewHost.js';
 declare const Layers3DView_base: (new (...args: any[]) => {
-    "__#1@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<EventTypes, T>>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<Common.EventTarget.EventPayload<EventTypes, T_1>>;
-    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<EventTypes, T_2>>) => void, thisObject?: Object | undefined): void;
+    "__#6@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T]>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<EventTypes[T_1]>;
+    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2]>) => void, thisObject?: Object | undefined): void;
     hasEventListeners(eventType: keyof EventTypes): boolean;
-    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<Common.EventTarget.EventPayload<EventTypes, T_3>>): void;
+    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
 }) & typeof UI.Widget.VBox;
 export declare class Layers3DView extends Layers3DView_base implements LayerView {
     private readonly failBanner;
@@ -99,7 +99,7 @@ export declare enum Events {
 }
 export declare type EventTypes = {
     [Events.PaintProfilerRequested]: Selection;
-    [Events.ScaleChanged]: void;
+    [Events.ScaleChanged]: number;
 };
 export declare const enum ChromeTexture {
     Left = 0,

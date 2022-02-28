@@ -1,13 +1,13 @@
 // Copyright 2017 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as Utils from './utils/utils.js';
 import { Icon } from './Icon.js';
 import { deepElementFromEvent } from './UIUtils.js';
 import { Widget } from './Widget.js';
-export class GlassPane extends Common.ObjectWrapper.ObjectWrapper {
+import glassPaneStyles from './glassPane.css.legacy.js';
+export class GlassPane {
     widgetInternal;
     element;
     contentElement;
@@ -22,7 +22,6 @@ export class GlassPane extends Common.ObjectWrapper.ObjectWrapper {
     sizeBehavior;
     marginBehavior;
     constructor() {
-        super();
         this.widgetInternal = new Widget(true);
         this.widgetInternal.markAsRoot();
         this.element = this.widgetInternal.element;
@@ -31,7 +30,7 @@ export class GlassPane extends Common.ObjectWrapper.ObjectWrapper {
         if (this.element.shadowRoot) {
             this.element.shadowRoot.appendChild(this.arrowElement);
         }
-        this.registerRequiredCSS('ui/legacy/glassPane.css');
+        this.registerRequiredCSS(glassPaneStyles);
         this.setPointerEventsBehavior("PierceGlassPane" /* PierceGlassPane */);
         this.onMouseDownBound = this.onMouseDown.bind(this);
         this.onClickOutsideCallback = null;
@@ -48,6 +47,9 @@ export class GlassPane extends Common.ObjectWrapper.ObjectWrapper {
     }
     registerRequiredCSS(cssFile) {
         this.widgetInternal.registerRequiredCSS(cssFile);
+    }
+    registerCSSFiles(cssFiles) {
+        this.widgetInternal.registerCSSFiles(cssFiles);
     }
     setDefaultFocusedElement(element) {
         this.widgetInternal.setDefaultFocusedElement(element);

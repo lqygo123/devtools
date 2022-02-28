@@ -19,7 +19,7 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('core/sdk/CSSStyleSheetHeader.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class CSSStyleSheetHeader {
-    cssModelInternal;
+    #cssModelInternal;
     id;
     frameId;
     sourceURL;
@@ -37,9 +37,9 @@ export class CSSStyleSheetHeader {
     contentLength;
     ownerNode;
     sourceMapURL;
-    originalContentProviderInternal;
+    #originalContentProviderInternal;
     constructor(cssModel, payload) {
-        this.cssModelInternal = cssModel;
+        this.#cssModelInternal = cssModel;
         this.id = payload.styleSheetId;
         this.frameId = payload.frameId;
         this.sourceURL = payload.sourceURL;
@@ -59,30 +59,30 @@ export class CSSStyleSheetHeader {
             this.ownerNode = new DeferredDOMNode(cssModel.target(), payload.ownerNode);
         }
         this.sourceMapURL = payload.sourceMapURL;
-        this.originalContentProviderInternal = null;
+        this.#originalContentProviderInternal = null;
     }
     originalContentProvider() {
-        if (!this.originalContentProviderInternal) {
+        if (!this.#originalContentProviderInternal) {
             const lazyContent = (async () => {
-                const originalText = await this.cssModelInternal.originalStyleSheetText(this);
+                const originalText = await this.#cssModelInternal.originalStyleSheetText(this);
                 if (originalText === null) {
                     return { content: null, error: i18nString(UIStrings.couldNotFindTheOriginalStyle), isEncoded: false };
                 }
                 return { content: originalText, isEncoded: false };
             });
-            this.originalContentProviderInternal =
+            this.#originalContentProviderInternal =
                 new TextUtils.StaticContentProvider.StaticContentProvider(this.contentURL(), this.contentType(), lazyContent);
         }
-        return this.originalContentProviderInternal;
+        return this.#originalContentProviderInternal;
     }
     setSourceMapURL(sourceMapURL) {
         this.sourceMapURL = sourceMapURL;
     }
     cssModel() {
-        return this.cssModelInternal;
+        return this.#cssModelInternal;
     }
     isAnonymousInlineStyleSheet() {
-        return !this.resourceURL() && !this.cssModelInternal.sourceMapManager().sourceMapForClient(this);
+        return !this.resourceURL() && !this.#cssModelInternal.sourceMapManager().sourceMapForClient(this);
     }
     isConstructedByNew() {
         return this.isConstructed && this.sourceURL.length === 0;
@@ -91,7 +91,7 @@ export class CSSStyleSheetHeader {
         return this.isViaInspector() ? this.viaInspectorResourceURL() : this.sourceURL;
     }
     viaInspectorResourceURL() {
-        const model = this.cssModelInternal.target().model(ResourceTreeModel);
+        const model = this.#cssModelInternal.target().model(ResourceTreeModel);
         console.assert(Boolean(model));
         if (!model) {
             return '';
@@ -124,6 +124,7 @@ export class CSSStyleSheetHeader {
         const beforeEnd = lineNumber < this.endLine || (lineNumber === this.endLine && columnNumber <= this.endColumn);
         return afterStart && beforeEnd;
     }
+    // TODO(crbug.com/1253323): Cast to RawPathString will be removed when migration to branded types is complete.
     contentURL() {
         return this.resourceURL();
     }
@@ -135,7 +136,7 @@ export class CSSStyleSheetHeader {
     }
     async requestContent() {
         try {
-            const cssText = await this.cssModelInternal.getStyleSheetText(this.id);
+            const cssText = await this.#cssModelInternal.getStyleSheetText(this.id);
             return { content: cssText, isEncoded: false };
         }
         catch (err) {

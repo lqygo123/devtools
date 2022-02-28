@@ -3,12 +3,12 @@ import type * as SDK from '../../../../core/sdk/sdk.js';
 import * as UI from '../../legacy.js';
 import type { Calculator } from './TimelineGrid.js';
 declare const TimelineOverviewPane_base: (new (...args: any[]) => {
-    "__#1@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends Events.WindowChanged>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<EventTypes, T>>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends Events.WindowChanged>(eventType: T_1): Promise<Common.EventTarget.EventPayload<EventTypes, T_1>>;
-    removeEventListener<T_2 extends Events.WindowChanged>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<EventTypes, T_2>>) => void, thisObject?: Object | undefined): void;
+    "__#6@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends Events.WindowChanged>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T]>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T_1 extends Events.WindowChanged>(eventType: T_1): Promise<EventTypes[T_1]>;
+    removeEventListener<T_2 extends Events.WindowChanged>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2]>) => void, thisObject?: Object | undefined): void;
     hasEventListeners(eventType: Events.WindowChanged): boolean;
-    dispatchEventToListeners<T_3 extends Events.WindowChanged>(eventType: import("../../../../core/platform/typescript-utilities.js").NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<Common.EventTarget.EventPayload<EventTypes, T_3>>): void;
+    dispatchEventToListeners<T_3 extends Events.WindowChanged>(eventType: import("../../../../core/platform/typescript-utilities.js").NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
 }) & typeof UI.Widget.VBox;
 export declare class TimelineOverviewPane extends TimelineOverviewPane_base {
     private readonly overviewCalculator;

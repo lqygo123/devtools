@@ -16,6 +16,7 @@ import * as ElementsComponents from './components/components.js';
 import { ElementsPanel } from './ElementsPanel.js';
 import { StyleEditorWidget } from './StyleEditorWidget.js';
 import { CSSPropertyPrompt, StylesSidebarPane, StylesSidebarPropertyRenderer } from './StylesSidebarPane.js';
+import { getCssDeclarationAsJavascriptProperty } from './StylePropertyUtils.js';
 const FlexboxEditor = ElementsComponents.StylePropertyEditor.FlexboxEditor;
 const GridEditor = ElementsComponents.StylePropertyEditor.GridEditor;
 const UIStrings = {
@@ -77,6 +78,14 @@ const UIStrings = {
     * @description Title of the button that opens the CSS Grid editor in the Styles panel.
     */
     gridEditorButton: 'Open `grid` editor',
+    /**
+    *@description A context menu item in Styles panel to copy CSS declaration as JavaScript property.
+    */
+    copyCssDeclarationAsJs: 'Copy declaration as JS',
+    /**
+    *@description A context menu item in Styles panel to copy all declarations of CSS rule as JavaScript properties.
+    */
+    copyAllCssDeclarationsAsJs: 'Copy all declarations as JS',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/elements/StylePropertyTreeElement.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -154,7 +163,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
         const regex = this.parentPaneInternal.filterRegex();
         const matches = regex !== null && (regex.test(this.property.name) || regex.test(this.property.value));
         this.listItemElement.classList.toggle('filter-match', matches);
-        this.onpopulate();
+        void this.onpopulate();
         let hasMatchingChildren = false;
         for (let i = 0; i < this.childCount(); ++i) {
             const child = this.childAt(i);
@@ -198,7 +207,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
         };
         swatch.addEventListener(InlineEditor.ColorSwatch.FormatChangedEvent.eventName, onFormatchanged);
         if (this.editable()) {
-            this.addColorContrastInfo(swatch);
+            void this.addColorContrastInfo(swatch);
         }
         return swatch;
     }
@@ -363,7 +372,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
             const { data } = event;
             valueElement.textContent = data.value;
             this.parentPaneInternal.setEditingStyle(true);
-            this.applyStyleText(this.renderedPropertyText(), false);
+            void this.applyStyleText(this.renderedPropertyText(), false);
         };
         const onDraggingFinished = () => {
             this.parentPaneInternal.setEditingStyle(false);
@@ -566,11 +575,17 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
         const section = this.section();
         if (this.valueElement && section && section.editable && this.property.name === 'display') {
             const propertyValue = this.property.trimmedValueWithoutImportant();
-            if (propertyValue === 'flex' || propertyValue === 'inline-flex') {
-                this.listItemElement.appendChild(StyleEditorWidget.createTriggerButton(this.parentPaneInternal, section, FlexboxEditor, i18nString(UIStrings.flexboxEditorButton)));
-            }
-            if (propertyValue === 'grid' || propertyValue === 'inline-grid') {
-                this.listItemElement.appendChild(StyleEditorWidget.createTriggerButton(this.parentPaneInternal, section, GridEditor, i18nString(UIStrings.gridEditorButton)));
+            const isFlex = propertyValue === 'flex' || propertyValue === 'inline-flex';
+            const isGrid = propertyValue === 'grid' || propertyValue === 'inline-grid';
+            if (isFlex || isGrid) {
+                const key = `${section.getSectionIdx()}_${section.nextEditorTriggerButtonIdx}`;
+                const button = StyleEditorWidget.createTriggerButton(this.parentPaneInternal, section, isFlex ? FlexboxEditor : GridEditor, isFlex ? i18nString(UIStrings.flexboxEditorButton) : i18nString(UIStrings.gridEditorButton), key);
+                section.nextEditorTriggerButtonIdx++;
+                this.listItemElement.appendChild(button);
+                const helper = this.parentPaneInternal.swatchPopoverHelper();
+                if (helper.isShowing(StyleEditorWidget.instance()) && StyleEditorWidget.instance().getTriggerKey() === key) {
+                    helper.setAnchorElement(button);
+                }
             }
         }
         if (!this.property.parsedOk) {
@@ -580,7 +595,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
             this.listItemElement.insertBefore(StylesSidebarPane.createExclamationMark(this.property, null), this.listItemElement.firstChild);
         }
         else {
-            this.updateFontVariationSettingsWarning();
+            void this.updateFontVariationSettingsWarning();
         }
         if (!this.property.activeInStyle()) {
             this.listItemElement.classList.add('inactive');
@@ -593,7 +608,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
             enabledCheckboxElement.checked = !this.property.disabled;
             enabledCheckboxElement.addEventListener('mousedown', event => event.consume(), false);
             enabledCheckboxElement.addEventListener('click', event => {
-                this.toggleDisabled(!this.property.disabled);
+                void this.toggleDisabled(!this.property.disabled);
                 event.consume();
             }, false);
             if (this.nameElement && this.valueElement) {
@@ -687,7 +702,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
         }
         const revealCallback = this.navigateToSource.bind(this);
         contextMenu.defaultSection().appendItem(i18nString(UIStrings.revealInSourcesPanel), revealCallback);
-        contextMenu.show();
+        void contextMenu.show();
     }
     handleCopyContextMenuEvent(event) {
         const target = event.target;
@@ -716,9 +731,11 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
             Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(allDeclarationText);
         });
         contextMenu.defaultSection().appendItem(i18nString(UIStrings.viewComputedValue), () => {
-            this.viewComputedValue();
+            void this.viewComputedValue();
         });
-        contextMenu.show();
+        contextMenu.clipboardSection().appendItem(i18nString(UIStrings.copyCssDeclarationAsJs), this.copyCssDeclarationAsJs.bind(this));
+        contextMenu.defaultSection().appendItem(i18nString(UIStrings.copyAllCssDeclarationsAsJs), this.copyAllCssDeclarationAsJs.bind(this));
+        void contextMenu.show();
     }
     async viewComputedValue() {
         const computedStyleWidget = ElementsPanel.instance().getComputedStyleWidget();
@@ -738,6 +755,16 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
         filterInput.value = this.property.name;
         filterInput.focus();
     }
+    copyCssDeclarationAsJs() {
+        const cssDeclarationValue = getCssDeclarationAsJavascriptProperty(this.property);
+        Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(cssDeclarationValue);
+    }
+    copyAllCssDeclarationAsJs() {
+        const section = this.section();
+        const leadingProperties = (section.style()).leadingProperties();
+        const cssDeclarationsAsJsProperties = leadingProperties.filter(property => !property.disabled).map(getCssDeclarationAsJavascriptProperty);
+        Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(cssDeclarationsAsJsProperties.join(',\n'));
+    }
     navigateToSource(element, omitFocus) {
         const section = this.section();
         if (!section || !section.navigable) {
@@ -746,7 +773,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
         const propertyNameClicked = element === this.nameElement;
         const uiLocation = Bindings.CSSWorkspaceBinding.CSSWorkspaceBinding.instance().propertyUILocation(this.property, propertyNameClicked);
         if (uiLocation) {
-            Common.Revealer.reveal(uiLocation, omitFocus);
+            void Common.Revealer.reveal(uiLocation, omitFocus);
         }
     }
     startEditing(selectElement) {
@@ -851,7 +878,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
                 this.valueElement.normalize();
             }
             const target = event.target;
-            this.editingCommitted(target.textContent || '', context, 'forward');
+            void this.editingCommitted(target.textContent || '', context, 'forward');
         }
         function blurListener(context, event) {
             const target = event.target;
@@ -859,7 +886,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
             if (!context.isEditingName) {
                 text = this.value || text;
             }
-            this.editingCommitted(text || '', context, '');
+            void this.editingCommitted(text || '', context, '');
         }
         this.originalPropertyText = this.property.propertyText || '';
         this.parentPaneInternal.setEditingStyle(true, this);
@@ -869,7 +896,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
         this.prompt = new CSSPropertyPrompt(this, isEditingName);
         this.prompt.setAutocompletionTimeout(0);
         this.prompt.addEventListener(UI.TextPrompt.Events.TextChanged, _event => {
-            this.applyFreeFlowStyleTextEdit(context);
+            void this.applyFreeFlowStyleTextEdit(context);
         });
         const invalidString = this.property.getInvalidStringForInvalidProperty();
         if (invalidString && selectElement) {
@@ -924,7 +951,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
                     break;
                 case 'forward':
                 case 'backward':
-                    this.editingCommitted(target.textContent || '', context, result);
+                    void this.editingCommitted(target.textContent || '', context, result);
                     break;
             }
             event.consume();
@@ -959,7 +986,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
         if (isFieldInputTerminated) {
             // Enter or colon (for name)/semicolon outside of string (for value).
             event.consume(true);
-            this.editingCommitted(target.textContent || '', context, 'forward');
+            void this.editingCommitted(target.textContent || '', context, 'forward');
             return;
         }
     }
@@ -969,7 +996,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
         }
         const enteredText = this.prompt.text();
         if (context.isEditingName && enteredText.includes(':')) {
-            this.editingCommitted(enteredText, context, 'forward');
+            void this.editingCommitted(enteredText, context, 'forward');
             return;
         }
         const valueText = this.prompt.textWithCurrentSuggestion();
@@ -1023,7 +1050,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
     editingCancelled(element, context) {
         this.removePrompt();
         if (this.hasBeenEditedIncrementally) {
-            this.applyOriginalStyle(context);
+            void this.applyOriginalStyle(context);
         }
         else if (this.newProperty && this.treeOutline) {
             this.treeOutline.removeChild(this);
@@ -1218,6 +1245,7 @@ export class StylePropertyTreeElement extends UI.TreeOutline.TreeElement {
         }
         const currentNode = this.parentPaneInternal.node();
         this.parentPaneInternal.setUserOperation(true);
+        styleText += Platform.StringUtilities.findUnclosedCssQuote(styleText);
         // Append a ";" if the new text does not end in ";".
         // FIXME: this does not handle trailing comments.
         if (styleText.length && !/;\s*$/.test(styleText)) {

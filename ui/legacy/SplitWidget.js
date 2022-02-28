@@ -34,6 +34,7 @@ import { Events as ResizerWidgetEvents, SimpleResizerWidget } from './ResizerWid
 import { ToolbarButton } from './Toolbar.js';
 import { Widget } from './Widget.js';
 import { ZoomManager } from './ZoomManager.js';
+import splitWidgetStyles from './splitWidget.css.legacy.js';
 export class SplitWidget extends Common.ObjectWrapper.eventMixin(Widget) {
     sidebarElementInternal;
     mainElement;
@@ -70,7 +71,7 @@ export class SplitWidget extends Common.ObjectWrapper.eventMixin(Widget) {
     constructor(isVertical, secondIsSidebar, settingName, defaultSidebarWidth, defaultSidebarHeight, constraintsInDip) {
         super(true);
         this.element.classList.add('split-widget');
-        this.registerRequiredCSS('ui/legacy/splitWidget.css');
+        this.registerRequiredCSS(splitWidgetStyles);
         this.contentElement.classList.add('shadow-split-widget');
         this.sidebarElementInternal =
             this.contentElement.createChild('div', 'shadow-split-widget-contents shadow-split-widget-sidebar vbox');
@@ -89,8 +90,7 @@ export class SplitWidget extends Common.ObjectWrapper.eventMixin(Widget) {
         this.defaultSidebarHeight = defaultSidebarHeight || this.defaultSidebarWidth;
         this.constraintsInDip = Boolean(constraintsInDip);
         this.resizeStartSizeDIP = 0;
-        this.setting =
-            settingName ? Common.Settings.Settings.instance().createSetting(settingName, /** @type {*} */ ({})) : null;
+        this.setting = settingName ? Common.Settings.Settings.instance().createSetting(settingName, {}) : null;
         this.totalSizeCSS = 0;
         this.totalSizeOtherDimensionCSS = 0;
         this.mainWidgetInternal = null;
@@ -194,7 +194,7 @@ export class SplitWidget extends Common.ObjectWrapper.eventMixin(Widget) {
         return this.sidebarWidgetInternal;
     }
     sidebarElement() {
-        return /** @type {!HTMLElement} */ this.sidebarElementInternal;
+        return this.sidebarElementInternal;
     }
     childWasDetached(widget) {
         if (this.detaching) {
@@ -714,7 +714,7 @@ export class SplitWidget extends Common.ObjectWrapper.eventMixin(Widget) {
         this.showHideSidebarButton = new ToolbarButton('', '');
         this.showHideSidebarButton.addEventListener(ToolbarButton.Events.Click, buttonClicked, this);
         this.updateShowHideSidebarButton();
-        function buttonClicked(_event) {
+        function buttonClicked() {
             if (this.showModeInternal !== ShowMode.Both) {
                 this.showBoth(true);
             }

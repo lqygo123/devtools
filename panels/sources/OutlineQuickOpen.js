@@ -66,11 +66,15 @@ export class OutlineQuickOpen extends QuickOpen.FilteredListWidget.Provider {
         }
         return -item.line - 1;
     }
-    renderItem(itemIndex, query, titleElement, subtitleElement) {
+    renderItem(itemIndex, query, titleElement, _subtitleElement) {
         const item = this.items[itemIndex];
         titleElement.textContent = item.title + (item.subtitle ? item.subtitle : '');
         QuickOpen.FilteredListWidget.FilteredListWidget.highlightRanges(titleElement, query);
-        subtitleElement.textContent = ':' + (item.line + 1);
+        const tagElement = titleElement.parentElement?.parentElement?.createChild('span', 'tag');
+        if (!tagElement) {
+            return;
+        }
+        tagElement.textContent = ':' + (item.line + 1);
     }
     selectItem(itemIndex, _promptValue) {
         if (itemIndex === null) {
@@ -82,7 +86,7 @@ export class OutlineQuickOpen extends QuickOpen.FilteredListWidget.Provider {
         }
         const lineNumber = this.items[itemIndex].line;
         if (!isNaN(lineNumber) && lineNumber >= 0) {
-            Common.Revealer.reveal(uiSourceCode.uiLocation(lineNumber, this.items[itemIndex].column));
+            void Common.Revealer.reveal(uiSourceCode.uiLocation(lineNumber, this.items[itemIndex].column));
         }
     }
     currentUISourceCode() {

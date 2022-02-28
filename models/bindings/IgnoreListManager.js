@@ -7,11 +7,11 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as Workspace from '../workspace/workspace.js';
 let ignoreListManagerInstance;
 export class IgnoreListManager {
-    debuggerWorkspaceBinding;
-    listeners;
-    isIgnoreListedURLCache;
+    #debuggerWorkspaceBinding;
+    #listeners;
+    #isIgnoreListedURLCache;
     constructor(debuggerWorkspaceBinding) {
-        this.debuggerWorkspaceBinding = debuggerWorkspaceBinding;
+        this.#debuggerWorkspaceBinding = debuggerWorkspaceBinding;
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DebuggerModel.DebuggerModel, SDK.DebuggerModel.Events.GlobalObjectCleared, this.clearCacheIfNeeded.bind(this), this);
         Common.Settings.Settings.instance()
             .moduleSetting('skipStackFramesPattern')
@@ -19,8 +19,8 @@ export class IgnoreListManager {
         Common.Settings.Settings.instance()
             .moduleSetting('skipContentScripts')
             .addChangeListener(this.patternChanged.bind(this));
-        this.listeners = new Set();
-        this.isIgnoreListedURLCache = new Map();
+        this.#listeners = new Set();
+        this.#isIgnoreListedURLCache = new Map();
         SDK.TargetManager.TargetManager.instance().observeModels(SDK.DebuggerModel.DebuggerModel, this);
     }
     static instance(opts = { forceNew: null, debuggerWorkspaceBinding: null }) {
@@ -34,13 +34,13 @@ export class IgnoreListManager {
         return ignoreListManagerInstance;
     }
     addChangeListener(listener) {
-        this.listeners.add(listener);
+        this.#listeners.add(listener);
     }
     removeChangeListener(listener) {
-        this.listeners.delete(listener);
+        this.#listeners.delete(listener);
     }
     modelAdded(debuggerModel) {
-        this.setIgnoreListPatterns(debuggerModel);
+        void this.setIgnoreListPatterns(debuggerModel);
         const sourceMapManager = debuggerModel.sourceMapManager();
         sourceMapManager.addEventListener(SDK.SourceMapManager.Events.SourceMapAttached, this.sourceMapAttached, this);
         sourceMapManager.addEventListener(SDK.SourceMapManager.Events.SourceMapDetached, this.sourceMapDetached, this);
@@ -52,12 +52,12 @@ export class IgnoreListManager {
         sourceMapManager.removeEventListener(SDK.SourceMapManager.Events.SourceMapDetached, this.sourceMapDetached, this);
     }
     clearCacheIfNeeded() {
-        if (this.isIgnoreListedURLCache.size > 1024) {
-            this.isIgnoreListedURLCache.clear();
+        if (this.#isIgnoreListedURLCache.size > 1024) {
+            this.#isIgnoreListedURLCache.clear();
         }
     }
     getSkipStackFramesPatternSetting() {
-        return /** @type {!Common.Settings.RegExpSetting} */ Common.Settings.Settings.instance().moduleSetting('skipStackFramesPattern');
+        return Common.Settings.Settings.instance().moduleSetting('skipStackFramesPattern');
     }
     setIgnoreListPatterns(debuggerModel) {
         const regexPatterns = this.getSkipStackFramesPatternSetting().getAsArray();
@@ -79,25 +79,25 @@ export class IgnoreListManager {
         return url ? this.isIgnoreListedURL(url) : false;
     }
     isIgnoreListedURL(url, isContentScript) {
-        if (this.isIgnoreListedURLCache.has(url)) {
-            return Boolean(this.isIgnoreListedURLCache.get(url));
+        if (this.#isIgnoreListedURLCache.has(url)) {
+            return Boolean(this.#isIgnoreListedURLCache.get(url));
         }
         if (isContentScript && Common.Settings.Settings.instance().moduleSetting('skipContentScripts').get()) {
             return true;
         }
         const regex = this.getSkipStackFramesPatternSetting().asRegExp();
         const isIgnoreListed = (regex && regex.test(url)) || false;
-        this.isIgnoreListedURLCache.set(url, isIgnoreListed);
+        this.#isIgnoreListedURLCache.set(url, isIgnoreListed);
         return isIgnoreListed;
     }
     sourceMapAttached(event) {
         const script = event.data.client;
         const sourceMap = event.data.sourceMap;
-        this.updateScriptRanges(script, sourceMap);
+        void this.updateScriptRanges(script, sourceMap);
     }
     sourceMapDetached(event) {
         const script = event.data.client;
-        this.updateScriptRanges(script, null);
+        void this.updateScriptRanges(script, null);
     }
     async updateScriptRanges(script, sourceMap) {
         let hasIgnoreListedMappings = false;
@@ -108,7 +108,7 @@ export class IgnoreListManager {
             if (scriptToRange.get(script) && await script.setBlackboxedRanges([])) {
                 scriptToRange.delete(script);
             }
-            await this.debuggerWorkspaceBinding.updateLocations(script);
+            await this.#debuggerWorkspaceBinding.updateLocations(script);
             return;
         }
         if (!sourceMap) {
@@ -133,7 +133,7 @@ export class IgnoreListManager {
         if (!isEqual(oldRanges, newRanges) && await script.setBlackboxedRanges(newRanges)) {
             scriptToRange.set(script, newRanges);
         }
-        this.debuggerWorkspaceBinding.updateLocations(script);
+        void this.#debuggerWorkspaceBinding.updateLocations(script);
         function isEqual(rangesA, rangesB) {
             if (rangesA.length !== rangesB.length) {
                 return false;
@@ -217,7 +217,7 @@ export class IgnoreListManager {
         this.getSkipStackFramesPatternSetting().setAsArray(regexPatterns);
     }
     async patternChanged() {
-        this.isIgnoreListedURLCache.clear();
+        this.#isIgnoreListedURLCache.clear();
         const promises = [];
         for (const debuggerModel of SDK.TargetManager.TargetManager.instance().models(SDK.DebuggerModel.DebuggerModel)) {
             promises.push(this.setIgnoreListPatterns(debuggerModel));
@@ -227,7 +227,7 @@ export class IgnoreListManager {
             }
         }
         await Promise.all(promises);
-        const listeners = Array.from(this.listeners);
+        const listeners = Array.from(this.#listeners);
         for (const listener of listeners) {
             listener();
         }

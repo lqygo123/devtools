@@ -94,7 +94,7 @@ export class ScopeChainSidebarPane extends UI.Widget.VBox {
         this.infoElement = document.createElement('div');
         this.infoElement.className = 'gray-info-message';
         this.infoElement.tabIndex = -1;
-        this.update();
+        void this.update();
     }
     static instance() {
         if (!scopeChainSidebarPaneInstance) {
@@ -103,7 +103,7 @@ export class ScopeChainSidebarPane extends UI.Widget.VBox {
         return scopeChainSidebarPaneInstance;
     }
     flavorChanged(_object) {
-        this.update();
+        void this.update();
     }
     focus() {
         if (this.hasFocus()) {
@@ -240,8 +240,7 @@ export class OpenLinearMemoryInspector extends UI.Widget.VBox {
             return true;
         }
         if (obj instanceof Bindings.DebuggerLanguagePlugins.ValueNode) {
-            const valueNode = /** @type {!Bindings.DebuggerLanguagePlugins.ValueNode} */ obj;
-            return valueNode.inspectableAddress !== undefined;
+            return obj.inspectableAddress !== undefined;
         }
         return false;
     }
@@ -257,7 +256,7 @@ export class OpenLinearMemoryInspector extends UI.Widget.VBox {
         let address = 0;
         let memoryObj = obj;
         if (obj instanceof Bindings.DebuggerLanguagePlugins.ValueNode) {
-            const valueNode = /** @type {!Bindings.DebuggerLanguagePlugins.ValueNode} */ obj;
+            const valueNode = obj;
             address = valueNode.inspectableAddress || 0;
             const callFrame = valueNode.callFrame;
             const response = await obj.debuggerModel().agent.invoke_evaluateOnCallFrame({
@@ -273,7 +272,7 @@ export class OpenLinearMemoryInspector extends UI.Widget.VBox {
             memoryObj = runtimeModel.createRemoteObject(response.result);
         }
         Host.userMetrics.linearMemoryInspectorRevealedFrom(Host.UserMetrics.LinearMemoryInspectorRevealedFrom.ContextMenu);
-        controller.openInspectorView(memoryObj, address);
+        void controller.openInspectorView(memoryObj, address);
     }
 }
 //# sourceMappingURL=ScopeChainSidebarPane.js.map

@@ -153,7 +153,7 @@ export class FilesNavigatorView extends NavigatorView {
   ${UI.XLink.XLink.create('https://developer.chrome.com/docs/devtools/workspaces/', i18nString(UIStrings.learnMoreAboutWorkspaces))}
   `);
         const toolbar = new UI.Toolbar.Toolbar('navigator-toolbar');
-        toolbar.appendItemsAtLocation('files-navigator-toolbar').then(() => {
+        void toolbar.appendItemsAtLocation('files-navigator-toolbar').then(() => {
             if (!toolbar.empty()) {
                 this.contentElement.insertBefore(toolbar.element, this.contentElement.firstChild);
             }
@@ -173,7 +173,7 @@ export class FilesNavigatorView extends NavigatorView {
     handleContextMenu(event) {
         const contextMenu = new UI.ContextMenu.ContextMenu(event);
         contextMenu.defaultSection().appendAction('sources.add-folder-to-workspace', undefined, true);
-        contextMenu.show();
+        void contextMenu.show();
     }
 }
 let overridesNavigatorViewInstance;
@@ -234,7 +234,7 @@ export class OverridesNavigatorView extends NavigatorView {
         const title = i18nString(UIStrings.selectFolderForOverrides);
         const setupButton = new UI.Toolbar.ToolbarButton(title, 'largeicon-add', title);
         setupButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, _event => {
-            this.setupNewWorkspace();
+            void this.setupNewWorkspace();
         }, this);
         this.toolbar.appendToolbarItem(setupButton);
     }
@@ -284,7 +284,7 @@ export class SnippetsNavigatorView extends NavigatorView {
         const toolbar = new UI.Toolbar.Toolbar('navigator-toolbar');
         const newButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.newSnippet), 'largeicon-add', i18nString(UIStrings.newSnippet));
         newButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, _event => {
-            this.create(Snippets.ScriptSnippetFileSystem.findSnippetsProject(), '');
+            void this.create(Snippets.ScriptSnippetFileSystem.findSnippetsProject(), '');
         });
         toolbar.appendToolbarItem(newButton);
         this.contentElement.insertBefore(toolbar.element, this.contentElement.firstChild);
@@ -301,7 +301,7 @@ export class SnippetsNavigatorView extends NavigatorView {
     handleContextMenu(event) {
         const contextMenu = new UI.ContextMenu.ContextMenu(event);
         contextMenu.headerSection().appendItem(i18nString(UIStrings.createNewSnippet), () => this.create(Snippets.ScriptSnippetFileSystem.findSnippetsProject(), ''));
-        contextMenu.show();
+        void contextMenu.show();
     }
     handleFileContextMenu(event, node) {
         const uiSourceCode = node.uiSourceCode();
@@ -310,12 +310,12 @@ export class SnippetsNavigatorView extends NavigatorView {
         contextMenu.editSection().appendItem(i18nString(UIStrings.rename), () => this.rename(node, false));
         contextMenu.editSection().appendItem(i18nString(UIStrings.remove), () => uiSourceCode.project().deleteFile(uiSourceCode));
         contextMenu.saveSection().appendItem(i18nString(UIStrings.saveAs), this.handleSaveAs.bind(this, uiSourceCode));
-        contextMenu.show();
+        void contextMenu.show();
     }
     async handleSaveAs(uiSourceCode) {
         uiSourceCode.commitWorkingCopy();
         const { content } = await uiSourceCode.requestContent();
-        Workspace.FileManager.FileManager.instance().save(uiSourceCode.url(), content || '', true);
+        void Workspace.FileManager.FileManager.instance().save(uiSourceCode.url(), content || '', true);
         Workspace.FileManager.FileManager.instance().close(uiSourceCode.url());
     }
 }
@@ -331,12 +331,12 @@ export class ActionDelegate {
     handleAction(context, actionId) {
         switch (actionId) {
             case 'sources.create-snippet':
-                Snippets.ScriptSnippetFileSystem.findSnippetsProject()
+                void Snippets.ScriptSnippetFileSystem.findSnippetsProject()
                     .createFile('', null, '')
                     .then(uiSourceCode => Common.Revealer.reveal(uiSourceCode));
                 return true;
             case 'sources.add-folder-to-workspace':
-                Persistence.IsolatedFileSystemManager.IsolatedFileSystemManager.instance().addFileSystem();
+                void Persistence.IsolatedFileSystemManager.IsolatedFileSystemManager.instance().addFileSystem();
                 return true;
         }
         return false;

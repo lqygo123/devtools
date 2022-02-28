@@ -38,10 +38,7 @@ export declare namespace Layer {
     }
 }
 export declare class StickyPositionConstraint {
-    private readonly stickyBoxRectInternal;
-    private readonly containingBlockRectInternal;
-    private readonly nearestLayerShiftingStickyBoxInternal;
-    private readonly nearestLayerShiftingContainingBlockInternal;
+    #private;
     constructor(layerTree: LayerTreeBase | null, constraint: Protocol.LayerTree.StickyPositionConstraint);
     stickyBoxRect(): Protocol.DOM.Rect;
     containingBlockRect(): Protocol.DOM.Rect;
@@ -49,13 +46,8 @@ export declare class StickyPositionConstraint {
     nearestLayerShiftingContainingBlock(): Layer | null;
 }
 export declare class LayerTreeBase {
-    private readonly targetInternal;
-    private domModel;
+    #private;
     layersById: Map<string | number, Layer>;
-    private rootInternal;
-    private contentRootInternal;
-    private readonly backendNodeIdToNodeInternal;
-    private viewportSizeInternal?;
     constructor(target: Target | null);
     target(): Target | null;
     root(): Layer | null;

@@ -6,7 +6,7 @@
   * promises by using the `clear` method on this class.
   */
 export declare abstract class ResolverBase<Id, T> {
-    private unresolvedIds;
+    #private;
     protected abstract getForId(id: Id): T | null;
     protected abstract startListening(): void;
     protected abstract stopListening(): void;

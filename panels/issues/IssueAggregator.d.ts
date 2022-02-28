@@ -18,25 +18,7 @@ export declare type AggregationKey = {
  * of all resources that are affected by the aggregated issues.
  */
 export declare class AggregatedIssue extends IssuesManager.Issue.Issue {
-    private affectedCookies;
-    private affectedRawCookieLines;
-    private affectedRequests;
-    private affectedLocations;
-    private heavyAdIssues;
-    private blockedByResponseDetails;
-    private corsIssues;
-    private cspIssues;
-    private issueKind;
-    private lowContrastIssues;
-    private mixedContentIssues;
-    private sharedArrayBufferIssues;
-    private trustedWebActivityIssues;
-    private quirksModeIssues;
-    private attributionReportingIssues;
-    private wasmCrossOriginModuleSharingIssues;
-    private representative?;
-    private aggregatedIssuesCount;
-    private key;
+    #private;
     constructor(code: string, aggregationKey: AggregationKey);
     primaryKey(): string;
     aggregationKey(): AggregationKey;
@@ -62,32 +44,24 @@ export declare class AggregatedIssue extends IssuesManager.Issue.Issue {
     getQuirksModeIssues(): Iterable<IssuesManager.QuirksModeIssue.QuirksModeIssue>;
     getAttributionReportingIssues(): ReadonlySet<IssuesManager.AttributionReportingIssue.AttributionReportingIssue>;
     getWasmCrossOriginModuleSharingIssue(): ReadonlySet<IssuesManager.WasmCrossOriginModuleSharingIssue.WasmCrossOriginModuleSharingIssue>;
+    getGenericIssues(): ReadonlySet<IssuesManager.GenericIssue.GenericIssue>;
     getDescription(): IssuesManager.MarkdownIssueDescription.MarkdownIssueDescription | null;
     getCategory(): IssuesManager.Issue.IssueCategory;
     getAggregatedIssuesCount(): number;
-    /**
-     * Produces a primary key for a cookie. Use this instead of `JSON.stringify` in
-     * case new fields are added to `AffectedCookie`.
-     */
-    private keyForCookie;
     addInstance(issue: IssuesManager.Issue.Issue): void;
     getKind(): IssuesManager.Issue.IssueKind;
     isHidden(): boolean;
     setHidden(_value: boolean): void;
 }
 export declare class IssueAggregator extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
+    #private;
     private readonly issuesManager;
-    private readonly aggregatedIssuesByKey;
-    private readonly hiddenAggregatedIssuesByKey;
     constructor(issuesManager: IssuesManager.IssuesManager.IssuesManager);
-    private onIssueAdded;
-    private onFullUpdateRequired;
-    private aggregateIssue;
-    private aggregateIssueByStatus;
     aggregatedIssues(): Iterable<AggregatedIssue>;
     hiddenAggregatedIssues(): Iterable<AggregatedIssue>;
     aggregatedIssueCodes(): Set<AggregationKey>;
     aggregatedIssueCategories(): Set<IssuesManager.Issue.IssueCategory>;
+    aggregatedIssueKinds(): Set<IssuesManager.Issue.IssueKind>;
     numberOfAggregatedIssues(): number;
     numberOfHiddenAggregatedIssues(): number;
     keyForIssue(issue: IssuesManager.Issue.Issue<string>): AggregationKey;

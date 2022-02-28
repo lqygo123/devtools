@@ -157,7 +157,7 @@ export class LiveHeapProfileView extends UI.Widget.VBox {
     }
     wasShown() {
         super.wasShown();
-        this.poll();
+        void this.poll();
         this.registerCSSFiles([liveHeapProfileStyles]);
         this.setting.addChangeListener(this.settingChanged, this);
     }
@@ -183,7 +183,7 @@ export class LiveHeapProfileView extends UI.Widget.VBox {
                 return;
             }
             this.update(isolates, profiles);
-            await new Promise(r => setTimeout(r, 3000));
+            await new Promise(r => window.setTimeout(r, 3000));
         } while (this.currentPollId === pollId);
     }
     update(isolates, profiles) {
@@ -261,7 +261,7 @@ export class LiveHeapProfileView extends UI.Widget.VBox {
         }
         const sourceCode = Workspace.Workspace.WorkspaceImpl.instance().uiSourceCodeForURL(node.url);
         if (sourceCode) {
-            Common.Revealer.reveal(sourceCode);
+            void Common.Revealer.reveal(sourceCode);
         }
     }
     sortingChanged() {
@@ -284,7 +284,7 @@ export class LiveHeapProfileView extends UI.Widget.VBox {
             this.startRecording(false);
         }
         else {
-            this.stopRecording();
+            void this.stopRecording();
         }
     }
     startRecording(reload) {
@@ -350,7 +350,7 @@ export class ActionDelegate {
         return profilerActionDelegateInstance;
     }
     handleAction(_context, actionId) {
-        (async () => {
+        void (async () => {
             const profileViewId = 'live_heap_profile';
             await UI.ViewManager.ViewManager.instance().showView(profileViewId);
             const view = UI.ViewManager.ViewManager.instance().view(profileViewId);

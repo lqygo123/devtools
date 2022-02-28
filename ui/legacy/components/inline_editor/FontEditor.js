@@ -1,10 +1,12 @@
 // Copyright 2020 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+import * as Common from '../../../../core/common/common.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
 import * as SDK from '../../../../core/sdk/sdk.js';
 import * as IconButton from '../../../components/icon_button/icon_button.js';
 import * as UI from '../../legacy.js';
+import fontEditorStyles from './fontEditor.css.js';
 import * as FontEditorUnitConverter from './FontEditorUnitConverter.js';
 import * as FontEditorUtils from './FontEditorUtils.js';
 const UIStrings = {
@@ -108,7 +110,7 @@ const UIStrings = {
 };
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/inline_editor/FontEditor.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-export class FontEditor extends UI.Widget.VBox {
+export class FontEditor extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
     selectedNode;
     propertyMap;
     fontSelectorSection;
@@ -116,7 +118,6 @@ export class FontEditor extends UI.Widget.VBox {
     fontsList;
     constructor(propertyMap) {
         super(true);
-        this.registerRequiredCSS('ui/legacy/components/inline_editor/fontEditor.css');
         this.selectedNode = UI.Context.Context.instance().flavor(SDK.DOMModel.DOMNode);
         this.propertyMap = propertyMap;
         this.contentElement.tabIndex = 0;
@@ -127,7 +128,7 @@ export class FontEditor extends UI.Widget.VBox {
         this.fontSelectors = [];
         this.fontsList = null;
         const propertyValue = this.propertyMap.get('font-family');
-        this.createFontSelectorSection(propertyValue);
+        void this.createFontSelectorSection(propertyValue);
         //  CSS Font Property Section
         const cssPropertySection = this.contentElement.createChild('div', 'font-section');
         cssPropertySection.createChild('h2', 'font-section-header').textContent = i18nString(UIStrings.cssProperties);
@@ -145,6 +146,9 @@ export class FontEditor extends UI.Widget.VBox {
         new FontPropertyInputs('letter-spacing', i18nString(UIStrings.spacing), cssPropertySection, letterSpacingPropertyInfo, FontEditorUtils.LetterSpacingStaticParams, this.updatePropertyValue.bind(this), this.resizePopout.bind(this), 
         /** hasUnits= */ true);
     }
+    wasShown() {
+        this.registerCSSFiles([fontEditorStyles]);
+    }
     async createFontSelectorSection(propertyValue) {
         if (propertyValue) {
             // FIXME(crbug.com/1148434): propertyValue will not be split correctly for font family names that contain commas.
@@ -154,12 +158,12 @@ export class FontEditor extends UI.Widget.VBox {
             if (!FontEditorUtils.GlobalValues.includes(splitValue[0])) {
                 // We add one to the splitValue length so that we have an additional empty fallback selector
                 for (let i = 1; i < splitValue.length + 1; i++) {
-                    this.createFontSelector(splitValue[i]);
+                    void this.createFontSelector(splitValue[i]);
                 }
             }
         }
         else {
-            this.createFontSelector('', true);
+            void this.createFontSelector('', true);
         }
         this.resizePopout();
     }
@@ -342,7 +346,7 @@ export class FontEditor extends UI.Widget.VBox {
         // selector's value is not a global value and if the list of selectors has not exceeded 10.
         if (this.fontSelectors[this.fontSelectors.length - 1].input.value !== '' && !isGlobalValue &&
             this.fontSelectors.length < 10) {
-            this.createFontSelector(/** value= */ '');
+            void this.createFontSelector(/** value= */ '');
             this.resizePopout();
         }
         this.updatePropertyValue('font-family', value);

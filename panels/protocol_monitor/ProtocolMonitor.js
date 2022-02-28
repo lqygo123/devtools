@@ -116,11 +116,12 @@ export class ProtocolMonitorImpl extends UI.Widget.VBox {
         clearButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, () => {
             this.messages = [];
             this.dataGridIntegrator.update({ ...this.dataGridIntegrator.data(), rows: [] });
+            this.infoWidget.render(null);
         });
         topToolbar.appendToolbarItem(clearButton);
         const saveButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.save), 'largeicon-download');
         saveButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, () => {
-            this.saveAsFile();
+            void this.saveAsFile();
         });
         topToolbar.appendToolbarItem(saveButton);
         const split = new UI.SplitWidget.SplitWidget(true, true, 'protocol-monitor-panel-split', 250);
@@ -135,6 +136,9 @@ export class ProtocolMonitorImpl extends UI.Widget.VBox {
                     widthWeighting: 1,
                     visible: true,
                     hideable: true,
+                    styles: {
+                        'text-align': 'center',
+                    },
                 },
                 {
                     id: 'method',
@@ -343,7 +347,7 @@ export class ProtocolMonitorImpl extends UI.Widget.VBox {
         responseIcon.data = { iconName: 'ic_response', color: 'var(--color-text-disabled)', width: '16px', height: '16px' };
         const newRow = {
             cells: [
-                { columnId: 'method', value: message.method },
+                { columnId: 'method', value: message.method, title: message.method },
                 { columnId: 'request', value: '', renderer: DataGrid.DataGridRenderers.codeBlockRenderer },
                 {
                     columnId: 'response',
@@ -379,7 +383,7 @@ export class ProtocolMonitorImpl extends UI.Widget.VBox {
                 '--override-data-grid-row-background-color': 'var(--override-data-grid-sent-message-row-background-color)',
             },
             cells: [
-                { columnId: 'method', value: message.method },
+                { columnId: 'method', value: message.method, title: message.method },
                 {
                     columnId: 'request',
                     value: JSON.stringify(message.params),
@@ -411,8 +415,8 @@ export class ProtocolMonitorImpl extends UI.Widget.VBox {
         if (!accepted) {
             return;
         }
-        stream.write(JSON.stringify(this.messages, null, '  '));
-        stream.close();
+        void stream.write(JSON.stringify(this.messages, null, '  '));
+        void stream.close();
     }
 }
 export class InfoWidget extends UI.Widget.VBox {

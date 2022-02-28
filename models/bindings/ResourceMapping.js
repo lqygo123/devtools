@@ -15,11 +15,11 @@ const styleSheetOffsetMap = new WeakMap();
 const scriptOffsetMap = new WeakMap();
 const boundUISourceCodes = new WeakSet();
 export class ResourceMapping {
-    workspace;
-    modelToInfo;
+    #workspace;
+    #modelToInfo;
     constructor(targetManager, workspace) {
-        this.workspace = workspace;
-        this.modelToInfo = new Map();
+        this.#workspace = workspace;
+        this.#modelToInfo = new Map();
         targetManager.observeModels(SDK.ResourceTreeModel.ResourceTreeModel, this);
     }
     static instance(opts = { forceNew: null, targetManager: null, workspace: null }) {
@@ -33,19 +33,19 @@ export class ResourceMapping {
         return resourceMappingInstance;
     }
     modelAdded(resourceTreeModel) {
-        const info = new ModelInfo(this.workspace, resourceTreeModel);
-        this.modelToInfo.set(resourceTreeModel, info);
+        const info = new ModelInfo(this.#workspace, resourceTreeModel);
+        this.#modelToInfo.set(resourceTreeModel, info);
     }
     modelRemoved(resourceTreeModel) {
-        const info = this.modelToInfo.get(resourceTreeModel);
+        const info = this.#modelToInfo.get(resourceTreeModel);
         if (info) {
             info.dispose();
-            this.modelToInfo.delete(resourceTreeModel);
+            this.#modelToInfo.delete(resourceTreeModel);
         }
     }
     infoForTarget(target) {
         const resourceTreeModel = target.model(SDK.ResourceTreeModel.ResourceTreeModel);
-        return resourceTreeModel ? this.modelToInfo.get(resourceTreeModel) || null : null;
+        return resourceTreeModel ? this.#modelToInfo.get(resourceTreeModel) || null : null;
     }
     cssLocationToUILocation(cssLocation) {
         const header = cssLocation.header();
@@ -128,7 +128,7 @@ export class ResourceMapping {
     }
     resetForTest(target) {
         const resourceTreeModel = target.model(SDK.ResourceTreeModel.ResourceTreeModel);
-        const info = resourceTreeModel ? this.modelToInfo.get(resourceTreeModel) : null;
+        const info = resourceTreeModel ? this.#modelToInfo.get(resourceTreeModel) : null;
         if (info) {
             info.resetForTest();
         }
@@ -136,32 +136,32 @@ export class ResourceMapping {
 }
 class ModelInfo {
     project;
-    bindings;
-    cssModel;
-    eventListeners;
+    #bindings;
+    #cssModel;
+    #eventListeners;
     constructor(workspace, resourceTreeModel) {
         const target = resourceTreeModel.target();
         this.project = new ContentProviderBasedProject(workspace, 'resources:' + target.id(), Workspace.Workspace.projectTypes.Network, '', false /* isServiceProject */);
         NetworkProject.setTargetForProject(this.project, target);
-        this.bindings = new Map();
+        this.#bindings = new Map();
         const cssModel = target.model(SDK.CSSModel.CSSModel);
         console.assert(Boolean(cssModel));
-        this.cssModel = cssModel;
-        this.eventListeners = [
+        this.#cssModel = cssModel;
+        this.#eventListeners = [
             resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.ResourceAdded, this.resourceAdded, this),
             resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.FrameWillNavigate, this.frameWillNavigate, this),
             resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.FrameDetached, this.frameDetached, this),
-            this.cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetChanged, event => {
-                this.styleSheetChanged(event);
+            this.#cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetChanged, event => {
+                void this.styleSheetChanged(event);
             }, this),
         ];
     }
     async styleSheetChanged(event) {
-        const header = this.cssModel.styleSheetHeaderForId(event.data.styleSheetId);
+        const header = this.#cssModel.styleSheetHeaderForId(event.data.styleSheetId);
         if (!header || !header.isInline || (header.isInline && header.isMutable)) {
             return;
         }
-        const binding = this.bindings.get(header.resourceURL());
+        const binding = this.#bindings.get(header.resourceURL());
         if (!binding) {
             return;
         }
@@ -197,10 +197,10 @@ class ModelInfo {
         if (!this.acceptsResource(resource)) {
             return;
         }
-        let binding = this.bindings.get(resource.url);
+        let binding = this.#bindings.get(resource.url);
         if (!binding) {
             binding = new Binding(this.project, resource);
-            this.bindings.set(resource.url, binding);
+            this.#bindings.set(resource.url, binding);
         }
         else {
             binding.addResource(resource);
@@ -211,13 +211,13 @@ class ModelInfo {
             if (!this.acceptsResource(resource)) {
                 continue;
             }
-            const binding = this.bindings.get(resource.url);
+            const binding = this.#bindings.get(resource.url);
             if (!binding) {
                 continue;
             }
             if (binding.resources.size === 1) {
                 binding.dispose();
-                this.bindings.delete(resource.url);
+                this.#bindings.delete(resource.url);
             }
             else {
                 binding.removeResource(resource);
@@ -231,17 +231,17 @@ class ModelInfo {
         this.removeFrameResources(event.data.frame);
     }
     resetForTest() {
-        for (const binding of this.bindings.values()) {
+        for (const binding of this.#bindings.values()) {
             binding.dispose();
         }
-        this.bindings.clear();
+        this.#bindings.clear();
     }
     dispose() {
-        Common.EventTarget.removeEventListeners(this.eventListeners);
-        for (const binding of this.bindings.values()) {
+        Common.EventTarget.removeEventListeners(this.#eventListeners);
+        for (const binding of this.#bindings.values()) {
             binding.dispose();
         }
-        this.bindings.clear();
+        this.#bindings.clear();
         this.project.removeProject();
     }
     getProject() {
@@ -250,29 +250,29 @@ class ModelInfo {
 }
 class Binding {
     resources;
-    project;
-    uiSourceCode;
-    edits;
+    #project;
+    #uiSourceCode;
+    #edits;
     constructor(project, resource) {
         this.resources = new Set([resource]);
-        this.project = project;
-        this.uiSourceCode = this.project.createUISourceCode(resource.url, resource.contentType());
-        boundUISourceCodes.add(this.uiSourceCode);
+        this.#project = project;
+        this.#uiSourceCode = this.#project.createUISourceCode(resource.url, resource.contentType());
+        boundUISourceCodes.add(this.#uiSourceCode);
         if (resource.frameId) {
-            NetworkProject.setInitialFrameAttribution(this.uiSourceCode, resource.frameId);
+            NetworkProject.setInitialFrameAttribution(this.#uiSourceCode, resource.frameId);
         }
-        this.project.addUISourceCodeWithProvider(this.uiSourceCode, this, resourceMetadata(resource), resource.mimeType);
-        this.edits = [];
+        this.#project.addUISourceCodeWithProvider(this.#uiSourceCode, this, resourceMetadata(resource), resource.mimeType);
+        this.#edits = [];
     }
     inlineStyles() {
-        const target = NetworkProject.targetForUISourceCode(this.uiSourceCode);
+        const target = NetworkProject.targetForUISourceCode(this.#uiSourceCode);
         const stylesheets = [];
         if (!target) {
             return stylesheets;
         }
         const cssModel = target.model(SDK.CSSModel.CSSModel);
         if (cssModel) {
-            for (const headerId of cssModel.getStyleSheetIdsForURL(this.uiSourceCode.url())) {
+            for (const headerId of cssModel.getStyleSheetIdsForURL(this.#uiSourceCode.url())) {
                 const header = cssModel.styleSheetHeaderForId(headerId);
                 if (header) {
                     stylesheets.push(header);
@@ -282,7 +282,7 @@ class Binding {
         return stylesheets;
     }
     inlineScripts() {
-        const target = NetworkProject.targetForUISourceCode(this.uiSourceCode);
+        const target = NetworkProject.targetForUISourceCode(this.#uiSourceCode);
         if (!target) {
             return [];
         }
@@ -290,24 +290,24 @@ class Binding {
         if (!debuggerModel) {
             return [];
         }
-        return debuggerModel.scriptsForSourceURL(this.uiSourceCode.url());
+        return debuggerModel.scriptsForSourceURL(this.#uiSourceCode.url());
     }
     async styleSheetChanged(stylesheet, edit) {
-        this.edits.push({ stylesheet, edit });
-        if (this.edits.length > 1) {
+        this.#edits.push({ stylesheet, edit });
+        if (this.#edits.length > 1) {
             return;
         } // There is already a styleSheetChanged loop running
-        const { content } = await this.uiSourceCode.requestContent();
+        const { content } = await this.#uiSourceCode.requestContent();
         if (content !== null) {
             await this.innerStyleSheetChanged(content);
         }
-        this.edits = [];
+        this.#edits = [];
     }
     async innerStyleSheetChanged(content) {
         const scripts = this.inlineScripts();
         const styles = this.inlineStyles();
         let text = new TextUtils.Text.Text(content);
-        for (const data of this.edits) {
+        for (const data of this.#edits) {
             const edit = data.edit;
             if (!edit) {
                 continue;
@@ -339,22 +339,22 @@ class Binding {
             }
             await Promise.all(updatePromises);
         }
-        this.uiSourceCode.addRevision(text.value());
+        this.#uiSourceCode.addRevision(text.value());
     }
     addResource(resource) {
         this.resources.add(resource);
         if (resource.frameId) {
-            NetworkProject.addFrameAttribution(this.uiSourceCode, resource.frameId);
+            NetworkProject.addFrameAttribution(this.#uiSourceCode, resource.frameId);
         }
     }
     removeResource(resource) {
         this.resources.delete(resource);
         if (resource.frameId) {
-            NetworkProject.removeFrameAttribution(this.uiSourceCode, resource.frameId);
+            NetworkProject.removeFrameAttribution(this.#uiSourceCode, resource.frameId);
         }
     }
     dispose() {
-        this.project.removeFile(this.uiSourceCode.url());
+        this.#project.removeFile(this.#uiSourceCode.url());
     }
     firstResource() {
         console.assert(this.resources.size > 0);

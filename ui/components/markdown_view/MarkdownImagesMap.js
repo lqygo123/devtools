@@ -7,7 +7,7 @@
  * [
  *   'feedbackIcon',
  *   {
- *     src: 'Images/feedback_thin_16x16_icon.svg',
+ *     src: 'Images/survey_feedback_icon.svg',
  *     isIcon: true,
  *     width: '20px',
  *     height: '20px',

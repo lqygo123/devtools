@@ -10,9 +10,6 @@ export declare class ExtensionTraceProvider {
     longDisplayName(): string;
     persistentIdentifier(): string;
 }
-/**
- * @interface
- */
 export interface TracingSession {
     complete(url: string, timeOffsetMicroseconds: number): void;
 }

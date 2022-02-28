@@ -28,26 +28,8 @@ export interface Hinge {
     outlineColor: HighlightColor;
 }
 export declare class OverlayModel extends SDKModel<EventTypes> implements ProtocolProxyApi.OverlayDispatcher {
-    private readonly domModel;
+    #private;
     overlayAgent: ProtocolProxyApi.OverlayApi;
-    private readonly debuggerModel;
-    private inspectModeEnabledInternal;
-    private hideHighlightTimeout;
-    private defaultHighlighter;
-    private highlighter;
-    private showPaintRectsSetting;
-    private showLayoutShiftRegionsSetting;
-    private showAdHighlightsSetting;
-    private showDebugBordersSetting;
-    private showFPSCounterSetting;
-    private showScrollBottleneckRectsSetting;
-    private showHitTestBordersSetting;
-    private showWebVitalsSetting;
-    private registeredListeners;
-    private showViewportSizeOnResize;
-    private persistentHighlighter;
-    private readonly sourceOrderHighlighter;
-    private sourceOrderModeActiveInternal;
     constructor(target: Target);
     static highlightObjectAsDOMNode(object: RemoteObject): void;
     static hideDOMNodeHighlight(): void;
@@ -56,8 +38,8 @@ export declare class OverlayModel extends SDKModel<EventTypes> implements Protoc
     static highlightRect(rect: HighlightRect): void;
     static clearHighlight(): void;
     getDOMModel(): DOMModel;
-    highlightRect({ x, y, width, height, color, outlineColor }: HighlightRect): Promise<any>;
-    clearHighlight(): Promise<any>;
+    highlightRect({ x, y, width, height, color, outlineColor }: HighlightRect): Promise<Protocol.ProtocolResponseWithError>;
+    clearHighlight(): Promise<Protocol.ProtocolResponseWithError>;
     private wireAgentToSettings;
     suspendModel(): Promise<void>;
     resumeModel(): Promise<void>;
@@ -88,6 +70,9 @@ export declare class OverlayModel extends SDKModel<EventTypes> implements Protoc
     hideSourceOrderInOverlay(): void;
     setSourceOrderActive(isActive: boolean): void;
     sourceOrderModeActive(): boolean;
+    highlightIsolatedElementInPersistentOverlay(nodeId: Protocol.DOM.NodeId): void;
+    hideIsolatedElementInPersistentOverlay(nodeId: Protocol.DOM.NodeId): void;
+    isHighlightedIsolatedElementInPersistentOverlay(nodeId: Protocol.DOM.NodeId): boolean;
     private delayedHideHighlight;
     highlightFrame(frameId: Protocol.Page.FrameId): void;
     showHingeForDualScreen(hinge: Hinge | null): void;
@@ -130,7 +115,7 @@ export interface Highlighter {
     highlightFrame(frameId: Protocol.Page.FrameId): void;
 }
 export declare class SourceOrderHighlighter {
-    private readonly model;
+    #private;
     constructor(model: OverlayModel);
     highlightSourceOrderInOverlay(node: DOMNode, sourceOrderConfig: Protocol.Overlay.SourceOrderConfig): void;
     hideSourceOrderHighlight(): void;

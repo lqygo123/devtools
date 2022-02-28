@@ -20,13 +20,6 @@ const UIStrings = {
 };
 const str_ = i18n.i18n.registerUIStrings('panels/sources/ScriptOriginPlugin.ts', UIStrings);
 export class ScriptOriginPlugin extends Plugin {
-    textEditor;
-    uiSourceCode;
-    constructor(textEditor, uiSourceCode) {
-        super();
-        this.textEditor = textEditor;
-        this.uiSourceCode = uiSourceCode;
-    }
     static accepts(uiSourceCode) {
         return uiSourceCode.contentType().hasScripts() || Boolean(ScriptOriginPlugin.script(uiSourceCode));
     }

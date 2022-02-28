@@ -369,25 +369,43 @@ function hideFromLayout(element) {
     element.style.width = '100em';
     element.style.overflow = 'hidden';
 }
-let alertElement;
-function createAriaAlertElement() {
-    const element = document.body.createChild('div');
-    hideFromLayout(element);
-    element.setAttribute('role', 'alert');
-    element.setAttribute('aria-atomic', 'true');
-    return element;
+let alertElementOne;
+let alertElementTwo;
+let alertToggle = false;
+/**
+ * This function instantiates and switches off returning one of two offscreen alert elements.
+ * We utilize two alert elements to ensure that alerts with the same string are still registered
+ * as changes and trigger screen reader announcement.
+ */
+export function alertElementInstance() {
+    if (!alertElementOne) {
+        const element = document.body.createChild('div');
+        hideFromLayout(element);
+        element.setAttribute('role', 'alert');
+        element.setAttribute('aria-atomic', 'true');
+        alertElementOne = element;
+    }
+    if (!alertElementTwo) {
+        const element = document.body.createChild('div');
+        hideFromLayout(element);
+        element.setAttribute('role', 'alert');
+        element.setAttribute('aria-atomic', 'true');
+        alertElementTwo = element;
+    }
+    alertToggle = !alertToggle;
+    if (alertToggle) {
+        alertElementTwo.textContent = '';
+        return alertElementOne;
+    }
+    alertElementOne.textContent = '';
+    return alertElementTwo;
 }
 /**
  * This function is used to announce a message with the screen reader.
  * Setting the textContent would allow the SR to access the offscreen element via browse mode
  */
 export function alert(message) {
-    if (!alertElement) {
-        alertElement = createAriaAlertElement();
-    }
-    // We first set the textContent to blank so that the string will announce even if it is replaced
-    // with the same string.
-    alertElement.textContent = '';
-    alertElement.textContent = Platform.StringUtilities.trimEndWithMaxLength(message, 10000);
+    const element = alertElementInstance();
+    element.textContent = Platform.StringUtilities.trimEndWithMaxLength(message, 10000);
 }
 //# sourceMappingURL=ARIAUtils.js.map

@@ -184,7 +184,7 @@ export class ResourceWebSocketFrameView extends UI.Widget.VBox {
         this.dataGrid.addEventListener(DataGrid.DataGrid.Events.SortingChanged, this.sortItems, this);
         this.dataGrid.setName('ResourceWebSocketFrameView');
         this.dataGrid.addEventListener(DataGrid.DataGrid.Events.SelectedNode, event => {
-            this.onFrameSelected(event);
+            void this.onFrameSelected(event);
         }, this);
         this.dataGrid.addEventListener(DataGrid.DataGrid.Events.DeselectedNode, this.onFrameDeselected, this);
         this.mainToolbar = new UI.Toolbar.Toolbar('');
@@ -288,9 +288,9 @@ export class ResourceWebSocketFrameView extends UI.Widget.VBox {
             this.splitWidget.setSidebarWidget(jsonView);
             return;
         }
-        this.splitWidget.setSidebarWidget(new SourceFrame.ResourceSourceFrame.ResourceSourceFrame(TextUtils.StaticContentProvider.StaticContentProvider.fromString(this.request.url(), Common.ResourceType.resourceTypes.WebSocket, content)));
+        this.splitWidget.setSidebarWidget(new SourceFrame.ResourceSourceFrame.ResourceSourceFrame(TextUtils.StaticContentProvider.StaticContentProvider.fromString(this.request.url(), Common.ResourceType.resourceTypes.WebSocket, content), ''));
     }
-    onFrameDeselected(_event) {
+    onFrameDeselected() {
         this.currentSelectedNode = null;
         this.splitWidget.setSidebarWidget(this.frameEmptyWidget);
     }

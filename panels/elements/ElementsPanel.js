@@ -37,7 +37,7 @@ import * as Root from '../../core/root/root.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Extensions from '../../models/extensions/extensions.js';
 import elementsPanelStyles from './elementsPanel.css.js';
-import * as IconButton from '../../ui/components/icon_button/icon_button.js';
+import * as Buttons from '../../ui/components/buttons/buttons.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { AccessibilityTreeView } from './AccessibilityTreeView.js';
@@ -130,20 +130,19 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/elements/ElementsPanel.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 const createAccessibilityTreeToggleButton = (isActive) => {
-    const button = document.createElement('button');
-    if (isActive) {
-        button.classList.add('axtree-button', 'axtree-button-active');
-    }
-    else {
-        button.classList.add('axtree-button');
-    }
+    const button = new Buttons.Button.Button();
+    const title = isActive ? i18nString(UIStrings.switchToDomTreeView) : i18nString(UIStrings.switchToAccessibilityTreeView);
+    button.data = {
+        active: isActive,
+        variant: "toolbar" /* TOOLBAR */,
+        iconUrl: new URL('../../Images/accessibility-icon.svg', import.meta.url).toString(),
+        title,
+    };
     button.tabIndex = 0;
-    button.title =
-        isActive ? i18nString(UIStrings.switchToDomTreeView) : i18nString(UIStrings.switchToAccessibilityTreeView);
-    const icon = new IconButton.Icon.Icon();
-    const bgColor = isActive ? 'var(--color-primary)' : 'var(--color-text-secondary)';
-    icon.data = { iconName: 'accessibility-icon', color: bgColor, width: '16px', height: '16px' };
-    button.appendChild(icon);
+    button.classList.add('axtree-button');
+    if (isActive) {
+        button.classList.add('active');
+    }
     return button;
 };
 let elementsPanelInstance;
@@ -187,7 +186,7 @@ export class ElementsPanel extends UI.Panel.Panel {
         this.contentElementInternal = document.createElement('div');
         const crumbsContainer = document.createElement('div');
         if (Root.Runtime.experiments.isEnabled('fullAccessibilityTree')) {
-            this.initializeFullAccessibilityTreeView(stackElement);
+            this.initializeFullAccessibilityTreeView();
         }
         stackElement.appendChild(this.contentElementInternal);
         stackElement.appendChild(crumbsContainer);
@@ -233,12 +232,12 @@ export class ElementsPanel extends UI.Panel.Panel {
         this.adornerSettingsPane = null;
         this.adornersByName = new Map();
     }
-    initializeFullAccessibilityTreeView(stackElement) {
+    initializeFullAccessibilityTreeView() {
         this.accessibilityTreeButton = createAccessibilityTreeToggleButton(false);
         this.accessibilityTreeButton.addEventListener('click', this.showAccessibilityTree.bind(this));
         this.domTreeButton = createAccessibilityTreeToggleButton(true);
         this.domTreeButton.addEventListener('click', this.showDOMTree.bind(this));
-        stackElement.appendChild(this.accessibilityTreeButton);
+        this.contentElementInternal.appendChild(this.accessibilityTreeButton);
     }
     showAccessibilityTree() {
         if (this.accessibilityTreeView) {
@@ -246,8 +245,16 @@ export class ElementsPanel extends UI.Panel.Panel {
         }
     }
     showDOMTree() {
-        // TODO(meredithl): Scroll to inspected DOM node.
         this.splitWidget.setMainWidget(this.searchableViewInternal);
+        const selectedNode = this.selectedDOMNode();
+        if (!selectedNode) {
+            return;
+        }
+        const treeElement = this.treeElementForNode(selectedNode);
+        if (!treeElement) {
+            return;
+        }
+        treeElement.select();
     }
     static instance(opts = { forceNew: null }) {
         const { forceNew } = opts;
@@ -273,11 +280,6 @@ export class ElementsPanel extends UI.Panel.Panel {
     }
     modelAdded(domModel) {
         const parentModel = domModel.parentModel();
-        // Different frames will have different DOMModels, we only want to add the accessibility model
-        // for the top level frame, as the accessibility tree does not yet support exploring IFrames.
-        if (this.accessibilityTreeView) {
-            this.accessibilityTreeView.wireToDOMModel(domModel);
-        }
         let treeOutline = parentModel ? ElementsTreeOutline.forDOMModel(parentModel) : null;
         if (!treeOutline) {
             treeOutline = new ElementsTreeOutline(true, true);
@@ -385,7 +387,7 @@ export class ElementsPanel extends UI.Panel.Panel {
                     this.documentUpdated(domModel);
                 }
                 else {
-                    domModel.requestDocument();
+                    void domModel.requestDocument();
                 }
             }
         }
@@ -430,6 +432,9 @@ export class ElementsPanel extends UI.Panel.Panel {
                 crumbs,
                 selectedNode: ElementsComponents.Helper.legacyNodeToElementsComponentsNode(selectedNode),
             };
+            if (this.accessibilityTreeView) {
+                void this.accessibilityTreeView.selectedNodeChanged(selectedNode);
+            }
         }
         else {
             this.breadcrumbs.data = { crumbs: [], selectedNode: null };
@@ -438,7 +443,7 @@ export class ElementsPanel extends UI.Panel.Panel {
         if (!selectedNode) {
             return;
         }
-        selectedNode.setAsInspectedNode();
+        void selectedNode.setAsInspectedNode();
         if (focus) {
             this.selectedNodeOnReset = selectedNode;
             this.hasNonDefaultSelectedNode = true;
@@ -462,7 +467,7 @@ export class ElementsPanel extends UI.Panel.Panel {
         this.searchableViewInternal.resetSearch();
         if (!domModel.existingDocument()) {
             if (this.isShowing()) {
-                domModel.requestDocument();
+                void domModel.requestDocument();
             }
             return;
         }
@@ -471,7 +476,7 @@ export class ElementsPanel extends UI.Panel.Panel {
             return;
         }
         const savedSelectedNodeOnReset = this.selectedNodeOnReset;
-        restoreNode.call(this, domModel, this.selectedNodeOnReset || null);
+        void restoreNode.call(this, domModel, this.selectedNodeOnReset || null);
         async function restoreNode(domModel, staleNode) {
             const nodePath = staleNode ? staleNode.path() : null;
             const restoredNodeId = nodePath ? await domModel.pushNodeByPathToFrontend(nodePath) : null;
@@ -532,7 +537,7 @@ export class ElementsPanel extends UI.Panel.Panel {
         const showUAShadowDOM = Common.Settings.Settings.instance().moduleSetting('showUAShadowDOM').get();
         const domModels = SDK.TargetManager.TargetManager.instance().models(SDK.DOMModel.DOMModel);
         const promises = domModels.map(domModel => domModel.performSearch(whitespaceTrimmedQuery, showUAShadowDOM));
-        Promise.all(promises).then(resultCounts => {
+        void Promise.all(promises).then(resultCounts => {
             this.searchResults = [];
             for (let i = 0; i < resultCounts.length; ++i) {
                 const resultCount = resultCounts[i];
@@ -568,7 +573,7 @@ export class ElementsPanel extends UI.Panel.Panel {
     switchToAndFocus(node) {
         // Reset search restore.
         this.searchableViewInternal.cancelSearch();
-        UI.ViewManager.ViewManager.instance().showView('elements').then(() => this.selectDOMNode(node, true));
+        void UI.ViewManager.ViewManager.instance().showView('elements').then(() => this.selectDOMNode(node, true));
     }
     jumpToSearchResult(index) {
         if (!this.searchResults) {
@@ -608,7 +613,7 @@ export class ElementsPanel extends UI.Panel.Panel {
         }
         if (typeof searchResult.node === 'undefined') {
             // No data for slot, request it.
-            searchResult.domModel.searchResult(searchResult.index).then(node => {
+            void searchResult.domModel.searchResult(searchResult.index).then(node => {
                 searchResult.node = node;
                 // If any of these properties are undefined or reset to an invalid value,
                 // this means the search/highlight request is outdated.
@@ -620,7 +625,7 @@ export class ElementsPanel extends UI.Panel.Panel {
             return;
         }
         const treeElement = this.treeElementForNode(searchResult.node);
-        searchResult.node.scrollIntoView();
+        void searchResult.node.scrollIntoView();
         if (treeElement) {
             this.searchConfig && treeElement.highlightSearchResults(this.searchConfig.query);
             treeElement.reveal();
@@ -714,7 +719,7 @@ export class ElementsPanel extends UI.Panel.Panel {
         if (!treeOutline) {
             return null;
         }
-        return /** @type {?ElementsTreeElement} */ treeOutline.findTreeElement(node);
+        return treeOutline.findTreeElement(node);
     }
     leaveUserAgentShadowDOM(node) {
         let userAgentShadowRoot;
@@ -732,7 +737,7 @@ export class ElementsPanel extends UI.Panel.Panel {
             node.highlightForTwoSeconds();
         }
         if (this.accessibilityTreeView) {
-            this.accessibilityTreeView.selectedNodeChanged(node);
+            void this.accessibilityTreeView.revealAndSelectNode(node);
         }
         await UI.ViewManager.ViewManager.instance().showView('elements', false, !focus);
         this.selectDOMNode(node, focus);
@@ -834,7 +839,7 @@ export class ElementsPanel extends UI.Panel.Panel {
             this.metricsWidget.toggleVisibility(event.data.hasMatchedStyles);
         };
         const tabSelected = (event) => {
-            const tabId = event.data.tabId;
+            const { tabId } = event.data;
             if (tabId === i18nString(UIStrings.computed)) {
                 computedStylePanesWrapper.show(computedView.element);
                 showMetricsWidgetInComputedPane();
@@ -931,15 +936,14 @@ export class ElementsPanel extends UI.Panel.Panel {
         this.cssStyleTrackerByCSSModel.delete(cssModel);
         cssPropertyTracker.removeEventListener(SDK.CSSModel.CSSPropertyTrackerEvents.TrackedCSSPropertiesUpdated, this.trackedCSSPropertiesUpdated, this);
     }
-    trackedCSSPropertiesUpdated(event) {
-        const domNodes = event.data.domNodes;
+    trackedCSSPropertiesUpdated({ data: domNodes }) {
         for (const domNode of domNodes) {
             if (!domNode) {
                 continue;
             }
             const treeElement = this.treeElementForNode(domNode);
             if (treeElement) {
-                treeElement.updateStyleAdorners();
+                void treeElement.updateStyleAdorners();
             }
         }
     }
@@ -1065,13 +1069,9 @@ export class DOMNodeRevealer {
                 node.resolve(checkDeferredDOMNodeThenReveal);
             }
             else if (node instanceof SDK.RemoteObject.RemoteObject) {
-                const domModel = 
-                /** @type {!SDK.RemoteObject.RemoteObject} */ node
-                    .runtimeModel()
-                    .target()
-                    .model(SDK.DOMModel.DOMModel);
+                const domModel = node.runtimeModel().target().model(SDK.DOMModel.DOMModel);
                 if (domModel) {
-                    domModel.pushObjectAsNodeToFrontend(node).then(checkRemoteObjectThenReveal);
+                    void domModel.pushObjectAsNodeToFrontend(node).then(checkRemoteObjectThenReveal);
                 }
                 else {
                     reject(new Error('Could not resolve a node to reveal.'));
@@ -1100,7 +1100,7 @@ export class DOMNodeRevealer {
                     return;
                 }
                 if (resolvedNode) {
-                    panel.revealAndSelectNode(resolvedNode, !omitFocus).then(resolve);
+                    void panel.revealAndSelectNode(resolvedNode, !omitFocus).then(resolve);
                     return;
                 }
                 reject(new Error('Could not resolve node to reveal.'));
@@ -1153,7 +1153,7 @@ export class ElementsActionDelegate {
         }
         switch (actionId) {
             case 'elements.hide-element':
-                treeOutline.toggleHideElement(node);
+                void treeOutline.toggleHideElement(node);
                 return true;
             case 'elements.edit-as-html':
                 treeOutline.toggleEditAsHTML(node);
@@ -1162,14 +1162,14 @@ export class ElementsActionDelegate {
                 treeOutline.duplicateNode(node);
                 return true;
             case 'elements.copy-styles':
-                treeOutline.findTreeElement(node)?.copyStyles();
+                void treeOutline.findTreeElement(node)?.copyStyles();
                 return true;
             case 'elements.undo':
-                SDK.DOMModel.DOMModelUndoStack.instance().undo();
+                void SDK.DOMModel.DOMModelUndoStack.instance().undo();
                 ElementsPanel.instance().stylesWidget.forceUpdate();
                 return true;
             case 'elements.redo':
-                SDK.DOMModel.DOMModelUndoStack.instance().redo();
+                void SDK.DOMModel.DOMModelUndoStack.instance().redo();
                 ElementsPanel.instance().stylesWidget.forceUpdate();
                 return true;
         }

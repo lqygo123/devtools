@@ -1,9 +1,11 @@
 import * as Common from '../../core/common/common.js';
+import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as PerfUI from '../../ui/legacy/components/perf_ui/perf_ui.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import type * as Protocol from '../../generated/protocol.js';
 import { ProfileFlameChartDataProvider } from './CPUProfileFlameChart.js';
+import type { IdsRangeChangedEvent } from './HeapTimelineOverview.js';
 import { HeapTimelineOverview } from './HeapTimelineOverview.js';
 import type { Formatter, ProfileDataGridNode } from './ProfileDataGrid.js';
 import type { ProfileHeader } from './ProfileHeader.js';
@@ -11,7 +13,7 @@ import { ProfileType } from './ProfileHeader.js';
 import { ProfileView, WritableProfileHeader } from './ProfileView.js';
 export declare class HeapProfileView extends ProfileView implements UI.SearchableView.Searchable {
     profileHeader: SamplingHeapProfileHeader;
-    readonly profileType: ProfileType;
+    readonly profileType: SamplingHeapProfileTypeBase;
     adjustedTotal: number;
     readonly selectedSizeText: UI.Toolbar.ToolbarText;
     timestamps: number[];
@@ -23,13 +25,21 @@ export declare class HeapProfileView extends ProfileView implements UI.Searchabl
     readonly timelineOverview: HeapTimelineOverview;
     constructor(profileHeader: SamplingHeapProfileHeader);
     toolbarItems(): Promise<UI.Toolbar.ToolbarItem[]>;
-    onIdsRangeChanged(event: Common.EventTarget.EventTargetEvent): void;
+    onIdsRangeChanged(event: Common.EventTarget.EventTargetEvent<IdsRangeChangedEvent>): void;
     setSelectionRange(minId: number, maxId: number): void;
-    onStatsUpdate(event: Common.EventTarget.EventTargetEvent): void;
+    onStatsUpdate(event: Common.EventTarget.EventTargetEvent<Protocol.HeapProfiler.SamplingHeapProfile | null>): void;
     columnHeader(columnId: string): Common.UIString.LocalizedString;
     createFlameChartDataProvider(): ProfileFlameChartDataProvider;
 }
-export declare class SamplingHeapProfileTypeBase extends ProfileType {
+declare const SamplingHeapProfileTypeBase_base: (new (...args: any[]) => {
+    "__#6@#events": Common.ObjectWrapper.ObjectWrapper<SamplingHeapProfileType.EventTypes>;
+    addEventListener<T extends keyof SamplingHeapProfileType.EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<SamplingHeapProfileType.EventTypes[T]>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<SamplingHeapProfileType.EventTypes, T>;
+    once<T_1 extends keyof SamplingHeapProfileType.EventTypes>(eventType: T_1): Promise<SamplingHeapProfileType.EventTypes[T_1]>;
+    removeEventListener<T_2 extends keyof SamplingHeapProfileType.EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<SamplingHeapProfileType.EventTypes[T_2]>) => void, thisObject?: Object | undefined): void;
+    hasEventListeners(eventType: keyof SamplingHeapProfileType.EventTypes): boolean;
+    dispatchEventToListeners<T_3 extends keyof SamplingHeapProfileType.EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<SamplingHeapProfileType.EventTypes, T_3>): void;
+}) & typeof ProfileType;
+export declare class SamplingHeapProfileTypeBase extends SamplingHeapProfileTypeBase_base {
     recording: boolean;
     clearedDuringRecording: boolean;
     constructor(typeId: string, description: string);
@@ -64,6 +74,10 @@ export declare namespace SamplingHeapProfileType {
         RecordingStopped = "RecordingStopped",
         StatsUpdate = "StatsUpdate"
     }
+    type EventTypes = {
+        [Events.RecordingStopped]: void;
+        [Events.StatsUpdate]: Protocol.HeapProfiler.SamplingHeapProfile | null;
+    };
 }
 export declare class SamplingHeapProfileHeader extends WritableProfileHeader {
     readonly heapProfilerModelInternal: SDK.HeapProfilerModel.HeapProfilerModel | null;
@@ -89,6 +103,7 @@ export declare class SamplingHeapProfileHeader extends WritableProfileHeader {
     createView(): HeapProfileView;
     protocolProfile(): Protocol.HeapProfiler.SamplingHeapProfile;
     heapProfilerModel(): SDK.HeapProfilerModel.HeapProfilerModel | null;
+    profileType(): SamplingHeapProfileTypeBase;
 }
 export declare class SamplingHeapProfileNode extends SDK.ProfileTreeModel.ProfileNode {
     self: number;
@@ -118,3 +133,4 @@ export declare class HeapFlameChartDataProvider extends ProfileFlameChartDataPro
     calculateTimelineData(): PerfUI.FlameChart.TimelineData;
     prepareHighlightedEntryInfo(entryIndex: number): Element | null;
 }
+export {};

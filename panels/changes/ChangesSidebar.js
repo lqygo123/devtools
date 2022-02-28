@@ -33,7 +33,7 @@ export class ChangesSidebar extends Common.ObjectWrapper.eventMixin(UI.Widget.Wi
         this.treeElements = new Map();
         this.workspaceDiff = workspaceDiff;
         this.workspaceDiff.modifiedUISourceCodes().forEach(this.addUISourceCode.bind(this));
-        this.workspaceDiff.addEventListener(WorkspaceDiff.WorkspaceDiff.Events.ModifiedStatusChanged, this.uiSourceCodeMofiedStatusChanged, this);
+        this.workspaceDiff.addEventListener("ModifiedStatusChanged" /* ModifiedStatusChanged */, this.uiSourceCodeMofiedStatusChanged, this);
     }
     selectUISourceCode(uiSourceCode, omitFocus) {
         const treeElement = this.treeElements.get(uiSourceCode);

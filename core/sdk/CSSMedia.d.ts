@@ -3,19 +3,14 @@ import type * as Protocol from '../../generated/protocol.js';
 import type { CSSModel } from './CSSModel.js';
 import { CSSQuery } from './CSSQuery.js';
 export declare class CSSMediaQuery {
-    private readonly activeInternal;
-    private readonly expressionsInternal;
+    #private;
     constructor(payload: Protocol.CSS.MediaQuery);
     static parsePayload(payload: Protocol.CSS.MediaQuery): CSSMediaQuery;
     active(): boolean;
     expressions(): CSSMediaQueryExpression[] | null;
 }
 export declare class CSSMediaQueryExpression {
-    private readonly valueInternal;
-    private readonly unitInternal;
-    private readonly featureInternal;
-    private readonly valueRangeInternal;
-    private readonly computedLengthInternal;
+    #private;
     constructor(payload: Protocol.CSS.MediaQueryExpression);
     static parsePayload(payload: Protocol.CSS.MediaQueryExpression): CSSMediaQueryExpression;
     value(): number;

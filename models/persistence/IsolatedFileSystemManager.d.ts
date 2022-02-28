@@ -1,4 +1,5 @@
 import * as Common from '../../core/common/common.js';
+import * as Platform from '../../core/platform/platform.js';
 import type { FilesChangedData } from './FileSystemWorkspaceBinding.js';
 import { IsolatedFileSystem } from './IsolatedFileSystem.js';
 import type { PlatformFileSystem } from './PlatformFileSystem.js';
@@ -25,7 +26,7 @@ export declare class IsolatedFileSystemManager extends Common.ObjectWrapper.Obje
     fileSystems(): PlatformFileSystem[];
     fileSystem(fileSystemPath: string): PlatformFileSystem | null;
     workspaceFolderExcludePatternSetting(): Common.Settings.RegExpSetting;
-    registerCallback(callback: (arg0: Array<string>) => void): number;
+    registerCallback(callback: (arg0: Array<Platform.DevToolsPath.RawPathString>) => void): number;
     registerProgress(progress: Common.Progress.Progress): number;
     private onIndexingTotalWorkCalculated;
     private onIndexingWorked;
@@ -46,9 +47,3 @@ export declare type EventTypes = {
     [Events.ExcludedFolderAdded]: string;
     [Events.ExcludedFolderRemoved]: string;
 };
-export interface FileSystem {
-    type: string;
-    fileSystemName: string;
-    rootURL: string;
-    fileSystemPath: string;
-}

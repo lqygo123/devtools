@@ -1,10 +1,20 @@
+import * as Common from '../../core/common/common.js';
+import * as Platform from '../../core/platform/platform.js';
 import { ContextMenu } from './ContextMenu.js';
 import { Constraints } from './Geometry.js';
 import { Icon } from './Icon.js';
 import { Toolbar } from './Toolbar.js';
 import type { Widget } from './Widget.js';
 import { VBox } from './Widget.js';
-export declare class TabbedPane extends VBox {
+declare const TabbedPane_base: (new (...args: any[]) => {
+    "__#6@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T]>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<EventTypes[T_1]>;
+    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2]>) => void, thisObject?: Object | undefined): void;
+    hasEventListeners(eventType: keyof EventTypes): boolean;
+    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+}) & typeof VBox;
+export declare class TabbedPane extends TabbedPane_base {
     private readonly headerElementInternal;
     private readonly headerContentsElement;
     tabSlider: HTMLDivElement;
@@ -53,7 +63,7 @@ export declare class TabbedPane extends VBox {
     tabbedPaneContentElement(): Element;
     isTabCloseable(id: string): boolean;
     setTabDelegate(delegate: TabbedPaneTabDelegate): void;
-    appendTab(id: string, tabTitle: string, view: Widget, tabTooltip?: string, userGesture?: boolean, isCloseable?: boolean, index?: number): void;
+    appendTab(id: string, tabTitle: string, view: Widget, tabTooltip?: string, userGesture?: boolean, isCloseable?: boolean, isPreviewFeature?: boolean, index?: number): void;
     closeTab(id: string, userGesture?: boolean): void;
     closeTabs(ids: string[], userGesture?: boolean): void;
     private innerCloseTab;
@@ -122,8 +132,15 @@ export declare enum Events {
     TabClosed = "TabClosed",
     TabOrderChanged = "TabOrderChanged"
 }
+export declare type EventTypes = {
+    [Events.TabInvoked]: EventData;
+    [Events.TabSelected]: EventData;
+    [Events.TabClosed]: EventData;
+    [Events.TabOrderChanged]: EventData;
+};
 export declare class TabbedPaneTab {
     closeable: boolean;
+    previewFeature: boolean;
     private readonly tabbedPane;
     idInternal: string;
     private titleInternal;
@@ -138,7 +155,7 @@ export declare class TabbedPaneTab {
     private delegate?;
     private titleElement?;
     private dragStartX?;
-    constructor(tabbedPane: TabbedPane, id: string, title: string, closeable: boolean, view: Widget, tooltip?: string);
+    constructor(tabbedPane: TabbedPane, id: string, title: string, closeable: boolean, previewFeature: boolean, view: Widget, tooltip?: string);
     get id(): string;
     get title(): string;
     set title(title: string);
@@ -156,6 +173,7 @@ export declare class TabbedPaneTab {
     private createIconElement;
     createTabElement(measuring: boolean): HTMLElement;
     private createCloseIconButton;
+    private createPreviewIcon;
     private isCloseIconClicked;
     private tabClicked;
     private tabMouseDown;
@@ -170,3 +188,4 @@ export interface TabbedPaneTabDelegate {
     closeTabs(tabbedPane: TabbedPane, ids: string[]): void;
     onContextMenu(tabId: string, contextMenu: ContextMenu): void;
 }
+export {};

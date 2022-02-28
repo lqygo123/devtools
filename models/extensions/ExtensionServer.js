@@ -68,6 +68,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
     extensionsEnabled;
     inspectedTabId;
     extensionAPITestHook;
+    themeChangeHandlers = new Map();
     constructor() {
         super();
         this.clientObjects = new Map();
@@ -101,6 +102,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         this.registerHandler("getResourceContent" /* GetResourceContent */, this.onGetResourceContent.bind(this));
         this.registerHandler("Reload" /* Reload */, this.onReload.bind(this));
         this.registerHandler("setOpenResourceHandler" /* SetOpenResourceHandler */, this.onSetOpenResourceHandler.bind(this));
+        this.registerHandler("setThemeChangeHandler" /* SetThemeChangeHandler */, this.onSetThemeChangeHandler.bind(this));
         this.registerHandler("setResourceContent" /* SetResourceContent */, this.onSetResourceContent.bind(this));
         this.registerHandler("setSidebarHeight" /* SetSidebarHeight */, this.onSetSidebarHeight.bind(this));
         this.registerHandler("setSidebarContent" /* SetSidebarContent */, this.onSetSidebarContent.bind(this));
@@ -118,6 +120,12 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         }
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.events.addEventListener(Host.InspectorFrontendHostAPI.Events.SetInspectedTabId, this.setInspectedTabId, this);
         this.initExtensions();
+        ThemeSupport.ThemeSupport.instance().addEventListener(ThemeSupport.ThemeChangeEvent.eventName, () => {
+            const themeName = ThemeSupport.ThemeSupport.instance().themeName();
+            for (const port of this.themeChangeHandlers.values()) {
+                port.postMessage({ command: "host-theme-change" /* ThemeChange */, themeName });
+            }
+        });
     }
     static instance(opts = { forceNew: null }) {
         const { forceNew } = opts;
@@ -311,7 +319,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         if (panelView && panelView instanceof ExtensionServerPanelView) {
             panelViewId = panelView.viewId();
         }
-        UI.InspectorView.InspectorView.instance().showPanel(panelViewId);
+        void UI.InspectorView.InspectorView.instance().showPanel(panelViewId);
         return undefined;
     }
     onCreateToolbarButton(message, port) {
@@ -324,7 +332,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         }
         const button = new ExtensionButton(this, message.id, this.expandResourcePath(this.getExtensionOrigin(port), message.icon), message.tooltip, message.disabled);
         this.clientObjects.set(message.id, button);
-        panelView.widget().then(appendButton);
+        void panelView.widget().then(appendButton);
         function appendButton(panel) {
             panel.addToolbarItem(button.toolbarButton());
         }
@@ -415,17 +423,17 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         }
         const uiSourceCode = Workspace.Workspace.WorkspaceImpl.instance().uiSourceCodeForURL(message.url);
         if (uiSourceCode) {
-            Common.Revealer.reveal(uiSourceCode.uiLocation(message.lineNumber, message.columnNumber));
+            void Common.Revealer.reveal(uiSourceCode.uiLocation(message.lineNumber, message.columnNumber));
             return this.status.OK();
         }
         const resource = Bindings.ResourceUtils.resourceForURL(message.url);
         if (resource) {
-            Common.Revealer.reveal(resource);
+            void Common.Revealer.reveal(resource);
             return this.status.OK();
         }
         const request = Logs.NetworkLog.NetworkLog.instance().requestForURL(message.url);
         if (request) {
-            Common.Revealer.reveal(request);
+            void Common.Revealer.reveal(request);
             return this.status.OK();
         }
         return this.status.E_NOTFOUND(message.url);
@@ -444,6 +452,23 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         }
         else {
             Components.Linkifier.Linkifier.unregisterLinkHandler(name);
+        }
+        return undefined;
+    }
+    onSetThemeChangeHandler(message, port) {
+        if (message.command !== "setThemeChangeHandler" /* SetThemeChangeHandler */) {
+            return this.status.E_BADARG('command', `expected ${"setThemeChangeHandler" /* SetThemeChangeHandler */}`);
+        }
+        const extensionOrigin = this.getExtensionOrigin(port);
+        const extension = this.registeredExtensions.get(extensionOrigin);
+        if (!extension) {
+            throw new Error('Received a message from an unregistered extension');
+        }
+        if (message.handlerPresent) {
+            this.themeChangeHandlers.set(extensionOrigin, port);
+        }
+        else {
+            this.themeChangeHandlers.delete(extensionOrigin);
         }
         return undefined;
     }
@@ -527,7 +552,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         if (!request) {
             return this.status.E_NOTFOUND(message.id);
         }
-        this.getResourceContent(request, message, port);
+        void this.getResourceContent(request, message, port);
         return undefined;
     }
     onGetResourceContent(message, port) {
@@ -540,7 +565,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         if (!contentProvider) {
             return this.status.E_NOTFOUND(url);
         }
-        this.getResourceContent(contentProvider, message, port);
+        void this.getResourceContent(contentProvider, message, port);
         return undefined;
     }
     onSetResourceContent(message, port) {
@@ -751,10 +776,10 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         this.subscriptionStopHandlers.set(eventTopic, onUnsubscribeLast);
     }
     registerAutosubscriptionHandler(eventTopic, eventTarget, frontendEventType, handler) {
-        this.registerSubscriptionHandler(eventTopic, () => eventTarget.addEventListener(frontendEventType, handler, this), eventTarget.removeEventListener.bind(eventTarget, frontendEventType, handler, this));
+        this.registerSubscriptionHandler(eventTopic, () => eventTarget.addEventListener(frontendEventType, handler, this), () => eventTarget.removeEventListener(frontendEventType, handler, this));
     }
     registerAutosubscriptionTargetManagerHandler(eventTopic, modelClass, frontendEventType, handler) {
-        this.registerSubscriptionHandler(eventTopic, SDK.TargetManager.TargetManager.instance().addModelListener.bind(SDK.TargetManager.TargetManager.instance(), modelClass, frontendEventType, handler, this), SDK.TargetManager.TargetManager.instance().removeModelListener.bind(SDK.TargetManager.TargetManager.instance(), modelClass, frontendEventType, handler, this));
+        this.registerSubscriptionHandler(eventTopic, () => SDK.TargetManager.TargetManager.instance().addModelListener(modelClass, frontendEventType, handler, this), () => SDK.TargetManager.TargetManager.instance().removeModelListener(modelClass, frontendEventType, handler, this));
     }
     registerResourceContentCommittedHandler(handler) {
         function addFirstEventListener() {
@@ -768,27 +793,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         this.registerSubscriptionHandler("resource-content-committed" /* ResourceContentCommitted */, addFirstEventListener.bind(this), removeLastEventListener.bind(this));
     }
     expandResourcePath(extensionPath, resourcePath) {
-        return extensionPath + this.normalizePath(resourcePath);
-    }
-    normalizePath(path) {
-        const source = path.split('/');
-        const result = [];
-        for (let i = 0; i < source.length; ++i) {
-            if (source[i] === '.') {
-                continue;
-            }
-            // Ignore empty path components resulting from //, as well as a leading and traling slashes.
-            if (source[i] === '') {
-                continue;
-            }
-            if (source[i] === '..') {
-                result.pop();
-            }
-            else {
-                result.push(source[i]);
-            }
-        }
-        return '/' + result.join('/');
+        return extensionPath + '/' + Common.ParsedURL.normalizePath(resourcePath);
     }
     evaluate(expression, exposeCommandLineAPI, returnByValue, options, securityOrigin, callback) {
         let context;
@@ -861,7 +866,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         if (!this.canInspectURL(context.origin)) {
             return this.status.E_FAILED('Permission denied');
         }
-        context
+        void context
             .evaluate({
             expression: expression,
             objectGroup: 'extension',
@@ -939,12 +944,11 @@ export class ExtensionStatus {
     E_PROTOCOLERROR;
     E_FAILED;
     constructor() {
-        function makeStatus(code, description) {
-            const details = Array.prototype.slice.call(arguments, 2);
+        function makeStatus(code, description, ...details) {
             const status = { code, description, details };
             if (code !== 'OK') {
                 status.isError = true;
-                console.error('Extension server error: ' + Platform.StringUtilities.vsprintf(description, details));
+                console.error('Extension server error: ' + Platform.StringUtilities.sprintf(description, ...details));
             }
             return status;
         }

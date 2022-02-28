@@ -98,7 +98,7 @@ export class ColorSwatch extends HTMLElement {
         // free to append any content to replace what is being shown here.
         // Note also that whitespace between nodes is removed on purpose to avoid pushing these elements apart. Do not
         // re-format the HTML code.
-        LitHtml.render(LitHtml.html `<span class="color-swatch" title="${this.tooltip}"><span class="color-swatch-inner"
+        LitHtml.render(LitHtml.html `<span class="color-swatch" title=${this.tooltip}><span class="color-swatch-inner"
         style="background-color: ${this.text};"
         @click=${this.onClick}
         @mousedown=${this.consume}

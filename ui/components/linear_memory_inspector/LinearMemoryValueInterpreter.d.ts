@@ -21,22 +21,10 @@ export interface LinearMemoryValueInterpreterData {
     memoryLength: number;
 }
 export declare class LinearMemoryValueInterpreter extends HTMLElement {
+    #private;
     static readonly litTagName: import("../../lit-html/static.js").Static;
-    private readonly shadow;
-    private endianness;
-    private buffer;
-    private valueTypes;
-    private valueTypeModeConfig;
-    private memoryLength;
-    private showSettings;
-    constructor();
     connectedCallback(): void;
     set data(data: LinearMemoryValueInterpreterData);
-    private render;
-    private onEndiannessChange;
-    private renderEndiannessSetting;
-    private onSettingsToggle;
-    private onTypeToggle;
 }
 declare global {
     interface HTMLElementTagNameMap {

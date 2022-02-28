@@ -4,15 +4,13 @@
 import * as Host from '../../core/host/host.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as ComponentHelpers from '../components/helpers/helpers.js';
+import * as LitHtml from '../lit-html/lit-html.js';
 import * as ARIAUtils from './ARIAUtils.js';
 import { html } from './Fragment.js';
 import { Tooltip } from './Tooltip.js';
 import { addReferrerToURLIfNecessary, copyLinkAddressLabel, MaxLengthForDisplayedURLs, openLinkExternallyLabel } from './UIUtils.js';
 import { XElement } from './XElement.js';
 export class XLink extends XElement {
-    tabIndex;
-    target;
-    rel;
     hrefInternal;
     clickable;
     onClick;
@@ -25,18 +23,18 @@ export class XLink extends XElement {
         // clang-format off
         // TODO(dgozman): migrate css from 'devtools-link' to 'x-link'.
         const element = html `
-  <x-link href='${url}' class='${className} devtools-link' ${preventClick ? 'no-click' : ''}
+  <x-link href='${url}' tabindex="0" class='${className} devtools-link' ${preventClick ? 'no-click' : ''}
   >${Platform.StringUtilities.trimMiddle(linkText, MaxLengthForDisplayedURLs)}</x-link>`;
         // clang-format on
-        return /** @type {!HTMLElement} */ element;
+        return element;
     }
     constructor() {
         super();
         this.style.setProperty('display', 'inline');
         ARIAUtils.markAsLink(this);
-        this.tabIndex = 0;
-        this.target = '_blank';
-        this.rel = 'noopener';
+        this.setAttribute('tabindex', '0');
+        this.setAttribute('target', '_blank');
+        this.setAttribute('rel', 'noopener');
         this.hrefInternal = null;
         this.clickable = true;
         this.onClick = (event) => {
@@ -132,4 +130,5 @@ export class ContextMenuProvider {
     }
 }
 ComponentHelpers.CustomElements.defineComponent('x-link', XLink);
+export const sample = LitHtml.html `<p>Hello, <x-link>world!</x-link></p>`;
 //# sourceMappingURL=XLink.js.map

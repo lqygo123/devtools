@@ -1,7 +1,6 @@
 // Copyright (c) 2014 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import { DOMModel } from './DOMModel.js';
 import { DeferredDOMNode } from './DOMModel.js';
 import { Capability } from './Target.js';
 import { SDKModel } from './SDKModel.js';
@@ -15,100 +14,106 @@ export var CoreAxPropertyName;
     CoreAxPropertyName["Role"] = "role";
 })(CoreAxPropertyName || (CoreAxPropertyName = {}));
 export class AccessibilityNode {
-    accessibilityModelInternal;
-    agent;
-    idInternal;
-    backendDOMNodeIdInternal;
-    deferredDOMNodeInternal;
-    ignoredInternal;
-    ignoredReasonsInternal;
-    roleInternal;
-    nameInternal;
-    descriptionInternal;
-    valueInternal;
-    propertiesInternal;
-    childIds;
-    parentNodeInternal;
+    #accessibilityModelInternal;
+    #idInternal;
+    #backendDOMNodeIdInternal;
+    #deferredDOMNodeInternal;
+    #ignoredInternal;
+    #ignoredReasonsInternal;
+    #roleInternal;
+    #nameInternal;
+    #descriptionInternal;
+    #valueInternal;
+    #propertiesInternal;
+    #parentId;
+    #frameId;
+    #childIds;
     constructor(accessibilityModel, payload) {
-        this.accessibilityModelInternal = accessibilityModel;
-        this.agent = accessibilityModel.getAgent();
-        this.idInternal = payload.nodeId;
-        accessibilityModel.setAXNodeForAXId(this.idInternal, this);
+        this.#accessibilityModelInternal = accessibilityModel;
+        this.#idInternal = payload.nodeId;
+        accessibilityModel.setAXNodeForAXId(this.#idInternal, this);
         if (payload.backendDOMNodeId) {
             accessibilityModel.setAXNodeForBackendDOMNodeId(payload.backendDOMNodeId, this);
-            this.backendDOMNodeIdInternal = payload.backendDOMNodeId;
-            this.deferredDOMNodeInternal = new DeferredDOMNode(accessibilityModel.target(), payload.backendDOMNodeId);
+            this.#backendDOMNodeIdInternal = payload.backendDOMNodeId;
+            this.#deferredDOMNodeInternal = new DeferredDOMNode(accessibilityModel.target(), payload.backendDOMNodeId);
         }
         else {
-            this.backendDOMNodeIdInternal = null;
-            this.deferredDOMNodeInternal = null;
+            this.#backendDOMNodeIdInternal = null;
+            this.#deferredDOMNodeInternal = null;
         }
-        this.ignoredInternal = payload.ignored;
-        if (this.ignoredInternal && 'ignoredReasons' in payload) {
-            this.ignoredReasonsInternal = payload.ignoredReasons;
+        this.#ignoredInternal = payload.ignored;
+        if (this.#ignoredInternal && 'ignoredReasons' in payload) {
+            this.#ignoredReasonsInternal = payload.ignoredReasons;
         }
-        this.roleInternal = payload.role || null;
-        this.nameInternal = payload.name || null;
-        this.descriptionInternal = payload.description || null;
-        this.valueInternal = payload.value || null;
-        this.propertiesInternal = payload.properties || null;
-        this.childIds = payload.childIds || null;
-        this.parentNodeInternal = null;
+        this.#roleInternal = payload.role || null;
+        this.#nameInternal = payload.name || null;
+        this.#descriptionInternal = payload.description || null;
+        this.#valueInternal = payload.value || null;
+        this.#propertiesInternal = payload.properties || null;
+        this.#childIds = payload.childIds || null;
+        this.#parentId = payload.parentId || null;
+        if (payload.frameId && !payload.parentId) {
+            this.#frameId = payload.frameId;
+            accessibilityModel.setRootAXNodeForFrameId(payload.frameId, this);
+        }
+        else {
+            this.#frameId = null;
+        }
     }
     id() {
-        return this.idInternal;
+        return this.#idInternal;
     }
     accessibilityModel() {
-        return this.accessibilityModelInternal;
+        return this.#accessibilityModelInternal;
     }
     ignored() {
-        return this.ignoredInternal;
+        return this.#ignoredInternal;
     }
     ignoredReasons() {
-        return this.ignoredReasonsInternal || null;
+        return this.#ignoredReasonsInternal || null;
     }
     role() {
-        return this.roleInternal || null;
+        return this.#roleInternal || null;
     }
     coreProperties() {
         const properties = [];
-        if (this.nameInternal) {
-            properties.push({ name: CoreAxPropertyName.Name, value: this.nameInternal });
+        if (this.#nameInternal) {
+            properties.push({ name: CoreAxPropertyName.Name, value: this.#nameInternal });
         }
-        if (this.descriptionInternal) {
-            properties.push({ name: CoreAxPropertyName.Description, value: this.descriptionInternal });
+        if (this.#descriptionInternal) {
+            properties.push({ name: CoreAxPropertyName.Description, value: this.#descriptionInternal });
         }
-        if (this.valueInternal) {
-            properties.push({ name: CoreAxPropertyName.Value, value: this.valueInternal });
+        if (this.#valueInternal) {
+            properties.push({ name: CoreAxPropertyName.Value, value: this.#valueInternal });
         }
         return properties;
     }
     name() {
-        return this.nameInternal || null;
+        return this.#nameInternal || null;
     }
     description() {
-        return this.descriptionInternal || null;
+        return this.#descriptionInternal || null;
     }
     value() {
-        return this.valueInternal || null;
+        return this.#valueInternal || null;
     }
     properties() {
-        return this.propertiesInternal || null;
+        return this.#propertiesInternal || null;
     }
     parentNode() {
-        return this.parentNodeInternal;
-    }
-    setParentNode(parentNode) {
-        this.parentNodeInternal = parentNode;
+        if (this.#parentId) {
+            return this.#accessibilityModelInternal.axNodeForId(this.#parentId);
+        }
+        return null;
     }
     isDOMNode() {
-        return Boolean(this.backendDOMNodeIdInternal);
+        return Boolean(this.#backendDOMNodeIdInternal);
     }
     backendDOMNodeId() {
-        return this.backendDOMNodeIdInternal;
+        return this.#backendDOMNodeIdInternal;
     }
     deferredDOMNode() {
-        return this.deferredDOMNodeInternal;
+        return this.#deferredDOMNodeInternal;
     }
     highlightDOMNode() {
         const deferredNode = this.deferredDOMNode();
@@ -119,12 +124,12 @@ export class AccessibilityNode {
         deferredNode.highlight();
     }
     children() {
-        if (!this.childIds) {
+        if (!this.#childIds) {
             return [];
         }
         const children = [];
-        for (const childId of this.childIds) {
-            const child = this.accessibilityModelInternal.axNodeForId(childId);
+        for (const childId of this.#childIds) {
+            const child = this.#accessibilityModelInternal.axNodeForId(childId);
             if (child) {
                 children.push(child);
             }
@@ -132,41 +137,57 @@ export class AccessibilityNode {
         return children;
     }
     numChildren() {
-        if (!this.childIds) {
+        if (!this.#childIds) {
             return 0;
         }
-        return this.childIds.length;
+        return this.#childIds.length;
     }
     hasOnlyUnloadedChildren() {
-        if (!this.childIds || !this.childIds.length) {
+        if (!this.#childIds || !this.#childIds.length) {
             return false;
         }
-        return this.childIds.every(id => this.accessibilityModelInternal.axNodeForId(id) === null);
+        return this.#childIds.every(id => this.#accessibilityModelInternal.axNodeForId(id) === null);
+    }
+    hasUnloadedChildren() {
+        if (!this.#childIds || !this.#childIds.length) {
+            return false;
+        }
+        return this.#childIds.some(id => this.#accessibilityModelInternal.axNodeForId(id) === null);
     }
     // Only the root node gets a frameId, so nodes have to walk up the tree to find their frameId.
     getFrameId() {
-        const domNode = this.accessibilityModel().domNodeforAXNode(this);
-        if (!domNode) {
-            return null;
-        }
-        return domNode.frameId();
+        return this.#frameId || this.parentNode()?.getFrameId() || null;
     }
 }
+// TODO(crbug.com/1167717): Make this a const enum again
+// eslint-disable-next-line rulesdir/const_enum
+export var Events;
+(function (Events) {
+    Events["TreeUpdated"] = "TreeUpdated";
+})(Events || (Events = {}));
 export class AccessibilityModel extends SDKModel {
     agent;
-    axIdToAXNode;
-    backendDOMNodeIdToAXNode;
-    backendDOMNodeIdToDOMNode;
+    #axIdToAXNode;
+    #backendDOMNodeIdToAXNode;
+    #frameIdToAXNode;
+    #pendingChildRequests;
+    #root;
     constructor(target) {
         super(target);
+        target.registerAccessibilityDispatcher(this);
         this.agent = target.accessibilityAgent();
-        this.resumeModel();
-        this.axIdToAXNode = new Map();
-        this.backendDOMNodeIdToAXNode = new Map();
-        this.backendDOMNodeIdToDOMNode = new Map();
+        void this.resumeModel();
+        this.#axIdToAXNode = new Map();
+        this.#backendDOMNodeIdToAXNode = new Map();
+        this.#frameIdToAXNode = new Map();
+        this.#pendingChildRequests = new Map();
+        this.#root = null;
     }
     clear() {
-        this.axIdToAXNode.clear();
+        this.#root = null;
+        this.#axIdToAXNode.clear();
+        this.#backendDOMNodeIdToAXNode.clear();
+        this.#frameIdToAXNode.clear();
     }
     async resumeModel() {
         await this.agent.invoke_enable();
@@ -179,103 +200,102 @@ export class AccessibilityModel extends SDKModel {
         if (!nodes) {
             return;
         }
+        const axNodes = [];
         for (const payload of nodes) {
-            new AccessibilityNode(this, payload);
-        }
-        for (const axNode of this.axIdToAXNode.values()) {
-            for (const axChild of axNode.children()) {
-                axChild.setParentNode(axNode);
-            }
+            axNodes.push(new AccessibilityNode(this, payload));
         }
     }
-    async pushNodesToFrontend(backendIds) {
-        const domModel = this.target().model(DOMModel);
-        if (!domModel) {
-            return;
-        }
-        const newNodesToTrack = await domModel.pushNodesByBackendIdsToFrontend(backendIds);
-        newNodesToTrack?.forEach((value, key) => this.backendDOMNodeIdToDOMNode.set(key, value));
+    loadComplete({ root }) {
+        this.clear();
+        this.#root = new AccessibilityNode(this, root);
+        this.dispatchEventToListeners(Events.TreeUpdated, { root: this.#root });
+    }
+    nodesUpdated({ nodes }) {
+        this.createNodesFromPayload(nodes);
+        this.dispatchEventToListeners(Events.TreeUpdated, {});
+        return;
     }
     createNodesFromPayload(payloadNodes) {
-        const backendIds = new Set();
         const accessibilityNodes = payloadNodes.map(node => {
             const sdkNode = new AccessibilityNode(this, node);
-            const backendId = sdkNode.backendDOMNodeId();
-            if (backendId) {
-                backendIds.add(backendId);
-            }
             return sdkNode;
         });
-        this.pushNodesToFrontend(backendIds);
-        for (const sdkNode of accessibilityNodes) {
-            for (const sdkChild of sdkNode.children()) {
-                sdkChild.setParentNode(sdkNode);
-            }
-        }
         return accessibilityNodes;
     }
-    async requestRootNode(depth = 2, frameId) {
-        const { nodes } = await this.agent.invoke_getFullAXTree({ depth, frameId });
-        if (!nodes) {
+    async requestRootNode(frameId) {
+        if (frameId && this.#frameIdToAXNode.has(frameId)) {
+            return this.#frameIdToAXNode.get(frameId);
+        }
+        if (!frameId && this.#root) {
+            return this.#root;
+        }
+        const { node } = await this.agent.invoke_getRootAXNode({ frameId });
+        if (!node) {
             return;
         }
-        const axNodes = this.createNodesFromPayload(nodes);
-        const root = axNodes[0];
-        return root;
+        return this.createNodesFromPayload([node])[0];
     }
     async requestAXChildren(nodeId, frameId) {
-        const { nodes } = await this.agent.invoke_getChildAXNodes({ id: nodeId, frameId });
-        if (!nodes) {
-            return [];
+        const parent = this.#axIdToAXNode.get(nodeId);
+        if (!parent) {
+            throw Error('Cannot request children before parent');
         }
-        const axNodes = this.createNodesFromPayload(nodes);
-        return axNodes;
+        if (!parent.hasUnloadedChildren()) {
+            return parent.children();
+        }
+        let nodes;
+        const request = this.#pendingChildRequests.get(nodeId);
+        if (request) {
+            await request;
+        }
+        else {
+            const req = this.agent.invoke_getChildAXNodes({ id: nodeId, frameId });
+            this.#pendingChildRequests.set(nodeId, req);
+            nodes = (await req).nodes;
+            this.createNodesFromPayload(nodes);
+            this.#pendingChildRequests.delete(nodeId);
+        }
+        return parent.children();
     }
     async requestAndLoadSubTreeToNode(node) {
         // Node may have already been loaded, so don't bother requesting it again.
-        const loadedAXNode = this.axNodeForDOMNode(node);
-        if (loadedAXNode) {
-            return loadedAXNode;
+        const result = [];
+        let ancestor = this.axNodeForDOMNode(node);
+        while (ancestor) {
+            result.push(ancestor);
+            const parent = ancestor.parentNode();
+            if (!parent) {
+                return result;
+            }
+            ancestor = parent;
         }
-        const { nodes } = await this.agent.invoke_getPartialAXTree({ nodeId: node.id, fetchRelatives: true });
+        const { nodes } = await this.agent.invoke_getAXNodeAndAncestors({ backendNodeId: node.backendNodeId() });
         if (!nodes) {
             return null;
         }
         const ancestors = this.createNodesFromPayload(nodes);
-        // Request top level children nodes.
-        for (const node of ancestors) {
-            await this.requestAXChildren(node.id());
-        }
-        return this.axNodeForDOMNode(node);
-    }
-    async updateSubtreeAndAncestors(backendNodeId) {
-        const { nodes } = await this.agent.invoke_getPartialAXTree({ backendNodeId, fetchRelatives: true });
-        if (!nodes) {
-            return;
-        }
-        this.createNodesFromPayload(nodes);
+        return ancestors;
     }
     axNodeForId(axId) {
-        return this.axIdToAXNode.get(axId) || null;
+        return this.#axIdToAXNode.get(axId) || null;
+    }
+    setRootAXNodeForFrameId(frameId, axNode) {
+        this.#frameIdToAXNode.set(frameId, axNode);
+    }
+    axNodeForFrameId(frameId) {
+        return this.#frameIdToAXNode.get(frameId) ?? null;
     }
     setAXNodeForAXId(axId, axNode) {
-        this.axIdToAXNode.set(axId, axNode);
+        this.#axIdToAXNode.set(axId, axNode);
     }
     axNodeForDOMNode(domNode) {
         if (!domNode) {
             return null;
         }
-        return this.backendDOMNodeIdToAXNode.get(domNode.backendNodeId()) ?? null;
-    }
-    domNodeforAXNode(axNode) {
-        const backendDOMNodeId = axNode.backendDOMNodeId();
-        if (!backendDOMNodeId) {
-            return null;
-        }
-        return this.backendDOMNodeIdToDOMNode.get(backendDOMNodeId) ?? null;
+        return this.#backendDOMNodeIdToAXNode.get(domNode.backendNodeId()) ?? null;
     }
     setAXNodeForBackendDOMNodeId(backendDOMNodeId, axNode) {
-        this.backendDOMNodeIdToAXNode.set(backendDOMNodeId, axNode);
+        this.#backendDOMNodeIdToAXNode.set(backendDOMNodeId, axNode);
     }
     getAgent() {
         return this.agent;

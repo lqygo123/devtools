@@ -1,18 +1,6 @@
 import type { EventPayload } from './TracingManager.js';
 export declare class TracingModel {
-    private backingStorageInternal;
-    private firstWritePending;
-    private readonly processById;
-    private readonly processByName;
-    private minimumRecordTimeInternal;
-    private maximumRecordTimeInternal;
-    private readonly devToolsMetadataEventsInternal;
-    private asyncEvents;
-    private readonly openAsyncEvents;
-    private readonly openNestableAsyncEvents;
-    private readonly profileGroups;
-    private readonly parsedCategories;
-    private readonly mainFrameNavStartTimes;
+    #private;
     constructor(backingStorage: BackingStorage);
     static isNestableAsyncPhase(phase: string): boolean;
     static isAsyncBeginPhase(phase: string): boolean;
@@ -83,8 +71,8 @@ export declare abstract class BackingStorage {
     reset(): void;
 }
 export declare class Event {
+    #private;
     categoriesString: string;
-    private readonly parsedCategories;
     name: string;
     phase: Phase;
     startTime: number;
@@ -107,8 +95,7 @@ export declare class Event {
     setBackingStorage(_backingStorage: (() => Promise<string | null>) | null): void;
 }
 export declare class ObjectSnapshot extends Event {
-    private backingStorage;
-    private objectPromiseInternal;
+    #private;
     constructor(category: string | undefined, name: string, startTime: number, thread: Thread);
     static fromPayload(payload: EventPayload, thread: Thread): ObjectSnapshot;
     requestObject(callback: (arg0: ObjectSnapshot | null) => void): void;
@@ -127,11 +114,11 @@ declare class ProfileEventsGroup {
     addChild(event: Event): void;
 }
 declare class NamedObject {
+    #private;
     model: TracingModel;
     readonly idInternal: number;
-    private nameInternal;
-    private sortIndex;
     constructor(model: TracingModel, id: number);
+    static sort<Item extends NamedObject>(array: Item[]): Item[];
     setName(name: string): void;
     name(): string;
     id(): number;
@@ -139,8 +126,8 @@ declare class NamedObject {
     getModel(): TracingModel;
 }
 export declare class Process extends NamedObject {
+    #private;
     readonly threads: Map<number, Thread>;
-    private readonly threadByNameInternal;
     constructor(model: TracingModel, id: number);
     threadById(id: number): Thread;
     threadByName(name: string): Thread | null;
@@ -149,10 +136,7 @@ export declare class Process extends NamedObject {
     sortedThreads(): Thread[];
 }
 export declare class Thread extends NamedObject {
-    private readonly processInternal;
-    private eventsInternal;
-    private readonly asyncEventsInternal;
-    private lastTopLevelEvent;
+    #private;
     constructor(process: Process, id: number);
     tracingComplete(): void;
     addEvent(payload: EventPayload): Event | null;

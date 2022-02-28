@@ -7,22 +7,20 @@ const UIStrings = {
     /**
     * @description Text of the hint shows under Quick Open input box
     */
-    useTabToSwitchCommandsTypeToSeeAvailableCommands: 'Use Tab to switch commands. Type \'?\' to see available commands',
+    typeToSeeAvailableCommands: 'Type \'?\' to see available commands',
 };
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/quick_open/QuickOpen.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export const history = [];
 export class QuickOpenImpl {
     prefix;
-    query;
-    providers;
     prefixes;
+    providers;
     filteredListWidget;
     constructor() {
         this.prefix = null;
-        this.query = '';
-        this.providers = new Map();
         this.prefixes = [];
+        this.providers = new Map();
         this.filteredListWidget = null;
         getRegisteredProviders().forEach(this.addProvider.bind(this));
         this.prefixes.sort((a, b) => b.length - a.length);
@@ -31,7 +29,7 @@ export class QuickOpenImpl {
         const quickOpen = new this();
         const filteredListWidget = new FilteredListWidget(null, history, quickOpen.queryChanged.bind(quickOpen));
         quickOpen.filteredListWidget = filteredListWidget;
-        filteredListWidget.setHintElement(i18nString(UIStrings.useTabToSwitchCommandsTypeToSeeAvailableCommands));
+        filteredListWidget.setHintElement(i18nString(UIStrings.typeToSeeAvailableCommands));
         filteredListWidget.showAsDialog();
         filteredListWidget.setQuery(query);
     }
@@ -41,30 +39,40 @@ export class QuickOpenImpl {
             return;
         }
         this.prefixes.push(prefix);
-        this.providers.set(prefix, extension.provider);
+        this.providers.set(prefix, {
+            provider: extension.provider,
+            titlePrefix: extension.titlePrefix,
+            titleSuggestion: extension.titleSuggestion,
+        });
     }
-    queryChanged(query) {
+    async queryChanged(query) {
         const prefix = this.prefixes.find(prefix => query.startsWith(prefix));
-        if (typeof prefix !== 'string' || this.prefix === prefix) {
+        if (typeof prefix !== 'string') {
             return;
         }
-        this.prefix = prefix;
         if (!this.filteredListWidget) {
             return;
         }
         this.filteredListWidget.setPrefix(prefix);
+        const titlePrefixFunction = this.providers.get(prefix)?.titlePrefix;
+        this.filteredListWidget.setCommandPrefix(titlePrefixFunction ? titlePrefixFunction() : '');
+        const titleSuggestionFunction = (query === prefix) && this.providers.get(prefix)?.titleSuggestion;
+        this.filteredListWidget.setCommandSuggestion(titleSuggestionFunction ? titleSuggestionFunction() : '');
+        if (this.prefix === prefix) {
+            return;
+        }
+        this.prefix = prefix;
         this.filteredListWidget.setProvider(null);
-        const providerFunction = this.providers.get(prefix);
+        const providerFunction = this.providers.get(prefix)?.provider;
         if (!providerFunction) {
             return;
         }
-        providerFunction().then(provider => {
-            if (this.prefix !== prefix || !this.filteredListWidget) {
-                return;
-            }
-            this.filteredListWidget.setProvider(provider);
-            this.providerLoadedForTest(provider);
-        });
+        const provider = await providerFunction();
+        if (this.prefix !== prefix || !this.filteredListWidget) {
+            return;
+        }
+        this.filteredListWidget.setProvider(provider);
+        this.providerLoadedForTest(provider);
     }
     providerLoadedForTest(_provider) {
     }

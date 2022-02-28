@@ -28,6 +28,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { GlassPane } from './GlassPane.js';
+import popoverStyles from './popover.css.legacy.js';
 export class PopoverHelper {
     disableOnClick;
     hasPadding;
@@ -167,14 +168,14 @@ export class PopoverHelper {
     }
     showPopover(document) {
         const popover = new GlassPane();
-        popover.registerRequiredCSS('ui/legacy/popover.css');
+        popover.registerRequiredCSS(popoverStyles);
         popover.setSizeBehavior("MeasureContent" /* MeasureContent */);
         popover.setMarginBehavior("Arrow" /* Arrow */);
         const request = this.scheduledRequest;
         if (!request) {
             return;
         }
-        request.show.call(null, popover).then(success => {
+        void request.show.call(null, popover).then(success => {
             if (!success) {
                 return;
             }

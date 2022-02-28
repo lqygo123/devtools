@@ -1,3 +1,6 @@
+// Copyright 2021 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 /*
  * Copyright (C) 2012 Google Inc. All rights reserved.
  *
@@ -11,7 +14,7 @@
  * copyright notice, this list of conditions and the following disclaimer
  * in the documentation and/or other materials provided with the
  * distribution.
- *     * Neither the name of Google Inc. nor the names of its
+ *     * Neither the #name of Google Inc. nor the names of its
  * contributors may be used to endorse or promote products derived from
  * this software without specific prior written permission.
  *
@@ -36,19 +39,19 @@ import { Capability, Type } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export class RuntimeModel extends SDKModel {
     agent;
-    executionContextById;
-    executionContextComparatorInternal;
-    hasSideEffectSupportInternal;
+    #executionContextById;
+    #executionContextComparatorInternal;
+    #hasSideEffectSupportInternal;
     constructor(target) {
         super(target);
         this.agent = target.runtimeAgent();
         this.target().registerRuntimeDispatcher(new RuntimeDispatcher(this));
-        this.agent.invoke_enable();
-        this.executionContextById = new Map();
-        this.executionContextComparatorInternal = ExecutionContext.comparator;
-        this.hasSideEffectSupportInternal = null;
+        void this.agent.invoke_enable();
+        this.#executionContextById = new Map();
+        this.#executionContextComparatorInternal = ExecutionContext.comparator;
+        this.#hasSideEffectSupportInternal = null;
         if (Common.Settings.Settings.instance().moduleSetting('customFormatters').get()) {
-            this.agent.invoke_setCustomObjectFormatterEnabled({ enabled: true });
+            void this.agent.invoke_setCustomObjectFormatterEnabled({ enabled: true });
         }
         Common.Settings.Settings.instance()
             .moduleSetting('customFormatters')
@@ -66,15 +69,15 @@ export class RuntimeModel extends SDKModel {
         return this.target().model(HeapProfilerModel);
     }
     executionContexts() {
-        return [...this.executionContextById.values()].sort(this.executionContextComparator());
+        return [...this.#executionContextById.values()].sort(this.executionContextComparator());
     }
     setExecutionContextComparator(comparator) {
-        this.executionContextComparatorInternal = comparator;
+        this.#executionContextComparatorInternal = comparator;
     }
     /** comparator
        */
     executionContextComparator() {
-        return this.executionContextComparatorInternal;
+        return this.#executionContextComparatorInternal;
     }
     defaultExecutionContext() {
         for (const context of this.executionContexts()) {
@@ -85,21 +88,21 @@ export class RuntimeModel extends SDKModel {
         return null;
     }
     executionContext(id) {
-        return this.executionContextById.get(id) || null;
+        return this.#executionContextById.get(id) || null;
     }
     executionContextCreated(context) {
         const data = context.auxData || { isDefault: true };
         const executionContext = new ExecutionContext(this, context.id, context.uniqueId, context.name, context.origin, data['isDefault'], data['frameId']);
-        this.executionContextById.set(executionContext.id, executionContext);
+        this.#executionContextById.set(executionContext.id, executionContext);
         this.dispatchEventToListeners(Events.ExecutionContextCreated, executionContext);
     }
     executionContextDestroyed(executionContextId) {
-        const executionContext = this.executionContextById.get(executionContextId);
+        const executionContext = this.#executionContextById.get(executionContextId);
         if (!executionContext) {
             return;
         }
         this.debuggerModel().executionContextDestroyed(executionContext);
-        this.executionContextById.delete(executionContextId);
+        this.#executionContextById.delete(executionContextId);
         this.dispatchEventToListeners(Events.ExecutionContextDestroyed, executionContext);
     }
     fireExecutionContextOrderChanged() {
@@ -108,7 +111,7 @@ export class RuntimeModel extends SDKModel {
     executionContextsCleared() {
         this.debuggerModel().globalObjectCleared();
         const contexts = this.executionContexts();
-        this.executionContextById.clear();
+        this.#executionContextById.clear();
         for (let i = 0; i < contexts.length; ++i) {
             this.dispatchEventToListeners(Events.ExecutionContextDestroyed, contexts[i]);
         }
@@ -136,10 +139,10 @@ export class RuntimeModel extends SDKModel {
         return new RemoteObjectProperty(name, this.createRemoteObjectFromPrimitiveValue(value));
     }
     discardConsoleEntries() {
-        this.agent.invoke_discardConsoleEntries();
+        void this.agent.invoke_discardConsoleEntries();
     }
     releaseObjectGroup(objectGroup) {
-        this.agent.invoke_releaseObjectGroup({ objectGroup });
+        void this.agent.invoke_releaseObjectGroup({ objectGroup });
     }
     releaseEvaluationResult(result) {
         if ('object' in result && result.object) {
@@ -152,11 +155,10 @@ export class RuntimeModel extends SDKModel {
         }
     }
     runIfWaitingForDebugger() {
-        this.agent.invoke_runIfWaitingForDebugger();
+        void this.agent.invoke_runIfWaitingForDebugger();
     }
-    customFormattersStateChanged(event) {
-        const enabled = event.data;
-        this.agent.invoke_setCustomObjectFormatterEnabled({ enabled });
+    customFormattersStateChanged({ data: enabled }) {
+        void this.agent.invoke_setCustomObjectFormatterEnabled({ enabled });
     }
     async compileScript(expression, sourceURL, persistScript, executionContextId) {
         const response = await this.agent.invoke_compileScript({
@@ -221,15 +223,15 @@ export class RuntimeModel extends SDKModel {
             return;
         }
         if (hints && 'queryObjects' in hints && hints.queryObjects) {
-            this.queryObjectsRequested(object, executionContextId);
+            void this.queryObjectsRequested(object, executionContextId);
             return;
         }
         if (object.isNode()) {
-            Common.Revealer.reveal(object).then(object.release.bind(object));
+            void Common.Revealer.reveal(object).then(object.release.bind(object));
             return;
         }
         if (object.type === 'function') {
-            RemoteFunction.objectAsFunction(object).targetFunctionDetails().then(didGetDetails);
+            void RemoteFunction.objectAsFunction(object).targetFunctionDetails().then(didGetDetails);
             return;
         }
         function didGetDetails(response) {
@@ -237,7 +239,7 @@ export class RuntimeModel extends SDKModel {
             if (!response || !response.location) {
                 return;
             }
-            Common.Revealer.reveal(response.location);
+            void Common.Revealer.reveal(response.location);
         }
         object.release();
     }
@@ -253,7 +255,7 @@ export class RuntimeModel extends SDKModel {
             return;
         }
         const indent = Common.Settings.Settings.instance().moduleSetting('textEditorIndent').get();
-        object
+        void object
             // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
             // @ts-expect-error
             .callFunctionJSON(toStringForClipboard, [{
@@ -333,7 +335,7 @@ export class RuntimeModel extends SDKModel {
         return this.executionContextIdForScriptId(currentStackTrace.callFrames[0].scriptId);
     }
     hasSideEffectSupport() {
-        return this.hasSideEffectSupportInternal;
+        return this.#hasSideEffectSupportInternal;
     }
     async checkSideEffectSupport() {
         const contexts = this.executionContexts();
@@ -347,8 +349,8 @@ export class RuntimeModel extends SDKModel {
             contextId: testContext.id,
             throwOnSideEffect: true,
         });
-        this.hasSideEffectSupportInternal = response.getError() ? false : RuntimeModel.isSideEffectFailure(response);
-        return this.hasSideEffectSupportInternal;
+        this.#hasSideEffectSupportInternal = response.getError() ? false : RuntimeModel.isSideEffectFailure(response);
+        return this.#hasSideEffectSupportInternal;
     }
     // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -381,40 +383,40 @@ export var Events;
     Events["QueryObjectRequested"] = "QueryObjectRequested";
 })(Events || (Events = {}));
 class RuntimeDispatcher {
-    runtimeModel;
+    #runtimeModel;
     constructor(runtimeModel) {
-        this.runtimeModel = runtimeModel;
+        this.#runtimeModel = runtimeModel;
     }
     executionContextCreated({ context }) {
-        this.runtimeModel.executionContextCreated(context);
+        this.#runtimeModel.executionContextCreated(context);
     }
     executionContextDestroyed({ executionContextId }) {
-        this.runtimeModel.executionContextDestroyed(executionContextId);
+        this.#runtimeModel.executionContextDestroyed(executionContextId);
     }
     executionContextsCleared() {
-        this.runtimeModel.executionContextsCleared();
+        this.#runtimeModel.executionContextsCleared();
     }
     exceptionThrown({ timestamp, exceptionDetails }) {
-        this.runtimeModel.exceptionThrown(timestamp, exceptionDetails);
+        this.#runtimeModel.exceptionThrown(timestamp, exceptionDetails);
     }
     exceptionRevoked({ exceptionId }) {
-        this.runtimeModel.exceptionRevoked(exceptionId);
+        this.#runtimeModel.exceptionRevoked(exceptionId);
     }
     consoleAPICalled({ type, args, executionContextId, timestamp, stackTrace, context }) {
-        this.runtimeModel.consoleAPICalled(type, args, executionContextId, timestamp, stackTrace, context);
+        this.#runtimeModel.consoleAPICalled(type, args, executionContextId, timestamp, stackTrace, context);
     }
     inspectRequested({ object, hints, executionContextId }) {
-        this.runtimeModel.inspectRequested(object, hints, executionContextId);
+        this.#runtimeModel.inspectRequested(object, hints, executionContextId);
     }
     bindingCalled(event) {
-        this.runtimeModel.bindingCalled(event);
+        this.#runtimeModel.bindingCalled(event);
     }
 }
 export class ExecutionContext {
     id;
     uniqueId;
     name;
-    labelInternal;
+    #labelInternal;
     origin;
     isDefault;
     runtimeModel;
@@ -424,7 +426,7 @@ export class ExecutionContext {
         this.id = id;
         this.uniqueId = uniqueId;
         this.name = name;
-        this.labelInternal = null;
+        this.#labelInternal = null;
         this.origin = origin;
         this.isDefault = isDefault;
         this.runtimeModel = runtimeModel;
@@ -503,7 +505,6 @@ export class ExecutionContext {
         if (!needsTerminationOptions || this.runtimeModel.hasSideEffectSupport()) {
             return this.evaluateGlobal(options, userGesture, awaitPromise);
         }
-        /** @type {!EvaluationResult} */
         if (this.runtimeModel.hasSideEffectSupport() !== false) {
             await this.runtimeModel.checkSideEffectSupport();
             if (this.runtimeModel.hasSideEffectSupport()) {
@@ -558,7 +559,7 @@ export class ExecutionContext {
         return response.getError() ? [] : response.names;
     }
     label() {
-        return this.labelInternal;
+        return this.#labelInternal;
     }
     setLabel(label) {
         this.setLabelInternal(label);
@@ -566,15 +567,15 @@ export class ExecutionContext {
     }
     setLabelInternal(label) {
         if (label) {
-            this.labelInternal = label;
+            this.#labelInternal = label;
             return;
         }
         if (this.name) {
-            this.labelInternal = this.name;
+            this.#labelInternal = this.name;
             return;
         }
         const parsedUrl = Common.ParsedURL.ParsedURL.fromString(this.origin);
-        this.labelInternal = parsedUrl ? parsedUrl.lastPathComponentWithFragment() : '';
+        this.#labelInternal = parsedUrl ? parsedUrl.lastPathComponentWithFragment() : '';
     }
 }
 SDKModel.register(RuntimeModel, { capabilities: Capability.JS, autostart: true });

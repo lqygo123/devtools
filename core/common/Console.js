@@ -5,13 +5,13 @@ import { ObjectWrapper } from './Object.js';
 import { reveal } from './Revealer.js';
 let consoleInstance;
 export class Console extends ObjectWrapper {
-    messagesInternal;
+    #messagesInternal;
     /**
      * Instantiable via the instance() factory below.
      */
     constructor() {
         super();
-        this.messagesInternal = [];
+        this.#messagesInternal = [];
     }
     static instance({ forceNew } = { forceNew: false }) {
         if (!consoleInstance || forceNew) {
@@ -21,7 +21,7 @@ export class Console extends ObjectWrapper {
     }
     addMessage(text, level, show) {
         const message = new Message(text, level || MessageLevel.Info, Date.now(), show || false);
-        this.messagesInternal.push(message);
+        this.#messagesInternal.push(message);
         this.dispatchEventToListeners(Events.MessageAdded, message);
     }
     log(text) {
@@ -34,10 +34,10 @@ export class Console extends ObjectWrapper {
         this.addMessage(text, MessageLevel.Error, true);
     }
     messages() {
-        return this.messagesInternal;
+        return this.#messagesInternal;
     }
     show() {
-        this.showPromise();
+        void this.showPromise();
     }
     showPromise() {
         return reveal(this);

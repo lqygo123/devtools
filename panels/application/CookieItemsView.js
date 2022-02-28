@@ -226,7 +226,7 @@ export class CookieItemsView extends StorageItemsView {
         return this.model.saveCookie(newCookie);
     }
     deleteCookie(cookie, callback) {
-        this.model.deleteCookie(cookie).then(callback);
+        void this.model.deleteCookie(cookie).then(callback);
     }
     updateWithCookies(allCookies) {
         this.allCookies = allCookies;
@@ -269,20 +269,20 @@ export class CookieItemsView extends StorageItemsView {
      */
     deleteAllItems() {
         this.showPreview(null);
-        this.model.deleteCookies(this.shownCookies).then(() => this.refreshItems());
+        void this.model.deleteCookies(this.shownCookies).then(() => this.refreshItems());
     }
     deleteSelectedItem() {
         const selectedCookie = this.cookiesTable.selectedCookie();
         if (selectedCookie) {
             this.showPreview(null);
-            this.model.deleteCookie(selectedCookie).then(() => this.refreshItems());
+            void this.model.deleteCookie(selectedCookie).then(() => this.refreshItems());
         }
     }
     refreshItems() {
-        this.model.getCookiesForDomain(this.cookieDomain).then(this.updateWithCookies.bind(this));
+        void this.model.getCookiesForDomain(this.cookieDomain).then(this.updateWithCookies.bind(this));
     }
     refreshItemsThrottled() {
-        this.refreshThrottler.schedule(() => Promise.resolve(this.refreshItems()));
+        void this.refreshThrottler.schedule(() => Promise.resolve(this.refreshItems()));
     }
     onResponseReceived() {
         this.refreshItemsThrottled();

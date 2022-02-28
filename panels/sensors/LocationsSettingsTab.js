@@ -106,7 +106,7 @@ export class LocationsSettingsTab extends UI.Widget.VBox {
         this.list.show(this.contentElement);
         this.customSetting =
             Common.Settings.Settings.instance().moduleSetting('emulation.locations');
-        const list = this.customSetting.get().map(location => replaceLocationTitles(location, this.customSetting.defaultValue()));
+        const list = this.customSetting.get().map(location => replaceLocationTitles(location, this.customSetting.defaultValue));
         function replaceLocationTitles(location, defaultValues) {
             // This check is done for locations that might had been cached wrongly due to crbug.com/1171670.
             // Each of the default values would have been stored without a title if the user had added a new location

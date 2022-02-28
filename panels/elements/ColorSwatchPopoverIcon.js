@@ -2,9 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
-import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
-import * as Root from '../../core/root/root.js';
 import * as Bindings from '../../models/bindings/bindings.js';
 import * as ColorPicker from '../../ui/legacy/components/color_picker/color_picker.js';
 import * as InlineEditor from '../../ui/legacy/components/inline_editor/inline_editor.js';
@@ -43,9 +41,6 @@ export class BezierPopoverIcon {
         this.boundOnScroll = this.onScroll.bind(this);
     }
     iconClick(event) {
-        if (Root.Runtime.experiments.isEnabled('fontEditor')) {
-            Host.userMetrics.cssEditorOpened('bezierEditor');
-        }
         event.consume(true);
         if (this.swatchPopoverHelper.isShowing()) {
             this.swatchPopoverHelper.hide(true);
@@ -65,12 +60,12 @@ export class BezierPopoverIcon {
         this.treeElement.parentPane().setEditingStyle(true);
         const uiLocation = Bindings.CSSWorkspaceBinding.CSSWorkspaceBinding.instance().propertyUILocation(this.treeElement.property, false /* forName */);
         if (uiLocation) {
-            Common.Revealer.reveal(uiLocation, true /* omitFocus */);
+            void Common.Revealer.reveal(uiLocation, true /* omitFocus */);
         }
     }
     bezierChanged(event) {
         this.swatch.setBezierText(event.data);
-        this.treeElement.applyStyleText(this.treeElement.renderedPropertyText(), false);
+        void this.treeElement.applyStyleText(this.treeElement.renderedPropertyText(), false);
     }
     onScroll(_event) {
         this.swatchPopoverHelper.hide(true);
@@ -84,7 +79,7 @@ export class BezierPopoverIcon {
         }
         this.bezierEditor = undefined;
         const propertyText = commitEdit ? this.treeElement.renderedPropertyText() : this.originalPropertyText || '';
-        this.treeElement.applyStyleText(propertyText, true);
+        void this.treeElement.applyStyleText(propertyText, true);
         this.treeElement.parentPane().setEditingStyle(false);
         delete this.originalPropertyText;
     }
@@ -135,9 +130,6 @@ export class ColorSwatchPopoverIcon {
         this.contrastInfo = contrastInfo;
     }
     iconClick(event) {
-        if (Root.Runtime.experiments.isEnabled('fontEditor')) {
-            Host.userMetrics.cssEditorOpened('colorPicker');
-        }
         event.consume(true);
         this.showPopover();
     }
@@ -168,7 +160,7 @@ export class ColorSwatchPopoverIcon {
         this.treeElement.parentPane().setEditingStyle(true);
         const uiLocation = Bindings.CSSWorkspaceBinding.CSSWorkspaceBinding.instance().propertyUILocation(this.treeElement.property, false /* forName */);
         if (uiLocation) {
-            Common.Revealer.reveal(uiLocation, true /* omitFocus */);
+            void Common.Revealer.reveal(uiLocation, true /* omitFocus */);
         }
     }
     spectrumResized() {
@@ -187,7 +179,7 @@ export class ColorSwatchPopoverIcon {
             value.remove();
             this.swatch.createChild('span').textContent = text;
         }
-        this.treeElement.applyStyleText(this.treeElement.renderedPropertyText(), false);
+        void this.treeElement.applyStyleText(this.treeElement.renderedPropertyText(), false);
     }
     onScroll(_event) {
         this.swatchPopoverHelper.hide(true);
@@ -201,7 +193,7 @@ export class ColorSwatchPopoverIcon {
         }
         this.spectrum = undefined;
         const propertyText = commitEdit ? this.treeElement.renderedPropertyText() : this.originalPropertyText || '';
-        this.treeElement.applyStyleText(propertyText, true);
+        void this.treeElement.applyStyleText(propertyText, true);
         this.treeElement.parentPane().setEditingStyle(false);
         delete this.originalPropertyText;
     }
@@ -228,9 +220,6 @@ export class ShadowSwatchPopoverHelper {
         this.boundOnScroll = this.onScroll.bind(this);
     }
     iconClick(event) {
-        if (Root.Runtime.experiments.isEnabled('fontEditor')) {
-            Host.userMetrics.cssEditorOpened('shadowEditor');
-        }
         event.consume(true);
         this.showPopover();
     }
@@ -251,12 +240,12 @@ export class ShadowSwatchPopoverHelper {
         this.treeElement.parentPane().setEditingStyle(true);
         const uiLocation = Bindings.CSSWorkspaceBinding.CSSWorkspaceBinding.instance().propertyUILocation(this.treeElement.property, false /* forName */);
         if (uiLocation) {
-            Common.Revealer.reveal(uiLocation, true /* omitFocus */);
+            void Common.Revealer.reveal(uiLocation, true /* omitFocus */);
         }
     }
     shadowChanged(event) {
         this.shadowSwatch.setCSSShadow(event.data);
-        this.treeElement.applyStyleText(this.treeElement.renderedPropertyText(), false);
+        void this.treeElement.applyStyleText(this.treeElement.renderedPropertyText(), false);
     }
     onScroll(_event) {
         this.swatchPopoverHelper.hide(true);
@@ -270,7 +259,7 @@ export class ShadowSwatchPopoverHelper {
         }
         this.cssShadowEditor = undefined;
         const propertyText = commitEdit ? this.treeElement.renderedPropertyText() : this.originalPropertyText || '';
-        this.treeElement.applyStyleText(propertyText, true);
+        void this.treeElement.applyStyleText(propertyText, true);
         this.treeElement.parentPane().setEditingStyle(false);
         delete this.originalPropertyText;
     }
@@ -299,7 +288,7 @@ export class FontEditorSectionManager {
     fontChanged(event) {
         const { propertyName, value } = event.data;
         const treeElement = this.treeElementMap.get(propertyName);
-        this.updateFontProperty(propertyName, value, treeElement);
+        void this.updateFontProperty(propertyName, value, treeElement);
     }
     async updateFontProperty(propertyName, value, treeElement) {
         if (treeElement && treeElement.treeOutline && treeElement.valueElement && treeElement.property.parsedOk &&

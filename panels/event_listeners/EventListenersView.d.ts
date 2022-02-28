@@ -41,4 +41,5 @@ export declare class ObjectEventListenerBar extends UI.TreeOutline.TreeElement {
     private removeListenerBar;
     eventListener(): SDK.DOMDebuggerModel.EventListener;
     onenter(): boolean;
+    ondelete(): boolean;
 }

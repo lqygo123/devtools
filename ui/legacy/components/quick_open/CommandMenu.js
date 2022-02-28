@@ -19,9 +19,13 @@ const UIStrings = {
     */
     noCommandsFound: 'No commands found',
     /**
-    * @description Text in Command Menu of the Command Menu
+    * @description Text for command prefix of run a command
     */
-    runCommand: 'Run Command',
+    run: 'Run',
+    /**
+    * @description Text for command suggestion of run a command
+    */
+    command: 'Command',
 };
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/quick_open/CommandMenu.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -211,13 +215,17 @@ export class CommandMenuProvider extends Provider {
     renderItem(itemIndex, query, titleElement, subtitleElement) {
         const command = this.commands[itemIndex];
         titleElement.removeChildren();
-        const tagElement = titleElement.createChild('span', 'tag');
-        const index = Platform.StringUtilities.hashCode(command.category()) % MaterialPaletteColors.length;
-        tagElement.style.backgroundColor = MaterialPaletteColors[index];
-        tagElement.textContent = command.category();
         UI.UIUtils.createTextChild(titleElement, command.title());
         FilteredListWidget.highlightRanges(titleElement, query, true);
         subtitleElement.textContent = command.shortcut();
+        const tagElement = titleElement.parentElement?.parentElement?.createChild('span', 'tag');
+        if (!tagElement) {
+            return;
+        }
+        const index = Platform.StringUtilities.hashCode(command.category()) % MaterialPaletteColors.length;
+        tagElement.style.backgroundColor = MaterialPaletteColors[index];
+        tagElement.style.color = 'var(--color-background)';
+        tagElement.textContent = command.category();
     }
     selectItem(itemIndex, _promptValue) {
         if (itemIndex === null) {
@@ -301,7 +309,8 @@ export class ShowActionDelegate {
 registerProvider({
     prefix: '>',
     iconName: 'ic_command_run_command',
-    title: () => i18nString(UIStrings.runCommand),
     provider: () => Promise.resolve(CommandMenuProvider.instance()),
+    titlePrefix: () => i18nString(UIStrings.run),
+    titleSuggestion: () => i18nString(UIStrings.command),
 });
 //# sourceMappingURL=CommandMenu.js.map

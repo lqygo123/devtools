@@ -28,18 +28,18 @@ export class Script {
     endColumn;
     executionContextId;
     hash;
-    isContentScriptInternal;
-    isLiveEditInternal;
+    #isContentScriptInternal;
+    #isLiveEditInternal;
     sourceMapURL;
     debugSymbols;
     hasSourceURL;
     contentLength;
-    originalContentProviderInternal;
+    #originalContentProviderInternal;
     originStackTrace;
-    codeOffsetInternal;
-    language;
-    contentPromise;
-    embedderNameInternal;
+    #codeOffsetInternal;
+    #language;
+    #contentPromise;
+    #embedderNameInternal;
     isModule;
     constructor(debuggerModel, scriptId, sourceURL, startLine, startColumn, endLine, endColumn, executionContextId, hash, isContentScript, isLiveEdit, sourceMapURL, hasSourceURL, length, isModule, originStackTrace, codeOffset, scriptLanguage, debugSymbols, embedderName) {
         this.debuggerModel = debuggerModel;
@@ -52,21 +52,21 @@ export class Script {
         this.isModule = isModule;
         this.executionContextId = executionContextId;
         this.hash = hash;
-        this.isContentScriptInternal = isContentScript;
-        this.isLiveEditInternal = isLiveEdit;
+        this.#isContentScriptInternal = isContentScript;
+        this.#isLiveEditInternal = isLiveEdit;
         this.sourceMapURL = sourceMapURL;
         this.debugSymbols = debugSymbols;
         this.hasSourceURL = hasSourceURL;
         this.contentLength = length;
-        this.originalContentProviderInternal = null;
+        this.#originalContentProviderInternal = null;
         this.originStackTrace = originStackTrace;
-        this.codeOffsetInternal = codeOffset;
-        this.language = scriptLanguage;
-        this.contentPromise = null;
-        this.embedderNameInternal = embedderName;
+        this.#codeOffsetInternal = codeOffset;
+        this.#language = scriptLanguage;
+        this.#contentPromise = null;
+        this.#embedderNameInternal = embedderName;
     }
     embedderName() {
-        return this.embedderNameInternal;
+        return this.#embedderNameInternal;
     }
     target() {
         return this.debuggerModel.target();
@@ -90,26 +90,27 @@ export class Script {
         return source.substr(0, sourceURLLineIndex);
     }
     isContentScript() {
-        return this.isContentScriptInternal;
+        return this.#isContentScriptInternal;
     }
     codeOffset() {
-        return this.codeOffsetInternal;
+        return this.#codeOffsetInternal;
     }
     isJavaScript() {
-        return this.language === "JavaScript" /* JavaScript */;
+        return this.#language === "JavaScript" /* JavaScript */;
     }
     isWasm() {
-        return this.language === "WebAssembly" /* WebAssembly */;
+        return this.#language === "WebAssembly" /* WebAssembly */;
     }
     scriptLanguage() {
-        return this.language;
+        return this.#language;
     }
     executionContext() {
         return this.debuggerModel.runtimeModel().executionContext(this.executionContextId);
     }
     isLiveEdit() {
-        return this.isLiveEditInternal;
+        return this.#isLiveEditInternal;
     }
+    // TODO(crbug.com/1253323): Cast to RawPathString will be removed when migration to branded types is complete.
     contentURL() {
         return this.sourceURL;
     }
@@ -120,10 +121,10 @@ export class Script {
         return false;
     }
     requestContent() {
-        if (!this.contentPromise) {
-            this.contentPromise = this.originalContentProvider().requestContent();
+        if (!this.#contentPromise) {
+            this.#contentPromise = this.originalContentProvider().requestContent();
         }
-        return this.contentPromise;
+        return this.#contentPromise;
     }
     async getWasmBytecode() {
         const base64 = await this.debuggerModel.target().debuggerAgent().invoke_getWasmBytecode({ scriptId: this.scriptId });
@@ -131,10 +132,10 @@ export class Script {
         return response.arrayBuffer();
     }
     originalContentProvider() {
-        if (!this.originalContentProviderInternal) {
+        if (!this.#originalContentProviderInternal) {
             /* } */
             let lazyContentPromise;
-            this.originalContentProviderInternal =
+            this.#originalContentProviderInternal =
                 new TextUtils.StaticContentProvider.StaticContentProvider(this.contentURL(), this.contentType(), () => {
                     if (!lazyContentPromise) {
                         lazyContentPromise = (async () => {
@@ -165,7 +166,7 @@ export class Script {
                     return lazyContentPromise;
                 });
         }
-        return this.originalContentProviderInternal;
+        return this.#originalContentProviderInternal;
     }
     async searchInContent(query, caseSensitive, isRegex) {
         if (!this.scriptId) {
@@ -183,7 +184,7 @@ export class Script {
     }
     async editSource(newSource, callback) {
         newSource = Script.trimSourceURLComment(newSource);
-        // We append correct sourceURL to script for consistency only. It's not actually needed for things to work correctly.
+        // We append correct #sourceURL to script for consistency only. It's not actually needed for things to work correctly.
         newSource = this.appendSourceURLCommentIfNeeded(newSource);
         if (!this.scriptId) {
             callback('Script failed to parse');
@@ -196,7 +197,7 @@ export class Script {
         }
         const response = await this.debuggerModel.target().debuggerAgent().invoke_setScriptSource({ scriptId: this.scriptId, scriptSource: newSource });
         if (!response.getError() && !response.exceptionDetails) {
-            this.contentPromise = Promise.resolve({ content: newSource, isEncoded: false });
+            this.#contentPromise = Promise.resolve({ content: newSource, isEncoded: false });
         }
         const needsStepIn = Boolean(response.stackChanged);
         callback(response.getError() || null, response.exceptionDetails, response.callFrames, response.asyncStackTrace, response.asyncStackTraceId, needsStepIn);
@@ -219,9 +220,6 @@ export class Script {
     }
     isAnonymousScript() {
         return !this.sourceURL;
-    }
-    isInlineScriptWithSourceURL() {
-        return Boolean(this.hasSourceURL) && this.isInlineScript();
     }
     async setBlackboxedRanges(positions) {
         const response = await this.debuggerModel.target().debuggerAgent().invoke_setBlackboxedRanges({ scriptId: this.scriptId, positions });

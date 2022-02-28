@@ -4,6 +4,7 @@
 import * as EmulationModel from '../../../models/emulation/emulation.js';
 import * as ComponentHelpers from '../../../ui/components/helpers/helpers.js';
 import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as UILegacy from '../../../ui/legacy/legacy.js';
 class SizeChangedEvent extends Event {
     size;
     static eventName = 'sizechanged';
@@ -11,6 +12,9 @@ class SizeChangedEvent extends Event {
         super(SizeChangedEvent.eventName);
         this.size = size;
     }
+}
+function getInputValue(event) {
+    return Number(event.target.value);
 }
 export class SizeInputElement extends HTMLElement {
     #root = this.attachShadow({ mode: 'open' });
@@ -59,6 +63,8 @@ export class SizeInputElement extends HTMLElement {
           max-height: 18px;
           margin: 0 2px;
           text-align: center;
+          font-size: inherit;
+          font-family: inherit;
         }
 
         input:disabled {
@@ -77,11 +83,23 @@ export class SizeInputElement extends HTMLElement {
              placeholder=${this.#placeholder}
              ?disabled=${this.#disabled}
              .value=${this.#size}
-             @change=${this.fireSizeChange} />
+             @change=${this.#fireSizeChange}
+             @keydown=${this.#handleModifierKeys} />
     `, this.#root, { host: this });
     }
-    fireSizeChange(event) {
-        this.dispatchEvent(new SizeChangedEvent(Number(event.target.value)));
+    #fireSizeChange(event) {
+        this.dispatchEvent(new SizeChangedEvent(getInputValue(event)));
+    }
+    #handleModifierKeys(event) {
+        let modifiedValue = UILegacy.UIUtils.modifiedFloatNumber(getInputValue(event), event);
+        if (modifiedValue === null) {
+            return;
+        }
+        modifiedValue = Math.min(modifiedValue, EmulationModel.DeviceModeModel.MaxDeviceSize);
+        modifiedValue = Math.max(modifiedValue, EmulationModel.DeviceModeModel.MinDeviceSize);
+        event.preventDefault();
+        event.target.value = String(modifiedValue);
+        this.dispatchEvent(new SizeChangedEvent(modifiedValue));
     }
 }
 ComponentHelpers.CustomElements.defineComponent('device-mode-emulation-size-input', SizeInputElement);

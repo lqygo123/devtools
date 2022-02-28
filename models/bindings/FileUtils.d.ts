@@ -1,7 +1,4 @@
 import type * as Common from '../../core/common/common.js';
-/**
- * @interface
- */
 export interface ChunkedReader {
     fileSize(): number;
     loadedSize(): number;
@@ -10,18 +7,7 @@ export interface ChunkedReader {
     error(): DOMError | null;
 }
 export declare class ChunkedFileReader implements ChunkedReader {
-    private file;
-    private readonly fileSizeInternal;
-    private loadedSizeInternal;
-    private streamReader;
-    private readonly chunkSize;
-    private readonly chunkTransferredCallback;
-    private readonly decoder;
-    private isCanceled;
-    private errorInternal;
-    private transferFinished;
-    private output?;
-    private reader?;
+    #private;
     constructor(file: File, chunkSize: number, chunkTransferredCallback?: ((arg0: ChunkedReader) => void));
     read(output: Common.StringOutputStream.OutputStream): Promise<boolean>;
     cancel(): void;
@@ -37,9 +23,7 @@ export declare class ChunkedFileReader implements ChunkedReader {
     private onError;
 }
 export declare class FileOutputStream implements Common.StringOutputStream.OutputStream {
-    private writeCallbacks;
-    private fileName;
-    private closed?;
+    #private;
     constructor();
     open(fileName: string): Promise<boolean>;
     write(data: string): Promise<void>;

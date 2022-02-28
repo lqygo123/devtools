@@ -30,12 +30,14 @@ const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class SearchResultsPane extends UI.Widget.VBox {
     searchConfig;
     searchResults;
+    treeElements;
     treeOutline;
     matchesExpandedCount;
     constructor(searchConfig) {
         super(true);
         this.searchConfig = searchConfig;
         this.searchResults = [];
+        this.treeElements = [];
         this.treeOutline = new UI.TreeOutline.TreeOutlineInShadow();
         this.treeOutline.hideOverflow();
         this.contentElement.appendChild(this.treeOutline.element);
@@ -44,6 +46,17 @@ export class SearchResultsPane extends UI.Widget.VBox {
     addSearchResult(searchResult) {
         this.searchResults.push(searchResult);
         this.addTreeElement(searchResult);
+    }
+    showAllMatches() {
+        this.treeElements.forEach(treeElement => {
+            treeElement.expand();
+            treeElement.showAllMatches();
+        });
+    }
+    collapseAllResults() {
+        this.treeElements.forEach(treeElement => {
+            treeElement.collapse();
+        });
     }
     addTreeElement(searchResult) {
         const treeElement = new SearchResultsTreeElement(this.searchConfig, searchResult);
@@ -56,13 +69,14 @@ export class SearchResultsPane extends UI.Widget.VBox {
             treeElement.expand();
         }
         this.matchesExpandedCount += searchResult.matchesCount();
+        this.treeElements.push(treeElement);
     }
     wasShown() {
         super.wasShown();
         this.treeOutline.registerCSSFiles([searchResultsPaneStyles]);
     }
 }
-export const matchesExpandedByDefault = 20;
+export const matchesExpandedByDefault = 200;
 export const matchesShownAtOnce = 20;
 export class SearchResultsTreeElement extends UI.TreeOutline.TreeElement {
     searchConfig;
@@ -82,6 +96,10 @@ export class SearchResultsTreeElement extends UI.TreeOutline.TreeElement {
         }
         this.updateMatchesUI();
         this.initialized = true;
+    }
+    showAllMatches() {
+        this.removeChildren();
+        this.appendSearchMatches(0, this.searchResult.matchesCount());
     }
     updateMatchesUI() {
         this.removeChildren();
@@ -154,7 +172,7 @@ export class SearchResultsTreeElement extends UI.TreeOutline.TreeElement {
             searchMatchElement.listItemElement.addEventListener('keydown', event => {
                 if (event.key === 'Enter') {
                     event.consume(true);
-                    Common.Revealer.reveal(searchResult.matchRevealable(i));
+                    void Common.Revealer.reveal(searchResult.matchRevealable(i));
                 }
             });
             searchMatchElement.tooltip = lineContent;

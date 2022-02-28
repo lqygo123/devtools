@@ -1,8 +1,6 @@
-import * as Common from '../../../core/common/common.js';
 import { GraphView } from './GraphView.js';
-export declare class GraphManager extends Common.ObjectWrapper.ObjectWrapper {
-    private graphMapByContextId;
-    constructor();
+export declare class GraphManager {
+    private readonly graphMapByContextId;
     createContext(contextId: string): void;
     destroyContext(contextId: string): void;
     hasContext(contextId: string): boolean;
@@ -13,5 +11,4 @@ export declare class GraphManager extends Common.ObjectWrapper.ObjectWrapper {
      * the graph might be undefined.
      */
     getGraph(contextId: string): GraphView | null;
-    private notifyShouldRedraw;
 }

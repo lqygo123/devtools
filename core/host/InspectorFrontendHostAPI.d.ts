@@ -1,3 +1,4 @@
+import type * as Platform from '../../core/platform/platform.js';
 export declare enum Events {
     AppendedToURL = "appendedToURL",
     CanceledSaveURL = "canceledSaveURL",
@@ -29,6 +30,90 @@ export declare enum Events {
     ShowPanel = "showPanel"
 }
 export declare const EventDescriptors: (string | string[])[][];
+export interface DispatchMessageChunkEvent {
+    messageChunk: string;
+    messageSize: number;
+}
+export interface EyeDropperPickedColorEvent {
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+}
+export interface DevToolsFileSystem {
+    type: string;
+    fileSystemName: string;
+    rootURL: string;
+    fileSystemPath: Platform.DevToolsPath.RawPathString;
+}
+export interface FileSystemAddedEvent {
+    errorMessage?: string;
+    fileSystem: DevToolsFileSystem | null;
+}
+export interface FilesChangedEvent {
+    changed: Platform.DevToolsPath.RawPathString[];
+    added: Platform.DevToolsPath.RawPathString[];
+    removed: Platform.DevToolsPath.RawPathString[];
+}
+export interface IndexingEvent {
+    requestId: number;
+    fileSystemPath: string;
+}
+export interface IndexingTotalWorkCalculatedEvent extends IndexingEvent {
+    totalWork: number;
+}
+export interface IndexingWorkedEvent extends IndexingEvent {
+    worked: number;
+}
+export interface KeyEventUnhandledEvent {
+    type: string;
+    key: string;
+    keyCode: number;
+    modifiers: number;
+}
+export interface RevealSourceLineEvent {
+    url: string;
+    lineNumber: number;
+    columnNumber: number;
+}
+export interface SavedURLEvent {
+    url: string;
+    fileSystemPath: string;
+}
+export interface SearchCompletedEvent {
+    requestId: number;
+    files: Platform.DevToolsPath.RawPathString[];
+}
+export declare type EventTypes = {
+    [Events.AppendedToURL]: string;
+    [Events.CanceledSaveURL]: string;
+    [Events.ContextMenuCleared]: void;
+    [Events.ContextMenuItemSelected]: number;
+    [Events.DeviceCountUpdated]: number;
+    [Events.DevicesDiscoveryConfigChanged]: Adb.Config;
+    [Events.DevicesPortForwardingStatusChanged]: void;
+    [Events.DevicesUpdated]: void;
+    [Events.DispatchMessage]: string;
+    [Events.DispatchMessageChunk]: DispatchMessageChunkEvent;
+    [Events.EnterInspectElementMode]: void;
+    [Events.EyeDropperPickedColor]: EyeDropperPickedColorEvent;
+    [Events.FileSystemsLoaded]: DevToolsFileSystem[];
+    [Events.FileSystemRemoved]: Platform.DevToolsPath.RawPathString;
+    [Events.FileSystemAdded]: FileSystemAddedEvent;
+    [Events.FileSystemFilesChangedAddedRemoved]: FilesChangedEvent;
+    [Events.IndexingTotalWorkCalculated]: IndexingTotalWorkCalculatedEvent;
+    [Events.IndexingWorked]: IndexingWorkedEvent;
+    [Events.IndexingDone]: IndexingEvent;
+    [Events.KeyEventUnhandled]: KeyEventUnhandledEvent;
+    [Events.ReattachMainTarget]: void;
+    [Events.ReloadInspectedPage]: boolean;
+    [Events.RevealSourceLine]: RevealSourceLineEvent;
+    [Events.SavedURL]: SavedURLEvent;
+    [Events.SearchCompleted]: SearchCompletedEvent;
+    [Events.SetInspectedTabId]: string;
+    [Events.SetUseSoftMenu]: boolean;
+    [Events.ShowPanel]: string;
+};
 export interface InspectorFrontendHostAPI {
     addFileSystem(type?: string): void;
     loadCompleted(): void;
@@ -61,12 +146,17 @@ export interface InspectorFrontendHostAPI {
     inspectedURLChanged(url: string): void;
     isolatedFileSystem(fileSystemId: string, registeredName: string): FileSystem | null;
     loadNetworkResource(url: string, headers: string, streamId: number, callback: (arg0: LoadNetworkResourceResult) => void): void;
+    registerPreference(name: string, options: {
+        synced?: boolean;
+    }): void;
     getPreferences(callback: (arg0: {
         [x: string]: string;
     }) => void): void;
+    getPreference(name: string, callback: (arg0: string) => void): void;
     setPreference(name: string, value: string): void;
     removePreference(name: string): void;
     clearPreferences(): void;
+    getSyncInformation(callback: (arg0: SyncInformation) => void): void;
     upgradeDraggedFileSystemPermissions(fileSystem: FileSystem): void;
     platform(): string;
     recordEnumeratedHistogram(actionName: EnumeratedHistogram, actionCode: number, bucketSize: number): void;
@@ -124,6 +214,16 @@ export interface ShowSurveyResult {
 export interface CanShowSurveyResult {
     canShowSurvey: boolean;
 }
+export interface SyncInformation {
+    /** Whether Chrome Sync is enabled and active */
+    isSyncActive: boolean;
+    /** Whether syncing of Chrome Settings is enabled via Chrome Sync is enabled */
+    arePreferencesSynced?: boolean;
+    /** The email of the account used for syncing */
+    accountEmail?: string;
+    /** The image of the account used for syncing. Its a base64 encoded PNG */
+    accountImage?: string;
+}
 /**
  * Enum for recordPerformanceHistogram
  * Warning: There is another definition of this enum in the DevTools code
@@ -142,14 +242,19 @@ export declare enum EnumeratedHistogram {
     IssuesPanelOpenedFrom = "DevTools.IssuesPanelOpenedFrom",
     IssuesPanelResourceOpened = "DevTools.IssuesPanelResourceOpened",
     KeybindSetSettingChanged = "DevTools.KeybindSetSettingChanged",
-    DualScreenDeviceEmulated = "DevTools.DualScreenDeviceEmulated",
     ExperimentEnabledAtLaunch = "DevTools.ExperimentEnabledAtLaunch",
     ExperimentEnabled = "DevTools.ExperimentEnabled",
     ExperimentDisabled = "DevTools.ExperimentDisabled",
-    CssEditorOpened = "DevTools.CssEditorOpened",
     DeveloperResourceLoaded = "DevTools.DeveloperResourceLoaded",
     DeveloperResourceScheme = "DevTools.DeveloperResourceScheme",
     LinearMemoryInspectorRevealedFrom = "DevTools.LinearMemoryInspector.RevealedFrom",
     LinearMemoryInspectorTarget = "DevTools.LinearMemoryInspector.Target",
-    Language = "DevTools.Language"
+    Language = "DevTools.Language",
+    ConsoleShowsCorsErrors = "DevTools.ConsoleShowsCorsErrors",
+    SyncSetting = "DevTools.SyncSetting",
+    RecordingEdited = "DevTools.RecordingEdited",
+    RecordingExported = "DevTools.RecordingExported",
+    RecordingReplayFinished = "DevTools.RecordingReplayFinished",
+    RecordingReplayStarted = "DevTools.RecordingReplayStarted",
+    RecordingToggled = "DevTools.RecordingToggled"
 }

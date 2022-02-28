@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
-import * as Root from '../../core/root/root.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import * as i18n from '../../core/i18n/i18n.js';
@@ -41,8 +40,6 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 let loadedResourcesModule;
 async function loadResourcesModule() {
     if (!loadedResourcesModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/application');
         loadedResourcesModule = await import('./application.js');
     }
     return loadedResourcesModule;
@@ -128,18 +125,6 @@ Common.Revealer.registerRevealer({
     async loadRevealer() {
         const Resources = await loadResourcesModule();
         return Resources.ResourcesPanel.ResourceRevealer.instance();
-    },
-});
-Common.Revealer.registerRevealer({
-    contextTypes() {
-        return [
-            SDK.Cookie.CookieReference,
-        ];
-    },
-    destination: Common.Revealer.RevealerDestination.APPLICATION_PANEL,
-    async loadRevealer() {
-        const Resources = await loadResourcesModule();
-        return Resources.ResourcesPanel.CookieReferenceRevealer.instance();
     },
 });
 Common.Revealer.registerRevealer({

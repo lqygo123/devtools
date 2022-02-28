@@ -31,7 +31,7 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('entrypoints/inspector_main/InspectorMain.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 let inspectorMainImplInstance;
-export class InspectorMainImpl extends Common.ObjectWrapper.ObjectWrapper {
+export class InspectorMainImpl {
     static instance(opts = { forceNew: null }) {
         const { forceNew } = opts;
         if (!inspectorMainImplInstance || forceNew) {
@@ -61,13 +61,12 @@ export class InspectorMainImpl extends Common.ObjectWrapper.ObjectWrapper {
                     debuggerModel.pause();
                 }
             }
-            target.runtimeAgent().invoke_runIfWaitingForDebugger();
+            void target.runtimeAgent().invoke_runIfWaitingForDebugger();
         }, Components.TargetDetachedDialog.TargetDetachedDialog.webSocketConnectionLost);
         new SourcesPanelIndicator();
         new BackendSettingsSync();
         new MobileThrottling.NetworkPanelIndicator.NetworkPanelIndicator();
-        Host.InspectorFrontendHost.InspectorFrontendHostInstance.events.addEventListener(Host.InspectorFrontendHostAPI.Events.ReloadInspectedPage, event => {
-            const hard = event.data;
+        Host.InspectorFrontendHost.InspectorFrontendHostInstance.events.addEventListener(Host.InspectorFrontendHostAPI.Events.ReloadInspectedPage, ({ data: hard }) => {
             SDK.ResourceTreeModel.ResourceTreeModel.reloadAllPages(hard);
         });
     }
@@ -108,24 +107,24 @@ export class FocusDebuggeeActionDelegate {
         if (!mainTarget) {
             return false;
         }
-        mainTarget.pageAgent().invoke_bringToFront();
+        void mainTarget.pageAgent().invoke_bringToFront();
         return true;
     }
 }
 let nodeIndicatorInstance;
 export class NodeIndicator {
-    element;
-    button;
+    #element;
+    #button;
     constructor() {
         const element = document.createElement('div');
         const shadowRoot = UI.Utils.createShadowRootWithCoreStyles(element, { cssFile: [nodeIconStyles], delegatesFocus: undefined });
-        this.element = shadowRoot.createChild('div', 'node-icon');
+        this.#element = shadowRoot.createChild('div', 'node-icon');
         element.addEventListener('click', () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.openNodeFrontend(), false);
-        this.button = new UI.Toolbar.ToolbarItem(element);
-        this.button.setTitle(i18nString(UIStrings.openDedicatedTools));
-        SDK.TargetManager.TargetManager.instance().addEventListener(SDK.TargetManager.Events.AvailableTargetsChanged, event => this.update(event.data));
-        this.button.setVisible(false);
-        this.update([]);
+        this.#button = new UI.Toolbar.ToolbarItem(element);
+        this.#button.setTitle(i18nString(UIStrings.openDedicatedTools));
+        SDK.TargetManager.TargetManager.instance().addEventListener(SDK.TargetManager.Events.AvailableTargetsChanged, event => this.#update(event.data));
+        this.#button.setVisible(false);
+        this.#update([]);
     }
     static instance(opts = { forceNew: null }) {
         const { forceNew } = opts;
@@ -134,15 +133,15 @@ export class NodeIndicator {
         }
         return nodeIndicatorInstance;
     }
-    update(targetInfos) {
+    #update(targetInfos) {
         const hasNode = Boolean(targetInfos.find(target => target.type === 'node' && !target.attached));
-        this.element.classList.toggle('inactive', !hasNode);
+        this.#element.classList.toggle('inactive', !hasNode);
         if (hasNode) {
-            this.button.setVisible(true);
+            this.#button.setVisible(true);
         }
     }
     item() {
-        return this.button;
+        return this.#button;
     }
 }
 export class SourcesPanelIndicator {
@@ -163,36 +162,36 @@ export class SourcesPanelIndicator {
     }
 }
 export class BackendSettingsSync {
-    autoAttachSetting;
-    adBlockEnabledSetting;
-    emulatePageFocusSetting;
+    #autoAttachSetting;
+    #adBlockEnabledSetting;
+    #emulatePageFocusSetting;
     constructor() {
-        this.autoAttachSetting = Common.Settings.Settings.instance().moduleSetting('autoAttachToCreatedPages');
-        this.autoAttachSetting.addChangeListener(this.updateAutoAttach, this);
-        this.updateAutoAttach();
-        this.adBlockEnabledSetting = Common.Settings.Settings.instance().moduleSetting('network.adBlockingEnabled');
-        this.adBlockEnabledSetting.addChangeListener(this.update, this);
-        this.emulatePageFocusSetting = Common.Settings.Settings.instance().moduleSetting('emulatePageFocus');
-        this.emulatePageFocusSetting.addChangeListener(this.update, this);
+        this.#autoAttachSetting = Common.Settings.Settings.instance().moduleSetting('autoAttachToCreatedPages');
+        this.#autoAttachSetting.addChangeListener(this.#updateAutoAttach, this);
+        this.#updateAutoAttach();
+        this.#adBlockEnabledSetting = Common.Settings.Settings.instance().moduleSetting('network.adBlockingEnabled');
+        this.#adBlockEnabledSetting.addChangeListener(this.#update, this);
+        this.#emulatePageFocusSetting = Common.Settings.Settings.instance().moduleSetting('emulatePageFocus');
+        this.#emulatePageFocusSetting.addChangeListener(this.#update, this);
         SDK.TargetManager.TargetManager.instance().observeTargets(this);
     }
-    updateTarget(target) {
+    #updateTarget(target) {
         if (target.type() !== SDK.Target.Type.Frame || target.parentTarget()) {
             return;
         }
-        target.pageAgent().invoke_setAdBlockingEnabled({ enabled: this.adBlockEnabledSetting.get() });
-        target.emulationAgent().invoke_setFocusEmulationEnabled({ enabled: this.emulatePageFocusSetting.get() });
+        void target.pageAgent().invoke_setAdBlockingEnabled({ enabled: this.#adBlockEnabledSetting.get() });
+        void target.emulationAgent().invoke_setFocusEmulationEnabled({ enabled: this.#emulatePageFocusSetting.get() });
     }
-    updateAutoAttach() {
-        Host.InspectorFrontendHost.InspectorFrontendHostInstance.setOpenNewWindowForPopups(this.autoAttachSetting.get());
+    #updateAutoAttach() {
+        Host.InspectorFrontendHost.InspectorFrontendHostInstance.setOpenNewWindowForPopups(this.#autoAttachSetting.get());
     }
-    update() {
+    #update() {
         for (const target of SDK.TargetManager.TargetManager.instance().targets()) {
-            this.updateTarget(target);
+            this.#updateTarget(target);
         }
     }
     targetAdded(target) {
-        this.updateTarget(target);
+        this.#updateTarget(target);
     }
     targetRemoved(_target) {
     }

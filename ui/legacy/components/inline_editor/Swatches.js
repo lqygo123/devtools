@@ -5,13 +5,15 @@ import * as Common from '../../../../core/common/common.js';
 import * as TextUtils from '../../../../models/text_utils/text_utils.js';
 import * as UI from '../../legacy.js';
 import { ColorSwatch, FormatChangedEvent } from './ColorSwatch.js';
+import bezierSwatchStyles from './bezierSwatch.css.js';
+import cssShadowSwatchStyles from './cssShadowSwatch.css.js';
 export class BezierSwatch extends HTMLSpanElement {
     iconElementInternal;
     textElement;
     constructor() {
         super();
         const root = UI.Utils.createShadowRootWithCoreStyles(this, {
-            cssFile: 'ui/legacy/components/inline_editor/bezierSwatch.css',
+            cssFile: [bezierSwatchStyles],
             delegatesFocus: undefined,
         });
         this.iconElementInternal = UI.Icon.Icon.create('smallicon-bezier', 'bezier-swatch-icon');
@@ -49,7 +51,7 @@ export class CSSShadowSwatch extends HTMLSpanElement {
     constructor() {
         super();
         const root = UI.Utils.createShadowRootWithCoreStyles(this, {
-            cssFile: 'ui/legacy/components/inline_editor/cssShadowSwatch.css',
+            cssFile: [cssShadowSwatchStyles],
             delegatesFocus: undefined,
         });
         this.iconElementInternal = UI.Icon.Icon.create('smallicon-shadow', 'shadow-swatch-icon');

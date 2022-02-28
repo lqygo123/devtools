@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
+import * as Host from '../../core/host/host.js';
+import * as i18n from '../../core/i18n/i18n.js';
 import * as Root from '../../core/root/root.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Workspace from '../../models/workspace/workspace.js';
 import * as ObjectUI from '../../ui/legacy/components/object_ui/object_ui.js';
 import * as QuickOpen from '../../ui/legacy/components/quick_open/quick_open.js';
-import * as TextEditor from '../../ui/legacy/components/text_editor/text_editor.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import * as i18n from '../../core/i18n/i18n.js';
 const UIStrings = {
     /**
     *@description Command for showing the 'Sources' tool
@@ -343,13 +343,25 @@ const UIStrings = {
     */
     disallowScrollingPastEndOfFile: 'Disallow scrolling past end of file',
     /**
-    *@description Title of the Filtered List WidgetProvider of Quick Open
+    *@description Text for command prefix of go to a given line or symbol
     */
-    goToSymbol: 'Go to symbol',
+    goTo: 'Go to',
     /**
-    *@description Text to open a file
+    *@description Text for command suggestion of go to a given line
     */
-    openFile: 'Open file',
+    line: 'Line',
+    /**
+    *@description Text for command suggestion of go to a given symbol
+    */
+    symbol: 'Symbol',
+    /**
+    *@description Text for command prefix of open a file
+    */
+    open: 'Open',
+    /**
+    *@description Text for command suggestion of open a file
+    */
+    file: 'File',
     /**
     * @description  Title of a setting under the Sources category in Settings. If this option is off,
     * the sources panel will not be automatically be focsed whenever the application hits a breakpoint
@@ -368,8 +380,6 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 let loadedSourcesModule;
 async function loadSourcesModule() {
     if (!loadedSourcesModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/sources');
         loadedSourcesModule = await import('./sources.js');
     }
     return loadedSourcesModule;
@@ -492,9 +502,7 @@ UI.ActionRegistration.registerActionExtension({
         return Sources.SourcesPanel.RevealingActionDelegate.instance();
     },
     contextTypes() {
-        return maybeRetrieveContextTypes(Sources => [Sources.SourcesView.SourcesView,
-            UI.ShortcutRegistry.ForwardedShortcut,
-        ]);
+        return maybeRetrieveContextTypes(Sources => [Sources.SourcesView.SourcesView, UI.ShortcutRegistry.ForwardedShortcut]);
     },
     options: [
         {
@@ -1048,17 +1056,19 @@ UI.ActionRegistration.registerActionExtension({
     },
     title: i18nLazyString(UIStrings.createNewSnippet),
 });
-UI.ActionRegistration.registerActionExtension({
-    category: UI.ActionRegistration.ActionCategory.SOURCES,
-    actionId: 'sources.add-folder-to-workspace',
-    async loadActionDelegate() {
-        const Sources = await loadSourcesModule();
-        return Sources.SourcesNavigator.ActionDelegate.instance();
-    },
-    iconClass: "largeicon-add" /* LARGE_ICON_ADD */,
-    title: i18nLazyString(UIStrings.addFolderToWorkspace),
-    condition: Root.Runtime.ConditionName.NOT_SOURCES_HIDE_ADD_FOLDER,
-});
+if (!Host.InspectorFrontendHost.InspectorFrontendHostInstance.isHostedMode()) {
+    UI.ActionRegistration.registerActionExtension({
+        category: UI.ActionRegistration.ActionCategory.SOURCES,
+        actionId: 'sources.add-folder-to-workspace',
+        async loadActionDelegate() {
+            const Sources = await loadSourcesModule();
+            return Sources.SourcesNavigator.ActionDelegate.instance();
+        },
+        iconClass: "largeicon-add" /* LARGE_ICON_ADD */,
+        title: i18nLazyString(UIStrings.addFolderToWorkspace),
+        condition: Root.Runtime.ConditionName.NOT_SOURCES_HIDE_ADD_FOLDER,
+    });
+}
 UI.ActionRegistration.registerActionExtension({
     category: UI.ActionRegistration.ActionCategory.DEBUGGER,
     actionId: 'debugger.previous-call-frame',
@@ -1187,6 +1197,7 @@ Common.Settings.registerSettingExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.SOURCES,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.searchInAnonymousAndContent),
     settingName: 'searchInAnonymousAndContentScripts',
     settingType: Common.Settings.SettingType.BOOLEAN,
@@ -1204,6 +1215,7 @@ Common.Settings.registerSettingExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.SOURCES,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.automaticallyRevealFilesIn),
     settingName: 'autoRevealInNavigator',
     settingType: Common.Settings.SettingType.BOOLEAN,
@@ -1221,6 +1233,7 @@ Common.Settings.registerSettingExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.SOURCES,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.enableJavascriptSourceMaps),
     settingName: 'jsSourceMapsEnabled',
     settingType: Common.Settings.SettingType.BOOLEAN,
@@ -1238,6 +1251,7 @@ Common.Settings.registerSettingExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.SOURCES,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.enableTabMovesFocus),
     settingName: 'textEditorTabMovesFocus',
     settingType: Common.Settings.SettingType.BOOLEAN,
@@ -1255,6 +1269,7 @@ Common.Settings.registerSettingExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.SOURCES,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.detectIndentation),
     settingName: 'textEditorAutoDetectIndent',
     settingType: Common.Settings.SettingType.BOOLEAN,
@@ -1272,6 +1287,7 @@ Common.Settings.registerSettingExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.SOURCES,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.autocompletion),
     settingName: 'textEditorAutocompletion',
     settingType: Common.Settings.SettingType.BOOLEAN,
@@ -1306,6 +1322,7 @@ Common.Settings.registerSettingExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.SOURCES,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.codeFolding),
     settingName: 'textEditorCodeFolding',
     settingType: Common.Settings.SettingType.BOOLEAN,
@@ -1323,6 +1340,7 @@ Common.Settings.registerSettingExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.SOURCES,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.showWhitespaceCharacters),
     settingName: 'showWhitespacesInEditor',
     settingType: Common.Settings.SettingType.ENUM,
@@ -1347,6 +1365,7 @@ Common.Settings.registerSettingExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.SOURCES,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.displayVariableValuesInlineWhile),
     settingName: 'inlineVariableValues',
     settingType: Common.Settings.SettingType.BOOLEAN,
@@ -1364,6 +1383,7 @@ Common.Settings.registerSettingExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.SOURCES,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.enableAutoFocusOnDebuggerPaused),
     settingName: 'autoFocusOnDebuggerPausedEnabled',
     settingType: Common.Settings.SettingType.BOOLEAN,
@@ -1381,6 +1401,7 @@ Common.Settings.registerSettingExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.SOURCES,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.enableCssSourceMaps),
     settingName: 'cssSourceMapsEnabled',
     settingType: Common.Settings.SettingType.BOOLEAN,
@@ -1398,6 +1419,7 @@ Common.Settings.registerSettingExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.SOURCES,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.allowScrollingPastEndOfFile),
     settingName: 'allowScrollPastEof',
     settingType: Common.Settings.SettingType.BOOLEAN,
@@ -1475,25 +1497,11 @@ UI.ContextMenu.registerProvider({
 });
 UI.ContextMenu.registerProvider({
     contextTypes() {
-        return [
-            TextEditor.CodeMirrorTextEditor.CodeMirrorTextEditor,
-        ];
+        return maybeRetrieveContextTypes(Sources => [Sources.UISourceCodeFrame.UISourceCodeFrame]);
     },
     async loadProvider() {
         const Sources = await loadSourcesModule();
         return Sources.WatchExpressionsSidebarPane.WatchExpressionsSidebarPane.instance();
-    },
-    experiment: undefined,
-});
-UI.ContextMenu.registerProvider({
-    contextTypes() {
-        return [
-            Workspace.UISourceCode.UISourceCode,
-        ];
-    },
-    async loadProvider() {
-        const Sources = await loadSourcesModule();
-        return Sources.GutterDiffPlugin.ContextMenuProvider.instance();
     },
     experiment: undefined,
 });
@@ -1615,28 +1623,31 @@ UI.ContextMenu.registerItem({
 QuickOpen.FilteredListWidget.registerProvider({
     prefix: '@',
     iconName: 'ic_command_go_to_symbol',
-    title: i18nLazyString(UIStrings.goToSymbol),
     async provider() {
         const Sources = await loadSourcesModule();
         return Sources.OutlineQuickOpen.OutlineQuickOpen.instance();
     },
+    titlePrefix: i18nLazyString(UIStrings.goTo),
+    titleSuggestion: i18nLazyString(UIStrings.symbol),
 });
 QuickOpen.FilteredListWidget.registerProvider({
     prefix: ':',
     iconName: 'ic_command_go_to_line',
-    title: i18nLazyString(UIStrings.goToLine),
     async provider() {
         const Sources = await loadSourcesModule();
         return Sources.GoToLineQuickOpen.GoToLineQuickOpen.instance();
     },
+    titlePrefix: i18nLazyString(UIStrings.goTo),
+    titleSuggestion: i18nLazyString(UIStrings.line),
 });
 QuickOpen.FilteredListWidget.registerProvider({
     prefix: '',
     iconName: 'ic_command_open_file',
-    title: i18nLazyString(UIStrings.openFile),
     async provider() {
         const Sources = await loadSourcesModule();
         return Sources.OpenFileQuickOpen.OpenFileQuickOpen.instance();
     },
+    titlePrefix: i18nLazyString(UIStrings.open),
+    titleSuggestion: i18nLazyString(UIStrings.file),
 });
 //# sourceMappingURL=sources-meta.js.map

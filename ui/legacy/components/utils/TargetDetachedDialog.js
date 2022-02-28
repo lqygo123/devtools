@@ -17,7 +17,7 @@ export class TargetDetachedDialog extends SDK.SDKModel.SDKModel {
     constructor(target) {
         super(target);
         target.registerInspectorDispatcher(this);
-        target.inspectorAgent().invoke_enable();
+        void target.inspectorAgent().invoke_enable();
         // Hide all dialogs if a new top-level target is created.
         if (target.parentTarget()?.type() === SDK.Target.Type.Browser && TargetDetachedDialog.hideCrashedDialog) {
             TargetDetachedDialog.hideCrashedDialog.call(null);
@@ -61,7 +61,7 @@ export class TargetDetachedDialog extends SDK.SDKModel.SDKModel {
     /** ;
      */
     targetReloadedAfterCrash() {
-        this.target().runtimeAgent().invoke_runIfWaitingForDebugger();
+        void this.target().runtimeAgent().invoke_runIfWaitingForDebugger();
         if (TargetDetachedDialog.hideCrashedDialog) {
             TargetDetachedDialog.hideCrashedDialog.call(null);
             TargetDetachedDialog.hideCrashedDialog = null;

@@ -88,7 +88,7 @@ export class RequestResponseView extends UI.Widget.VBox {
         return sourceView;
     }
     wasShown() {
-        this.doShowPreview();
+        void this.doShowPreview();
     }
     doShowPreview() {
         if (!this.contentViewPromise) {
@@ -121,7 +121,7 @@ export class RequestResponseView extends UI.Widget.VBox {
     async revealLine(line) {
         const view = await this.doShowPreview();
         if (view instanceof SourceFrame.ResourceSourceFrame.SearchableContainer) {
-            view.revealPosition(line);
+            void view.revealPosition(line);
         }
     }
 }

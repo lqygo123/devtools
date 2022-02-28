@@ -136,7 +136,14 @@ export class CPUProfileType extends ProfileType {
     constructor() {
         super(CPUProfileType.TypeId, i18nString(UIStrings.recordJavascriptCpuProfile));
         this.recording = false;
-        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.CPUProfilerModel.CPUProfilerModel, SDK.CPUProfilerModel.Events.ConsoleProfileFinished, this.consoleProfileFinished, this);
+        const targetManager = SDK.TargetManager.TargetManager.instance();
+        const profilerModels = targetManager.models(SDK.CPUProfilerModel.CPUProfilerModel);
+        for (const model of profilerModels) {
+            for (const message of model.registeredConsoleProfileMessages) {
+                this.consoleProfileFinished(message);
+            }
+        }
+        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.CPUProfilerModel.CPUProfilerModel, SDK.CPUProfilerModel.Events.ConsoleProfileFinished, event => this.consoleProfileFinished(event.data), this);
     }
     profileBeingRecorded() {
         return super.profileBeingRecorded();
@@ -152,7 +159,7 @@ export class CPUProfileType extends ProfileType {
     }
     buttonClicked() {
         if (this.recording) {
-            this.stopRecordingProfile();
+            void this.stopRecordingProfile();
             return false;
         }
         this.startRecordingProfile();
@@ -164,8 +171,7 @@ export class CPUProfileType extends ProfileType {
     get description() {
         return i18nString(UIStrings.cpuProfilesShow);
     }
-    consoleProfileFinished(event) {
-        const data = event.data;
+    consoleProfileFinished(data) {
         const profile = new CPUProfileHeader(data.cpuProfilerModel, this, data.title);
         profile.setProtocolProfile(data.cpuProfile);
         this.addProfile(profile);
@@ -177,11 +183,11 @@ export class CPUProfileType extends ProfileType {
         }
         const profile = new CPUProfileHeader(cpuProfilerModel, this);
         this.setProfileBeingRecorded(profile);
-        SDK.TargetManager.TargetManager.instance().suspendAllTargets();
+        void SDK.TargetManager.TargetManager.instance().suspendAllTargets();
         this.addProfile(profile);
         profile.updateStatus(i18nString(UIStrings.recording));
         this.recording = true;
-        cpuProfilerModel.startRecording();
+        void cpuProfilerModel.startRecording();
         Host.userMetrics.actionTaken(Host.UserMetrics.Action.ProfilesCPUProfileTaken);
     }
     async stopRecordingProfile() {
@@ -207,7 +213,7 @@ export class CPUProfileType extends ProfileType {
         return new CPUProfileHeader(null, this, title);
     }
     profileBeingRecordedRemoved() {
-        this.stopRecordingProfile();
+        void this.stopRecordingProfile();
     }
     // eslint-disable-next-line @typescript-eslint/naming-convention
     static TypeId = 'CPU';

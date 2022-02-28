@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
-import * as Root from '../../core/root/root.js';
+import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Workspace from '../../models/workspace/workspace.js';
 import * as NetworkForward from '../../panels/network/forward/forward.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import * as i18n from '../../core/i18n/i18n.js';
 const UIStrings = {
     /**
     *@description Command for showing the 'Network' tool
@@ -111,8 +110,6 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 let loadedNetworkModule;
 async function loadNetworkModule() {
     if (!loadedNetworkModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/network');
         loadedNetworkModule = await import('./network.js');
     }
     return loadedNetworkModule;
@@ -260,6 +257,7 @@ UI.ActionRegistration.registerActionExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.NETWORK,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.colorcodeResourceTypes),
     settingName: 'networkColorCodeResourceTypes',
     settingType: Common.Settings.SettingType.BOOLEAN,
@@ -281,6 +279,7 @@ Common.Settings.registerSettingExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.NETWORK,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.groupNetworkLogByFrame),
     settingName: 'network.group-by-frame',
     settingType: Common.Settings.SettingType.BOOLEAN,

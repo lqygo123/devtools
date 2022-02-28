@@ -4,27 +4,31 @@
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Bindings from '../../models/bindings/bindings.js';
 import * as Workspace from '../../models/workspace/workspace.js';
+import * as CodeMirror from '../../third_party/codemirror.next/codemirror.next.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import * as Snippets from '../snippets/snippets.js';
 import { Plugin } from './Plugin.js';
+// Plugin that tries to compile the editor content and highlights
+// compilation errors.
 export class JavaScriptCompilerPlugin extends Plugin {
-    textEditor;
-    uiSourceCode;
-    compiling;
-    recompileScheduled;
-    timeout;
-    message;
-    disposed;
-    constructor(textEditor, uiSourceCode) {
-        super();
-        this.textEditor = textEditor;
-        this.uiSourceCode = uiSourceCode;
-        this.compiling = false;
-        this.recompileScheduled = false;
-        this.timeout = null;
-        this.message = null;
-        this.disposed = false;
-        this.textEditor.addEventListener(UI.TextEditor.Events.TextChanged, this.scheduleCompile, this);
+    compiling = false;
+    recompileScheduled = false;
+    timeout = null;
+    message = null;
+    disposed = false;
+    editor = null;
+    constructor(uiSourceCode) {
+        super(uiSourceCode);
+    }
+    editorExtension() {
+        return CodeMirror.EditorView.updateListener.of(update => {
+            if (update.docChanged) {
+                this.scheduleCompile();
+            }
+        });
+    }
+    editorInitialized(editor) {
+        this.editor = editor;
         if (this.uiSourceCode.hasCommits() || this.uiSourceCode.isDirty()) {
             this.scheduleCompile();
         }
@@ -66,17 +70,17 @@ export class JavaScriptCompilerPlugin extends Plugin {
     }
     async compile() {
         const runtimeModel = this.findRuntimeModel();
-        if (!runtimeModel) {
+        if (!runtimeModel || !this.editor) {
             return;
         }
         const currentExecutionContext = UI.Context.Context.instance().flavor(SDK.RuntimeModel.ExecutionContext);
         if (!currentExecutionContext) {
             return;
         }
-        const code = this.textEditor.text();
-        if (code.length > 1024 * 100) {
+        if (this.editor.state.doc.length > 1024 * 100) {
             return;
         }
+        const code = this.editor.state.doc.toString();
         const scripts = Bindings.DebuggerWorkspaceBinding.DebuggerWorkspaceBinding.instance().scriptsForResource(this.uiSourceCode);
         const isModule = scripts.reduce((v, s) => v || s.isModule === true, false);
         if (isModule) {
@@ -92,6 +96,7 @@ export class JavaScriptCompilerPlugin extends Plugin {
         }
         if (this.message) {
             this.uiSourceCode.removeMessage(this.message);
+            this.message = null;
         }
         if (this.disposed || !result || !result.exceptionDetails) {
             return;
@@ -104,7 +109,6 @@ export class JavaScriptCompilerPlugin extends Plugin {
     compilationFinishedForTest() {
     }
     dispose() {
-        this.textEditor.removeEventListener(UI.TextEditor.Events.TextChanged, this.scheduleCompile, this);
         if (this.message) {
             this.uiSourceCode.removeMessage(this.message);
         }

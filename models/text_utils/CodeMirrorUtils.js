@@ -27,43 +27,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as TextRange from './TextRange.js';
-export function toPos(range) {
-    return {
-        start: new CodeMirror.Pos(range.startLine, range.startColumn),
-        end: new CodeMirror.Pos(range.endLine, range.endColumn),
-    };
-}
-export function toRange(start, end) {
-    return new TextRange.TextRange(start.line, start.ch, end.line, end.ch);
-}
-export function changeObjectToEditOperation(changeObject) {
-    const oldRange = toRange(changeObject.from, changeObject.to);
-    const newRange = oldRange.clone();
-    const linesAdded = changeObject.text.length;
-    if (linesAdded === 0) {
-        newRange.endLine = newRange.startLine;
-        newRange.endColumn = newRange.startColumn;
-    }
-    else if (linesAdded === 1) {
-        newRange.endLine = newRange.startLine;
-        newRange.endColumn = newRange.startColumn + changeObject.text[0].length;
-    }
-    else {
-        newRange.endLine = newRange.startLine + linesAdded - 1;
-        newRange.endColumn = changeObject.text[linesAdded - 1].length;
-    }
-    return { oldRange: oldRange, newRange: newRange };
-}
-export function pullLines(codeMirror, linesCount) {
-    const lines = [];
-    // @ts-expect-error CodeMirror types do not specify eachLine.
-    codeMirror.eachLine(0, linesCount, onLineHandle);
-    return lines;
-    function onLineHandle(lineHandle) {
-        lines.push(lineHandle.text);
-    }
-}
+import '../../third_party/codemirror/package/addon/runmode/runmode-standalone.js';
+import '../../third_party/codemirror/package/mode/css/css.js';
 let tokenizerFactoryInstance;
 export class TokenizerFactory {
     static instance(opts = { forceNew: null }) {
@@ -78,8 +43,8 @@ export class TokenizerFactory {
         return CodeMirror.getMode({ indentUnit: 2 }, mimeType);
     }
     // https://crbug.com/1151919 * = CodeMirror.Mode
-    createTokenizer(mimeType, mode) {
-        const cmMode = mode || CodeMirror.getMode({ indentUnit: 2 }, mimeType);
+    createTokenizer(mimeType) {
+        const cmMode = CodeMirror.getMode({ indentUnit: 2 }, mimeType);
         const state = CodeMirror.startState(cmMode);
         function tokenize(line, callback) {
             const stream = new CodeMirror.StringStream(line);

@@ -14,7 +14,7 @@ export class StylePropertyHighlighter {
         // Expand all shorthands.
         for (const section of this.styleSidebarPane.allSections()) {
             for (let treeElement = section.propertiesTreeOutline.firstChild(); treeElement; treeElement = treeElement.nextSibling) {
-                treeElement.onpopulate();
+                void treeElement.onpopulate();
             }
         }
         const { treeElement, section } = this.findTreeElementAndSection(treeElement => treeElement.property === cssProperty);
@@ -30,11 +30,18 @@ export class StylePropertyHighlighter {
      * Find the first non-overridden property that matches the provided name, scroll to it and highlight it.
      */
     findAndHighlightPropertyName(propertyName) {
-        const { treeElement, section } = this.findTreeElementAndSection(treeElement => treeElement.property.name === propertyName && !treeElement.overloaded());
-        if (treeElement) {
-            this.scrollAndHighlightTreeElement(treeElement);
-            if (section) {
-                section.element.focus();
+        for (const section of this.styleSidebarPane.allSections()) {
+            if (!section.style().hasActiveProperty(propertyName)) {
+                continue;
+            }
+            section.showAllItems();
+            const treeElement = this.findTreeElementFromSection(treeElement => treeElement.property.name === propertyName && !treeElement.overloaded(), section);
+            if (treeElement) {
+                this.scrollAndHighlightTreeElement(treeElement);
+                if (section) {
+                    section.element.focus();
+                }
+                return;
             }
         }
     }
@@ -43,23 +50,23 @@ export class StylePropertyHighlighter {
      * return the first tree element and corresponding section for which the callback returns a truthy value.
      */
     findTreeElementAndSection(compareCb) {
-        let result = null;
-        let containingSection = null;
         for (const section of this.styleSidebarPane.allSections()) {
-            let treeElement = section.propertiesTreeOutline.firstChild();
-            while (treeElement && !result && (treeElement instanceof StylePropertyTreeElement)) {
-                if (compareCb(treeElement)) {
-                    result = treeElement;
-                    break;
-                }
-                treeElement = treeElement.traverseNextTreeElement(false, null, true);
-            }
-            if (result) {
-                containingSection = section;
-                break;
+            const treeElement = this.findTreeElementFromSection(compareCb, section);
+            if (treeElement) {
+                return { treeElement, section };
             }
         }
-        return { treeElement: result, section: containingSection };
+        return { treeElement: null, section: null };
+    }
+    findTreeElementFromSection(compareCb, section) {
+        let treeElement = section.propertiesTreeOutline.firstChild();
+        while (treeElement && (treeElement instanceof StylePropertyTreeElement)) {
+            if (compareCb(treeElement)) {
+                return treeElement;
+            }
+            treeElement = treeElement.traverseNextTreeElement(false, null, true);
+        }
+        return null;
     }
     scrollAndHighlightTreeElement(treeElement) {
         treeElement.listItemElement.scrollIntoViewIfNeeded();

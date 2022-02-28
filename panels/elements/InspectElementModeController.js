@@ -70,7 +70,7 @@ export class InspectElementModeController {
         if (this.mode === "none" /* None */) {
             return;
         }
-        overlayModel.setInspectMode(this.mode, this.showDetailedInspectTooltipSetting.get());
+        void overlayModel.setInspectMode(this.mode, this.showDetailedInspectTooltipSetting.get());
     }
     modelRemoved(_overlayModel) {
     }
@@ -98,7 +98,7 @@ export class InspectElementModeController {
         }
         this.mode = mode;
         for (const overlayModel of SDK.TargetManager.TargetManager.instance().models(SDK.OverlayModel.OverlayModel)) {
-            overlayModel.setInspectMode(mode, this.showDetailedInspectTooltipSetting.get());
+            void overlayModel.setInspectMode(mode, this.showDetailedInspectTooltipSetting.get());
         }
         if (this.toggleSearchAction) {
             this.toggleSearchAction.setToggled(this.isInInspectElementMode());
@@ -114,7 +114,7 @@ export class InspectElementModeController {
         }
     }
     inspectNode(node) {
-        ElementsPanel.instance().revealAndSelectNode(node, true, true);
+        void ElementsPanel.instance().revealAndSelectNode(node, true, true);
     }
     showDetailedInspectTooltipChanged() {
         this.setMode(this.mode);

@@ -37,19 +37,19 @@ const str_ = i18n.i18n.registerUIStrings('panels/application/components/TrustTok
 export const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 class TrustTokensDeleteButton extends HTMLElement {
     static litTagName = LitHtml.literal `devtools-trust-tokens-delete-button`;
-    shadow = this.attachShadow({ mode: 'open' });
-    issuer = null;
-    deleteClickHandler = () => { };
+    #shadow = this.attachShadow({ mode: 'open' });
+    #issuer = null;
+    #deleteClickHandler = () => { };
     connectedCallback() {
-        this.shadow.adoptedStyleSheets = [trustTokensViewDeleteButtonStyles];
+        this.#shadow.adoptedStyleSheets = [trustTokensViewDeleteButtonStyles];
     }
     set data(data) {
-        this.issuer = data.issuer;
-        this.deleteClickHandler = data.deleteClickHandler;
-        this.render();
+        this.#issuer = data.issuer;
+        this.#deleteClickHandler = data.deleteClickHandler;
+        this.#render();
     }
-    render() {
-        if (!this.issuer) {
+    #render() {
+        if (!this.#issuer) {
             return;
         }
         // clang-format off
@@ -57,30 +57,30 @@ class TrustTokensDeleteButton extends HTMLElement {
       <!-- Wrap the button in a container, otherwise we can't center it inside the column. -->
       <span class="button-container">
         <button class="delete-button"
-          title=${i18nString(UIStrings.deleteTrustTokens, { PH1: this.issuer })}
-          @click=${() => this.deleteClickHandler(this.issuer)}>
+          title=${i18nString(UIStrings.deleteTrustTokens, { PH1: this.#issuer })}
+          @click=${() => this.#deleteClickHandler(this.#issuer)}>
           <${IconButton.Icon.Icon.litTagName} .data=${{ iconName: 'trash_bin_icon', color: 'var(--color-text-secondary)', width: '9px', height: '14px' }}>
           </${IconButton.Icon.Icon.litTagName}>
         </button>
-      </span>`, this.shadow, { host: this });
+      </span>`, this.#shadow, { host: this });
         // clang-format on
     }
 }
 export class TrustTokensView extends HTMLElement {
     static litTagName = LitHtml.literal `devtools-trust-tokens-storage-view`;
-    shadow = this.attachShadow({ mode: 'open' });
-    tokens = [];
-    deleteClickHandler = () => { };
+    #shadow = this.attachShadow({ mode: 'open' });
+    #tokens = [];
+    #deleteClickHandler = () => { };
     connectedCallback() {
-        this.shadow.adoptedStyleSheets = [trustTokensViewStyles];
-        this.render();
+        this.#shadow.adoptedStyleSheets = [trustTokensViewStyles];
+        this.#render();
     }
     set data(data) {
-        this.tokens = data.tokens;
-        this.deleteClickHandler = data.deleteClickHandler;
-        this.render();
+        this.#tokens = data.tokens;
+        this.#deleteClickHandler = data.deleteClickHandler;
+        this.#render();
     }
-    render() {
+    #render() {
         // clang-format off
         LitHtml.render(LitHtml.html `
       <div>
@@ -88,13 +88,13 @@ export class TrustTokensView extends HTMLElement {
         <${IconButton.Icon.Icon.litTagName} class="info-icon" title=${i18nString(UIStrings.allStoredTrustTokensAvailableIn)}
           .data=${{ iconName: 'ic_info_black_18dp', color: 'var(--color-link)', width: '14px' }}>
         </${IconButton.Icon.Icon.litTagName}>
-        ${this.renderGridOrNoDataMessage()}
+        ${this.#renderGridOrNoDataMessage()}
       </div>
-    `, this.shadow, { host: this });
+    `, this.#shadow, { host: this });
         // clang-format on
     }
-    renderGridOrNoDataMessage() {
-        if (this.tokens.length === 0) {
+    #renderGridOrNoDataMessage() {
+        if (this.#tokens.length === 0) {
             return LitHtml.html `<div class="no-tt-message">${i18nString(UIStrings.noTrustTokensStored)}</div>`;
         }
         const gridData = {
@@ -124,7 +124,7 @@ export class TrustTokensView extends HTMLElement {
                     sortable: false,
                 },
             ],
-            rows: this.buildRowsFromTokens(),
+            rows: this.#buildRowsFromTokens(),
             initialSort: {
                 columnId: 'issuer',
                 direction: "ASC" /* ASC */,
@@ -134,24 +134,24 @@ export class TrustTokensView extends HTMLElement {
       <${DataGrid.DataGridController.DataGridController.litTagName} .data=${gridData}></${DataGrid.DataGridController.DataGridController.litTagName}>
     `;
     }
-    buildRowsFromTokens() {
-        const tokens = this.tokens.filter(token => token.count > 0);
+    #buildRowsFromTokens() {
+        const tokens = this.#tokens.filter(token => token.count > 0);
         return tokens.map(token => ({
             cells: [
                 {
                     columnId: 'delete-button',
                     value: removeTrailingSlash(token.issuerOrigin),
-                    renderer: this.deleteButtonRendererForDataGridCell.bind(this),
+                    renderer: this.#deleteButtonRendererForDataGridCell.bind(this),
                 },
                 { columnId: 'issuer', value: removeTrailingSlash(token.issuerOrigin) },
                 { columnId: 'count', value: token.count },
             ],
         }));
     }
-    deleteButtonRendererForDataGridCell(issuer) {
+    #deleteButtonRendererForDataGridCell(issuer) {
         // clang-format off
         return LitHtml.html `<${TrustTokensDeleteButton.litTagName}
-     .data=${{ issuer, deleteClickHandler: this.deleteClickHandler }}
+     .data=${{ issuer, deleteClickHandler: this.#deleteClickHandler }}
     ></${TrustTokensDeleteButton.litTagName}>`;
         // clang-format on
     }

@@ -69,8 +69,7 @@ export class StorageItemsView extends UI.Widget.VBox {
         button.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, callback, this);
         return button;
     }
-    filterChanged(event) {
-        const text = event.data;
+    filterChanged({ data: text }) {
         this.filterRegex = text ? new RegExp(Platform.StringUtilities.escapeForRegExp(text), 'i') : null;
         this.refreshItems();
     }

@@ -44,9 +44,9 @@ export class TimelineFlameChartNetworkDataProvider {
             padding: 4,
             height: 17,
             collapsible: true,
-            color: ThemeSupport.ThemeSupport.instance().patchColorText('#222', ThemeSupport.ThemeSupport.ColorUsage.Foreground),
+            color: ThemeSupport.ThemeSupport.instance().getComputedValue('--color-text-primary'),
             font: this.font,
-            backgroundColor: ThemeSupport.ThemeSupport.instance().patchColorText('white', ThemeSupport.ThemeSupport.ColorUsage.Background),
+            backgroundColor: ThemeSupport.ThemeSupport.instance().getComputedValue('--color-background'),
             nestingLevel: 0,
             useFirstLineForOverview: false,
             useDecoratorsForOverview: true,
@@ -59,6 +59,11 @@ export class TimelineFlameChartNetworkDataProvider {
         this.timeSpan = 0;
         this.requests = [];
         this.maxLevel = 0;
+        // In the event of a theme change, these colors must be recalculated.
+        ThemeSupport.ThemeSupport.instance().addEventListener(ThemeSupport.ThemeChangeEvent.eventName, () => {
+            this.style.color = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-text-primary');
+            this.style.backgroundColor = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-background');
+        });
     }
     setModel(performanceModel) {
         this.model = performanceModel && performanceModel.timelineModel();
@@ -75,7 +80,6 @@ export class TimelineFlameChartNetworkDataProvider {
         if (this.timelineDataInternal) {
             return this.timelineDataInternal;
         }
-        /** @type {!Array<!TimelineModel.TimelineModel.NetworkRequest>} */
         this.requests = [];
         this.timelineDataInternal = new PerfUI.FlameChart.TimelineData([], [], [], []);
         if (this.model) {
@@ -158,8 +162,7 @@ export class TimelineFlameChartNetworkDataProvider {
         context.fillStyle = 'hsla(0, 100%, 100%, 0.8)';
         context.fillRect(sendStart + 0.5, barY + 0.5, headersEnd - sendStart - 0.5, barHeight - 2);
         // Clear portions of initial rect to prepare for the ticks.
-        context.fillStyle =
-            ThemeSupport.ThemeSupport.instance().patchColorText('white', ThemeSupport.ThemeSupport.ColorUsage.Background);
+        context.fillStyle = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-background');
         context.fillRect(barX, barY - 0.5, sendStart - barX, barHeight);
         context.fillRect(finish, barY - 0.5, barX + barWidth - finish, barHeight);
         // If the request is from cache, pushStart refers to the original request, and hence cannot be used.

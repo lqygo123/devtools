@@ -130,7 +130,7 @@ const processColor = (autoDetectFormat, text) => {
     return swatch;
 };
 const navigateToSource = (cssProperty, event) => {
-    Common.Revealer.reveal(cssProperty);
+    void Common.Revealer.reveal(cssProperty);
     event.consume(true);
 };
 const propertySorter = (propA, propB) => {
@@ -435,7 +435,7 @@ export class ComputedStyleWidget extends UI.ThrottledWidget.ThrottledWidget {
             }
         }
         contextMenu.defaultSection().appendItem(i18nString(UIStrings.navigateToStyle), () => Common.Revealer.reveal(property));
-        contextMenu.show();
+        void contextMenu.show();
     }
     computePropertyTraces(matchedStyles) {
         const result = new Map();

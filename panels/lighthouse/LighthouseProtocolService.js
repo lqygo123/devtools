@@ -1,12 +1,10 @@
 // Copyright 2018 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
-import * as Root from '../../core/root/root.js';
 let lastId = 1;
-export class ProtocolService extends Common.ObjectWrapper.ObjectWrapper {
+export class ProtocolService {
     rawConnection;
     lighthouseWorkerPromise;
     lighthouseMessageUpdateCallback;
@@ -28,10 +26,7 @@ export class ProtocolService extends Common.ObjectWrapper.ObjectWrapper {
         });
     }
     getLocales() {
-        if (Root.Runtime.experiments.isEnabled(Root.Runtime.ExperimentName.LOCALIZED_DEVTOOLS)) {
-            return [i18n.DevToolsLocale.DevToolsLocale.instance().locale];
-        }
-        return navigator.languages;
+        return [i18n.DevToolsLocale.DevToolsLocale.instance().locale];
     }
     startLighthouse(auditURL, categoryIDs, flags) {
         return this.sendWithResponse('start', { url: auditURL, categoryIDs, flags, locales: this.getLocales() });
@@ -68,12 +63,18 @@ export class ProtocolService extends Common.ObjectWrapper.ObjectWrapper {
         //     (to kickstart autoAttach in LH).
         const protocolMessage = message;
         if (protocolMessage.sessionId || (protocolMessage.method && protocolMessage.method.startsWith('Target'))) {
-            this.sendWithoutResponse('dispatchProtocolMessage', { message: JSON.stringify(message) });
+            void this.sendWithoutResponse('dispatchProtocolMessage', { message: JSON.stringify(message) });
         }
     }
     initWorker() {
         this.lighthouseWorkerPromise = new Promise(resolve => {
-            const worker = new Worker(new URL('../../entrypoints/lighthouse_worker/lighthouse_worker.js', import.meta.url), { type: 'module' });
+            const workerUrl = new URL('../../entrypoints/lighthouse_worker/lighthouse_worker.js', import.meta.url);
+            const remoteBaseSearchParam = new URL(self.location.href).searchParams.get('remoteBase');
+            if (remoteBaseSearchParam) {
+                // Allows Lighthouse worker to fetch remote locale files.
+                workerUrl.searchParams.set('remoteBase', remoteBaseSearchParam);
+            }
+            const worker = new Worker(workerUrl, { type: 'module' });
             worker.addEventListener('message', event => {
                 if (event.data === 'workerReady') {
                     resolve(worker);

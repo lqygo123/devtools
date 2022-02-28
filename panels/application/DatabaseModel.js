@@ -124,7 +124,7 @@ export class DatabaseModel extends SDK.SDKModel.SDKModel {
         if (this.enabled) {
             return;
         }
-        this.agent.invoke_enable();
+        void this.agent.invoke_enable();
         this.enabled = true;
     }
     disable() {
@@ -133,7 +133,7 @@ export class DatabaseModel extends SDK.SDKModel.SDKModel {
         }
         this.enabled = false;
         this.databasesInternal = [];
-        this.agent.invoke_disable();
+        void this.agent.invoke_disable();
         this.dispatchEventToListeners(Events.DatabasesRemoved);
     }
     databases() {

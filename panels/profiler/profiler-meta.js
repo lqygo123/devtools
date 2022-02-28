@@ -49,8 +49,6 @@ const str_ = i18n.i18n.registerUIStrings('panels/profiler/profiler-meta.ts', UIS
 const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined, str_);
 async function loadProfilerModule() {
     if (!loadedProfilerModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/profiler');
         loadedProfilerModule = await import('./profiler.js');
     }
     return loadedProfilerModule;
@@ -147,6 +145,7 @@ UI.ActionRegistration.registerActionExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.PERFORMANCE,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.showNativeFunctions),
     settingName: 'showNativeFunctionsInJSProfile',
     settingType: Common.Settings.SettingType.BOOLEAN,

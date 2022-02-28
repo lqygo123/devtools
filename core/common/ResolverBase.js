@@ -9,7 +9,7 @@
   * promises by using the `clear` method on this class.
   */
 export class ResolverBase {
-    unresolvedIds = new Map();
+    #unresolvedIds = new Map();
     /**
      * Returns a promise that resolves once the `id` can be resolved to an object.
      */
@@ -29,7 +29,7 @@ export class ResolverBase {
         const obj = this.getForId(id);
         if (!obj) {
             const swallowTheError = () => { };
-            this.getOrCreatePromise(id).catch(swallowTheError).then(obj => {
+            void this.getOrCreatePromise(id).catch(swallowTheError).then(obj => {
                 if (obj) {
                     callback(obj);
                 }
@@ -43,13 +43,13 @@ export class ResolverBase {
      */
     clear() {
         this.stopListening();
-        for (const [id, { reject }] of this.unresolvedIds.entries()) {
+        for (const [id, { reject }] of this.#unresolvedIds.entries()) {
             reject(new Error(`Object with ${id} never resolved.`));
         }
-        this.unresolvedIds.clear();
+        this.#unresolvedIds.clear();
     }
     getOrCreatePromise(id) {
-        const promiseInfo = this.unresolvedIds.get(id);
+        const promiseInfo = this.#unresolvedIds.get(id);
         if (promiseInfo) {
             return promiseInfo.promise;
         }
@@ -59,14 +59,14 @@ export class ResolverBase {
             resolve = res;
             reject = rej;
         });
-        this.unresolvedIds.set(id, { promise, resolve, reject });
+        this.#unresolvedIds.set(id, { promise, resolve, reject });
         this.startListening();
         return promise;
     }
     onResolve(id, t) {
-        const promiseInfo = this.unresolvedIds.get(id);
-        this.unresolvedIds.delete(id);
-        if (this.unresolvedIds.size === 0) {
+        const promiseInfo = this.#unresolvedIds.get(id);
+        this.#unresolvedIds.delete(id);
+        if (this.#unresolvedIds.size === 0) {
             this.stopListening();
         }
         promiseInfo?.resolve(t);

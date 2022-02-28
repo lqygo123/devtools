@@ -17,50 +17,48 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('core/sdk/ServiceWorkerCacheModel.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class ServiceWorkerCacheModel extends SDKModel {
-    cachesInternal;
     cacheAgent;
-    storageAgent;
-    securityOriginManager;
-    originsUpdated;
-    throttler;
-    enabled;
+    #storageAgent;
+    #securityOriginManager;
+    #cachesInternal = new Map();
+    #originsUpdated = new Set();
+    #throttler = new Common.Throttler.Throttler(2000);
+    #enabled = false;
+    // Used by tests to remove the Throttler timeout.
+    #scheduleAsSoonAsPossible = false;
     /**
-     * Invariant: This model can only be constructed on a ServiceWorker target.
+     * Invariant: This #model can only be constructed on a ServiceWorker target.
      */
     constructor(target) {
         super(target);
         target.registerStorageDispatcher(this);
-        this.cachesInternal = new Map();
         this.cacheAgent = target.cacheStorageAgent();
-        this.storageAgent = target.storageAgent();
-        this.securityOriginManager = target.model(SecurityOriginManager);
-        this.originsUpdated = new Set();
-        this.throttler = new Common.Throttler.Throttler(2000);
-        this.enabled = false;
+        this.#storageAgent = target.storageAgent();
+        this.#securityOriginManager = target.model(SecurityOriginManager);
     }
     enable() {
-        if (this.enabled) {
+        if (this.#enabled) {
             return;
         }
-        this.securityOriginManager.addEventListener(SecurityOriginManagerEvents.SecurityOriginAdded, this.securityOriginAdded, this);
-        this.securityOriginManager.addEventListener(SecurityOriginManagerEvents.SecurityOriginRemoved, this.securityOriginRemoved, this);
-        for (const securityOrigin of this.securityOriginManager.securityOrigins()) {
+        this.#securityOriginManager.addEventListener(SecurityOriginManagerEvents.SecurityOriginAdded, this.securityOriginAdded, this);
+        this.#securityOriginManager.addEventListener(SecurityOriginManagerEvents.SecurityOriginRemoved, this.securityOriginRemoved, this);
+        for (const securityOrigin of this.#securityOriginManager.securityOrigins()) {
             this.addOrigin(securityOrigin);
         }
-        this.enabled = true;
+        this.#enabled = true;
     }
     clearForOrigin(origin) {
         this.removeOrigin(origin);
         this.addOrigin(origin);
     }
     refreshCacheNames() {
-        for (const cache of this.cachesInternal.values()) {
+        for (const cache of this.#cachesInternal.values()) {
             this.cacheRemoved(cache);
         }
-        this.cachesInternal.clear();
-        const securityOrigins = this.securityOriginManager.securityOrigins();
+        this.#cachesInternal.clear();
+        const securityOrigins = this.#securityOriginManager.securityOrigins();
         for (const securityOrigin of securityOrigins) {
-            this.loadCacheNames(securityOrigin);
+            void this.loadCacheNames(securityOrigin);
         }
     }
     async deleteCache(cache) {
@@ -69,7 +67,7 @@ export class ServiceWorkerCacheModel extends SDKModel {
             console.error(`ServiceWorkerCacheAgent error deleting cache ${cache.toString()}: ${response.getError()}`);
             return;
         }
-        this.cachesInternal.delete(cache.cacheId);
+        this.#cachesInternal.delete(cache.cacheId);
         this.cacheRemoved(cache);
     }
     async deleteCacheEntry(cache, request) {
@@ -80,43 +78,43 @@ export class ServiceWorkerCacheModel extends SDKModel {
         }
     }
     loadCacheData(cache, skipCount, pageSize, pathFilter, callback) {
-        this.requestEntries(cache, skipCount, pageSize, pathFilter, callback);
+        void this.requestEntries(cache, skipCount, pageSize, pathFilter, callback);
     }
     loadAllCacheData(cache, pathFilter, callback) {
-        this.requestAllEntries(cache, pathFilter, callback);
+        void this.requestAllEntries(cache, pathFilter, callback);
     }
     caches() {
         const caches = new Array();
-        for (const cache of this.cachesInternal.values()) {
+        for (const cache of this.#cachesInternal.values()) {
             caches.push(cache);
         }
         return caches;
     }
     dispose() {
-        for (const cache of this.cachesInternal.values()) {
+        for (const cache of this.#cachesInternal.values()) {
             this.cacheRemoved(cache);
         }
-        this.cachesInternal.clear();
-        if (this.enabled) {
-            this.securityOriginManager.removeEventListener(SecurityOriginManagerEvents.SecurityOriginAdded, this.securityOriginAdded, this);
-            this.securityOriginManager.removeEventListener(SecurityOriginManagerEvents.SecurityOriginRemoved, this.securityOriginRemoved, this);
+        this.#cachesInternal.clear();
+        if (this.#enabled) {
+            this.#securityOriginManager.removeEventListener(SecurityOriginManagerEvents.SecurityOriginAdded, this.securityOriginAdded, this);
+            this.#securityOriginManager.removeEventListener(SecurityOriginManagerEvents.SecurityOriginRemoved, this.securityOriginRemoved, this);
         }
     }
     addOrigin(securityOrigin) {
-        this.loadCacheNames(securityOrigin);
+        void this.loadCacheNames(securityOrigin);
         if (this.isValidSecurityOrigin(securityOrigin)) {
-            this.storageAgent.invoke_trackCacheStorageForOrigin({ origin: securityOrigin });
+            void this.#storageAgent.invoke_trackCacheStorageForOrigin({ origin: securityOrigin });
         }
     }
     removeOrigin(securityOrigin) {
-        for (const [opaqueId, cache] of this.cachesInternal.entries()) {
+        for (const [opaqueId, cache] of this.#cachesInternal.entries()) {
             if (cache.securityOrigin === securityOrigin) {
-                this.cachesInternal.delete(opaqueId);
+                this.#cachesInternal.delete(opaqueId);
                 this.cacheRemoved(cache);
             }
         }
         if (this.isValidSecurityOrigin(securityOrigin)) {
-            this.storageAgent.invoke_untrackCacheStorageForOrigin({ origin: securityOrigin });
+            void this.#storageAgent.invoke_untrackCacheStorageForOrigin({ origin: securityOrigin });
         }
     }
     isValidSecurityOrigin(securityOrigin) {
@@ -134,7 +132,7 @@ export class ServiceWorkerCacheModel extends SDKModel {
         function deleteAndSaveOldCaches(cache) {
             if (cache.securityOrigin === securityOrigin && !updatingCachesIds.has(cache.cacheId)) {
                 oldCaches.set(cache.cacheId, cache);
-                this.cachesInternal.delete(cache.cacheId);
+                this.#cachesInternal.delete(cache.cacheId);
             }
         }
         const updatingCachesIds = new Set();
@@ -143,13 +141,13 @@ export class ServiceWorkerCacheModel extends SDKModel {
         for (const cacheJson of cachesJson) {
             const cache = new Cache(this, cacheJson.securityOrigin, cacheJson.cacheName, cacheJson.cacheId);
             updatingCachesIds.add(cache.cacheId);
-            if (this.cachesInternal.has(cache.cacheId)) {
+            if (this.#cachesInternal.has(cache.cacheId)) {
                 continue;
             }
             newCaches.set(cache.cacheId, cache);
-            this.cachesInternal.set(cache.cacheId, cache);
+            this.#cachesInternal.set(cache.cacheId, cache);
         }
-        this.cachesInternal.forEach(deleteAndSaveOldCaches, this);
+        this.#cachesInternal.forEach(deleteAndSaveOldCaches, this);
         newCaches.forEach(this.cacheAdded, this);
         oldCaches.forEach(this.cacheRemoved, this);
     }
@@ -182,12 +180,12 @@ export class ServiceWorkerCacheModel extends SDKModel {
         callback(response.cacheDataEntries, response.returnCount);
     }
     cacheStorageListUpdated({ origin }) {
-        this.originsUpdated.add(origin);
-        this.throttler.schedule(() => {
-            const promises = Array.from(this.originsUpdated, origin => this.loadCacheNames(origin));
-            this.originsUpdated.clear();
+        this.#originsUpdated.add(origin);
+        void this.#throttler.schedule(() => {
+            const promises = Array.from(this.#originsUpdated, origin => this.loadCacheNames(origin));
+            this.#originsUpdated.clear();
             return Promise.all(promises);
-        });
+        }, this.#scheduleAsSoonAsPossible);
     }
     cacheStorageContentUpdated({ origin, cacheName }) {
         this.dispatchEventToListeners(Events.CacheStorageContentUpdated, { origin, cacheName });
@@ -195,6 +193,9 @@ export class ServiceWorkerCacheModel extends SDKModel {
     indexedDBListUpdated(_event) {
     }
     indexedDBContentUpdated(_event) {
+    }
+    setThrottlerSchedulesAsSoonAsPossibleForTest() {
+        this.#scheduleAsSoonAsPossible = true;
     }
 }
 // TODO(crbug.com/1167717): Make this a const enum again
@@ -206,12 +207,12 @@ export var Events;
     Events["CacheStorageContentUpdated"] = "CacheStorageContentUpdated";
 })(Events || (Events = {}));
 export class Cache {
-    model;
+    #model;
     securityOrigin;
     cacheName;
     cacheId;
     constructor(model, securityOrigin, cacheName, cacheId) {
-        this.model = model;
+        this.#model = model;
         this.securityOrigin = securityOrigin;
         this.cacheName = cacheName;
         this.cacheId = cacheId;
@@ -223,7 +224,7 @@ export class Cache {
         return this.securityOrigin + this.cacheName;
     }
     async requestCachedResponse(url, requestHeaders) {
-        const response = await this.model.cacheAgent.invoke_requestCachedResponse({ cacheId: this.cacheId, requestURL: url, requestHeaders });
+        const response = await this.#model.cacheAgent.invoke_requestCachedResponse({ cacheId: this.cacheId, requestURL: url, requestHeaders });
         if (response.getError()) {
             return null;
         }

@@ -21,7 +21,8 @@ export declare namespace PrivateAPI {
         ResourceAdded = "resource-added",
         ResourceContentCommitted = "resource-content-committed",
         ViewShown = "view-shown-",
-        ViewHidden = "view-hidden,"
+        ViewHidden = "view-hidden,",
+        ThemeChange = "host-theme-change"
     }
     export const enum Commands {
         AddRequestHeaders = "addRequestHeaders",
@@ -41,6 +42,7 @@ export declare namespace PrivateAPI {
         Reload = "Reload",
         Subscribe = "subscribe",
         SetOpenResourceHandler = "setOpenResourceHandler",
+        SetThemeChangeHandler = "setThemeChangeHandler",
         SetResourceContent = "setResourceContent",
         SetSidebarContent = "setSidebarContent",
         SetSidebarHeight = "setSidebarHeight",
@@ -163,6 +165,10 @@ export declare namespace PrivateAPI {
         command: Commands.SetOpenResourceHandler;
         handlerPresent: boolean;
     };
+    type SetThemeChangeHandlerRequest = {
+        command: Commands.SetThemeChangeHandler;
+        handlerPresent: boolean;
+    };
     type ReloadRequest = {
         command: Commands.Reload;
         options: null | {
@@ -208,7 +214,7 @@ export declare namespace PrivateAPI {
     type GetPageResourcesRequest = {
         command: Commands.GetPageResources;
     };
-    export type ServerRequests = RegisterLanguageExtensionPluginRequest | SubscribeRequest | UnsubscribeRequest | AddRequestHeadersRequest | ApplyStyleSheetRequest | CreatePanelRequest | ShowPanelRequest | CreateToolbarButtonRequest | UpdateButtonRequest | CompleteTraceSessionRequest | CreateSidebarPaneRequest | SetSidebarHeightRequest | SetSidebarContentRequest | SetSidebarPageRequest | OpenResourceRequest | SetOpenResourceHandlerRequest | ReloadRequest | EvaluateOnInspectedPageRequest | GetRequestContentRequest | GetResourceContentRequest | SetResourceContentRequest | AddTraceProviderRequest | ForwardKeyboardEventRequest | GetHARRequest | GetPageResourcesRequest;
+    export type ServerRequests = RegisterLanguageExtensionPluginRequest | SubscribeRequest | UnsubscribeRequest | AddRequestHeadersRequest | ApplyStyleSheetRequest | CreatePanelRequest | ShowPanelRequest | CreateToolbarButtonRequest | UpdateButtonRequest | CompleteTraceSessionRequest | CreateSidebarPaneRequest | SetSidebarHeightRequest | SetSidebarContentRequest | SetSidebarPageRequest | OpenResourceRequest | SetOpenResourceHandlerRequest | SetThemeChangeHandlerRequest | ReloadRequest | EvaluateOnInspectedPageRequest | GetRequestContentRequest | GetResourceContentRequest | SetResourceContentRequest | AddTraceProviderRequest | ForwardKeyboardEventRequest | GetHARRequest | GetPageResourcesRequest;
     export type ExtensionServerRequestMessage = PrivateAPI.ServerRequests & {
         requestId?: number;
     };
@@ -353,7 +359,7 @@ declare namespace APIImpl {
         sendRequest(request: PrivateAPI.ServerRequests, callback?: ((response: unknown) => unknown), transfers?: unknown[]): void;
         nextObjectId(): string;
     }
-    type Callable = (...args: any) => any;
+    type Callable = (...args: any) => void;
     interface EventSink<ListenerT extends Callable> extends PublicAPI.Chrome.DevTools.EventSink<ListenerT> {
         _type: string;
         _listeners: ListenerT[];
@@ -379,6 +385,7 @@ declare namespace APIImpl {
         };
         applyStyleSheet(styleSheet: string): void;
         setOpenResourceHandler(callback?: (resource: PublicAPI.Chrome.DevTools.Resource, lineNumber: number) => unknown): void;
+        setThemeChangeHandler(callback?: (themeName: string) => unknown): void;
     }
     interface ExtensionView extends PublicAPI.Chrome.DevTools.ExtensionView {
         _id: string | null;

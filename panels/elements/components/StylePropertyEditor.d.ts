@@ -30,18 +30,12 @@ export declare class PropertyDeselectedEvent extends Event {
     constructor(name: string, value: string);
 }
 export declare class StylePropertyEditor extends HTMLElement {
-    private readonly shadow;
-    private authoredProperties;
-    private computedProperties;
+    #private;
     protected readonly editableProperties: EditableProperty[];
     constructor();
     connectedCallback(): void;
     getEditableProperties(): EditableProperty[];
     set data(data: FlexEditorData);
-    private render;
-    private renderProperty;
-    private renderButton;
-    private onButtonClick;
     protected findIcon(_query: string, _computedProperties: Map<string, string>): IconInfo | null;
 }
 export declare class FlexboxEditor extends StylePropertyEditor {

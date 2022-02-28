@@ -34,22 +34,24 @@ import { ObjectWrapper } from './Object.js';
 import { getLocalizedSettingsCategory, getRegisteredSettings, maybeRemoveSettingExtension, registerSettingExtension, registerSettingsForTest, resetSettings, SettingCategory, SettingType } from './SettingRegistration.js';
 let settingsInstance;
 export class Settings {
+    syncedStorage;
     globalStorage;
     localStorage;
-    sessionStorage;
+    #sessionStorage;
     settingNameSet;
     orderValuesBySettingCategory;
-    eventSupport;
-    registry;
+    #eventSupport;
+    #registry;
     moduleSettings;
-    constructor(globalStorage, localStorage) {
+    constructor(syncedStorage, globalStorage, localStorage) {
+        this.syncedStorage = syncedStorage;
         this.globalStorage = globalStorage;
         this.localStorage = localStorage;
-        this.sessionStorage = new SettingsStorage({});
+        this.#sessionStorage = new SettingsStorage({});
         this.settingNameSet = new Set();
         this.orderValuesBySettingCategory = new Map();
-        this.eventSupport = new ObjectWrapper();
-        this.registry = new Map();
+        this.#eventSupport = new ObjectWrapper();
+        this.#registry = new Map();
         this.moduleSettings = new Map();
         for (const registration of getRegisteredSettings()) {
             const { settingName, defaultValue, storageType } = registration;
@@ -73,13 +75,13 @@ export class Settings {
     static hasInstance() {
         return typeof settingsInstance !== 'undefined';
     }
-    static instance(opts = { forceNew: null, globalStorage: null, localStorage: null }) {
-        const { forceNew, globalStorage, localStorage } = opts;
+    static instance(opts = { forceNew: null, syncedStorage: null, globalStorage: null, localStorage: null }) {
+        const { forceNew, syncedStorage, globalStorage, localStorage } = opts;
         if (!settingsInstance || forceNew) {
-            if (!globalStorage || !localStorage) {
+            if (!syncedStorage || !globalStorage || !localStorage) {
                 throw new Error(`Unable to create settings: global and local storage must be provided: ${new Error().stack}`);
             }
-            settingsInstance = new Settings(globalStorage, localStorage);
+            settingsInstance = new Settings(syncedStorage, globalStorage, localStorage);
         }
         return settingsInstance;
     }
@@ -114,7 +116,7 @@ export class Settings {
         return setting;
     }
     settingForTest(settingName) {
-        const setting = this.registry.get(settingName);
+        const setting = this.#registry.get(settingName);
         if (!setting) {
             throw new Error('No setting registered: ' + settingName);
         }
@@ -122,10 +124,10 @@ export class Settings {
     }
     createSetting(key, defaultValue, storageType) {
         const storage = this.storageFromType(storageType);
-        let setting = this.registry.get(key);
+        let setting = this.#registry.get(key);
         if (!setting) {
-            setting = new Setting(key, defaultValue, this.eventSupport, storage);
-            this.registry.set(key, setting);
+            setting = new Setting(key, defaultValue, this.#eventSupport, storage);
+            this.#registry.set(key, setting);
         }
         return setting;
     }
@@ -133,10 +135,10 @@ export class Settings {
         return this.createSetting(key, defaultValue, SettingStorageType.Local);
     }
     createRegExpSetting(key, defaultValue, regexFlags, storageType) {
-        if (!this.registry.get(key)) {
-            this.registry.set(key, new RegExpSetting(key, defaultValue, this.eventSupport, this.storageFromType(storageType), regexFlags));
+        if (!this.#registry.get(key)) {
+            this.#registry.set(key, new RegExpSetting(key, defaultValue, this.#eventSupport, this.storageFromType(storageType), regexFlags));
         }
-        return this.registry.get(key);
+        return this.#registry.get(key);
     }
     clearAll() {
         this.globalStorage.removeAll();
@@ -146,21 +148,25 @@ export class Settings {
     }
     storageFromType(storageType) {
         switch (storageType) {
-            case (SettingStorageType.Local):
+            case SettingStorageType.Local:
                 return this.localStorage;
-            case (SettingStorageType.Session):
-                return this.sessionStorage;
-            case (SettingStorageType.Global):
+            case SettingStorageType.Session:
+                return this.#sessionStorage;
+            case SettingStorageType.Global:
                 return this.globalStorage;
+            case SettingStorageType.Synced:
+                return this.syncedStorage;
         }
         return this.globalStorage;
     }
     getRegistry() {
-        return this.registry;
+        return this.#registry;
     }
 }
 export const NOOP_STORAGE = {
+    register: () => { },
     set: () => { },
+    get: () => Promise.resolve(''),
     remove: () => { },
     clear: () => { },
 };
@@ -172,6 +178,10 @@ export class SettingsStorage {
         this.object = object;
         this.backingStore = backingStore;
         this.storagePrefix = storagePrefix;
+    }
+    register(name) {
+        name = this.storagePrefix + name;
+        this.backingStore.register(name);
     }
     set(name, value) {
         name = this.storagePrefix + name;
@@ -185,6 +195,17 @@ export class SettingsStorage {
     get(name) {
         name = this.storagePrefix + name;
         return this.object[name];
+    }
+    async forceGet(originalName) {
+        const name = this.storagePrefix + originalName;
+        const value = await this.backingStore.get(name);
+        if (value && value !== this.object[name]) {
+            this.set(originalName, value);
+        }
+        else if (!value) {
+            this.remove(originalName);
+        }
+        return value;
     }
     remove(name) {
         name = this.storagePrefix + name;
@@ -216,107 +237,130 @@ function removeSetting(setting) {
     const settings = Settings.instance();
     settings.getRegistry().delete(name);
     settings.moduleSettings.delete(name);
-    setting.getStorage().remove(name);
+    setting.storage.remove(name);
 }
 export class Setting {
-    nameInternal;
-    defaultValueInternal;
+    name;
+    defaultValue;
     eventSupport;
     storage;
-    titleFunction;
-    titleInternal;
-    registration;
-    requiresUserAction;
-    value;
+    #titleFunction;
+    #titleInternal;
+    #registration = null;
+    #requiresUserAction;
+    #value;
     // TODO(crbug.com/1172300) Type cannot be inferred without changes to consumers. See above.
-    serializer = JSON;
-    hadUserAction;
+    #serializer = JSON;
+    #hadUserAction;
+    #disabled;
     constructor(name, defaultValue, eventSupport, storage) {
-        this.nameInternal = name;
-        this.defaultValueInternal = defaultValue;
+        this.name = name;
+        this.defaultValue = defaultValue;
         this.eventSupport = eventSupport;
         this.storage = storage;
-        this.registration = null;
+        storage.register(name);
     }
     setSerializer(serializer) {
-        this.serializer = serializer;
+        this.#serializer = serializer;
     }
     addChangeListener(listener, thisObject) {
-        return this.eventSupport.addEventListener(this.nameInternal, listener, thisObject);
+        return this.eventSupport.addEventListener(this.name, listener, thisObject);
     }
     removeChangeListener(listener, thisObject) {
-        this.eventSupport.removeEventListener(this.nameInternal, listener, thisObject);
-    }
-    get name() {
-        return this.nameInternal;
+        this.eventSupport.removeEventListener(this.name, listener, thisObject);
     }
     title() {
-        if (this.titleInternal) {
-            return this.titleInternal;
+        if (this.#titleInternal) {
+            return this.#titleInternal;
         }
-        if (this.titleFunction) {
-            return this.titleFunction();
+        if (this.#titleFunction) {
+            return this.#titleFunction();
         }
         return '';
     }
     setTitleFunction(titleFunction) {
         if (titleFunction) {
-            this.titleFunction = titleFunction;
+            this.#titleFunction = titleFunction;
         }
     }
     setTitle(title) {
-        this.titleInternal = title;
+        this.#titleInternal = title;
     }
     setRequiresUserAction(requiresUserAction) {
-        this.requiresUserAction = requiresUserAction;
+        this.#requiresUserAction = requiresUserAction;
+    }
+    disabled() {
+        return this.#disabled || false;
+    }
+    setDisabled(disabled) {
+        this.#disabled = disabled;
+        this.eventSupport.dispatchEventToListeners(this.name);
     }
     get() {
-        if (this.requiresUserAction && !this.hadUserAction) {
-            return this.defaultValueInternal;
+        if (this.#requiresUserAction && !this.#hadUserAction) {
+            return this.defaultValue;
         }
-        if (typeof this.value !== 'undefined') {
-            return this.value;
+        if (typeof this.#value !== 'undefined') {
+            return this.#value;
         }
-        this.value = this.defaultValueInternal;
-        if (this.storage.has(this.nameInternal)) {
+        this.#value = this.defaultValue;
+        if (this.storage.has(this.name)) {
             try {
-                this.value = this.serializer.parse(this.storage.get(this.nameInternal));
+                this.#value = this.#serializer.parse(this.storage.get(this.name));
             }
             catch (e) {
-                this.storage.remove(this.nameInternal);
+                this.storage.remove(this.name);
             }
         }
-        return this.value;
+        return this.#value;
+    }
+    async forceGet() {
+        const name = this.name;
+        const oldValue = this.storage.get(name);
+        const value = await this.storage.forceGet(name);
+        this.#value = this.defaultValue;
+        if (value) {
+            try {
+                this.#value = this.#serializer.parse(value);
+            }
+            catch (e) {
+                this.storage.remove(this.name);
+            }
+        }
+        if (oldValue !== value) {
+            this.eventSupport.dispatchEventToListeners(this.name, this.#value);
+        }
+        return this.#value;
     }
     set(value) {
-        this.hadUserAction = true;
-        this.value = value;
+        this.#hadUserAction = true;
+        this.#value = value;
         try {
-            const settingString = this.serializer.stringify(value);
+            const settingString = this.#serializer.stringify(value);
             try {
-                this.storage.set(this.nameInternal, settingString);
+                this.storage.set(this.name, settingString);
             }
             catch (e) {
-                this.printSettingsSavingError(e.message, this.nameInternal, settingString);
+                this.printSettingsSavingError(e.message, this.name, settingString);
             }
         }
         catch (e) {
-            Console.instance().error('Cannot stringify setting with name: ' + this.nameInternal + ', error: ' + e.message);
+            Console.instance().error('Cannot stringify setting with name: ' + this.name + ', error: ' + e.message);
         }
-        this.eventSupport.dispatchEventToListeners(this.nameInternal, value);
+        this.eventSupport.dispatchEventToListeners(this.name, value);
     }
     setRegistration(registration) {
-        this.registration = registration;
+        this.#registration = registration;
     }
     type() {
-        if (this.registration) {
-            return this.registration.settingType;
+        if (this.#registration) {
+            return this.#registration.settingType;
         }
         return null;
     }
     options() {
-        if (this.registration && this.registration.options) {
-            return this.registration.options.map(opt => {
+        if (this.#registration && this.#registration.options) {
+            return this.#registration.options.map(opt => {
                 const { value, title, text, raw } = opt;
                 return {
                     value: value,
@@ -329,52 +373,45 @@ export class Setting {
         return [];
     }
     reloadRequired() {
-        if (this.registration) {
-            return this.registration.reloadRequired || null;
+        if (this.#registration) {
+            return this.#registration.reloadRequired || null;
         }
         return null;
     }
     category() {
-        if (this.registration) {
-            return this.registration.category || null;
+        if (this.#registration) {
+            return this.#registration.category || null;
         }
         return null;
     }
     tags() {
-        if (this.registration && this.registration.tags) {
+        if (this.#registration && this.#registration.tags) {
             // Get localized keys and separate by null character to prevent fuzzy matching from matching across them.
-            return this.registration.tags.map(tag => tag()).join('\0');
+            return this.#registration.tags.map(tag => tag()).join('\0');
         }
         return null;
     }
     order() {
-        if (this.registration) {
-            return this.registration.order || null;
+        if (this.#registration) {
+            return this.#registration.order || null;
         }
         return null;
     }
     printSettingsSavingError(message, name, value) {
-        const errorMessage = 'Error saving setting with name: ' + this.nameInternal + ', value length: ' + value.length +
-            '. Error: ' + message;
+        const errorMessage = 'Error saving setting with name: ' + this.name + ', value length: ' + value.length + '. Error: ' + message;
         console.error(errorMessage);
         Console.instance().error(errorMessage);
         this.storage.dumpSizes();
-    }
-    defaultValue() {
-        return this.defaultValueInternal;
-    }
-    getStorage() {
-        return this.storage;
     }
 }
 // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class RegExpSetting extends Setting {
-    regexFlags;
-    regex;
+    #regexFlags;
+    #regex;
     constructor(name, defaultValue, eventSupport, storage, regexFlags) {
         super(name, defaultValue ? [{ pattern: defaultValue }] : [], eventSupport, storage);
-        this.regexFlags = regexFlags;
+        this.#regexFlags = regexFlags;
     }
     get() {
         const result = [];
@@ -394,23 +431,23 @@ export class RegExpSetting extends Setting {
         this.setAsArray([{ pattern: value, disabled: false }]);
     }
     setAsArray(value) {
-        delete this.regex;
+        this.#regex = undefined;
         super.set(value);
     }
     asRegExp() {
-        if (typeof this.regex !== 'undefined') {
-            return this.regex;
+        if (typeof this.#regex !== 'undefined') {
+            return this.#regex;
         }
-        this.regex = null;
+        this.#regex = null;
         try {
             const pattern = this.get();
             if (pattern) {
-                this.regex = new RegExp(pattern, this.regexFlags || '');
+                this.#regex = new RegExp(pattern, this.#regexFlags || '');
             }
         }
         catch (e) {
         }
-        return this.regex;
+        return this.#regex;
     }
 }
 export class VersionController {
@@ -843,7 +880,7 @@ export class VersionController {
         const drawerCloseableTabSetting = Settings.instance().createSetting('drawer-view-closeableTabs', {});
         const openTabsInPanel = panelCloseableTabSetting.get();
         const openTabsInDrawer = panelCloseableTabSetting.get();
-        // Set value of new setting
+        // Set #value of new setting
         const newValue = Object.assign(openTabsInDrawer, openTabsInPanel);
         closeableTabSetting.set(newValue);
         // Remove old settings
@@ -896,8 +933,16 @@ export class VersionController {
 // eslint-disable-next-line rulesdir/const_enum
 export var SettingStorageType;
 (function (SettingStorageType) {
+    /**
+     * Synced storage persists settings with the active Chrome profile but also
+     * syncs the settings across devices via Chrome Sync.
+     */
+    SettingStorageType["Synced"] = "Synced";
+    /** Global storage persists settings with the active Chrome profile */
     SettingStorageType["Global"] = "Global";
+    /** Uses Window.localStorage */
     SettingStorageType["Local"] = "Local";
+    /** Session storage dies when DevTools window closes */
     SettingStorageType["Session"] = "Session";
 })(SettingStorageType || (SettingStorageType = {}));
 export function moduleSetting(settingName) {

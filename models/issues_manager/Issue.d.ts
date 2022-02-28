@@ -4,6 +4,7 @@ import type * as Protocol from '../../generated/protocol.js';
 import type { MarkdownIssueDescription } from './MarkdownIssueDescription.js';
 export declare enum IssueCategory {
     CrossOriginEmbedderPolicy = "CrossOriginEmbedderPolicy",
+    Generic = "Generic",
     MixedContent = "MixedContent",
     SameSiteCookie = "SameSiteCookie",
     HeavyAd = "HeavyAd",
@@ -34,6 +35,7 @@ export declare enum IssueKind {
      */
     Improvement = "Improvement"
 }
+export declare function getIssueKindName(issueKind: IssueKind): Common.UIString.LocalizedString;
 export declare function getIssueKindDescription(issueKind: IssueKind): Common.UIString.LocalizedString;
 /**
  * Union two issue kinds for issue aggregation. The idea is to show the most
@@ -47,10 +49,8 @@ export interface AffectedElement {
     target: SDK.Target.Target | null;
 }
 export declare abstract class Issue<IssueCode extends string = string> {
-    private issueCode;
-    private issuesModel;
+    #private;
     protected issueId: Protocol.Audits.IssueId | undefined;
-    private hidden;
     constructor(code: IssueCode | {
         code: IssueCode;
         umaCode: string;

@@ -41,7 +41,7 @@ export class ScriptFormatterEditorAction {
         this.updateButton(uiSourceCode);
         if (this.isFormattableScript(uiSourceCode) && this.pathsToFormatOnLoad.has(uiSourceCode.url()) &&
             !FormatterModule.SourceFormatter.SourceFormatter.instance().hasFormatted(uiSourceCode)) {
-            this.showFormatted(uiSourceCode);
+            void this.showFormatted(uiSourceCode);
         }
     }
     async editorClosed(event) {
@@ -73,7 +73,7 @@ export class ScriptFormatterEditorAction {
             this.editorSelected(event);
         });
         this.sourcesView.addEventListener(Events.EditorClosed, event => {
-            this.editorClosed(event);
+            void this.editorClosed(event);
         });
         this.button = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.prettyPrint), 'largeicon-pretty-print');
         this.button.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.onFormatScriptButtonClicked, this);
@@ -102,7 +102,7 @@ export class ScriptFormatterEditorAction {
         const uiSourceCode = this.sourcesView.currentUISourceCode();
         return this.isFormattableScript(uiSourceCode);
     }
-    onFormatScriptButtonClicked(_event) {
+    onFormatScriptButtonClicked() {
         this.toggleFormatScriptSource();
     }
     toggleFormatScriptSource() {
@@ -111,7 +111,7 @@ export class ScriptFormatterEditorAction {
             return;
         }
         this.pathsToFormatOnLoad.add(uiSourceCode.url());
-        this.showFormatted(uiSourceCode);
+        void this.showFormatted(uiSourceCode);
     }
     async showFormatted(uiSourceCode) {
         const formatData = await FormatterModule.SourceFormatter.SourceFormatter.instance().format(uiSourceCode);
@@ -121,10 +121,10 @@ export class ScriptFormatterEditorAction {
         const sourceFrame = this.sourcesView.viewForFile(uiSourceCode);
         let start = [0, 0];
         if (sourceFrame instanceof SourceFrame.SourceFrame.SourceFrameImpl) {
-            const selection = sourceFrame.selection();
-            start = formatData.mapping.originalToFormatted(selection.startLine, selection.startColumn);
+            const selection = sourceFrame.textEditor.toLineColumn(sourceFrame.textEditor.state.selection.main.head);
+            start = formatData.mapping.originalToFormatted(selection.lineNumber, selection.columnNumber);
         }
-        this.sourcesView.showSourceLocation(formatData.formattedSourceCode, start[0], start[1]);
+        this.sourcesView.showSourceLocation(formatData.formattedSourceCode, { lineNumber: start[0], columnNumber: start[1] });
     }
 }
 registerEditorAction(ScriptFormatterEditorAction.instance);

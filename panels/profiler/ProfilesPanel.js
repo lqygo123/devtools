@@ -187,7 +187,7 @@ export class ProfilesPanel extends UI.Panel.PanelWithSidebar {
         }
         const error = await profileType.loadFromFile(file);
         if (error && 'message' in error) {
-            UI.UIUtils.MessageDialog.show(i18nString(UIStrings.profileLoadingFailedS, { PH1: error.message }));
+            void UI.UIUtils.MessageDialog.show(i18nString(UIStrings.profileLoadingFailedS, { PH1: error.message }));
         }
     }
     toggleRecord() {
@@ -295,7 +295,7 @@ export class ProfilesPanel extends UI.Panel.PanelWithSidebar {
         if (this.panelSidebarElement().isSelfOrAncestor(event.target)) {
             contextMenu.defaultSection().appendItem(i18nString(UIStrings.load), this.fileSelectorElement.click.bind(this.fileSelectorElement));
         }
-        contextMenu.show();
+        void contextMenu.show();
     }
     showLoadFromFileDialog() {
         this.fileSelectorElement.click();
@@ -344,7 +344,7 @@ export class ProfilesPanel extends UI.Panel.PanelWithSidebar {
             sidebarElement.revealAndSelect();
         }
         this.profileViewToolbar.removeToolbarItems();
-        view.toolbarItems().then(items => {
+        void view.toolbarItems().then(items => {
             items.map(item => this.profileViewToolbar.appendToolbarItem(item));
         });
         return view;

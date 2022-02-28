@@ -19,8 +19,6 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 let loadedDeveloperResourcesModule;
 async function loadDeveloperResourcesModule() {
     if (!loadedDeveloperResourcesModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/developer_resources');
         loadedDeveloperResourcesModule = await import('./developer_resources.js');
     }
     return loadedDeveloperResourcesModule;

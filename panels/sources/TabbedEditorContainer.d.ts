@@ -3,9 +3,6 @@ import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Workspace from '../../models/workspace/workspace.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { UISourceCodeFrame } from './UISourceCodeFrame.js';
-/**
- * @interface
- */
 export interface TabbedEditorContainerDelegate {
     viewForFile(uiSourceCode: Workspace.UISourceCode.UISourceCode): UI.Widget.Widget;
     recycleUISourceCodeFrame(sourceFrame: UISourceCodeFrame, uiSourceCode: Workspace.UISourceCode.UISourceCode): void;
@@ -36,8 +33,8 @@ export declare class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWr
     historyUISourceCodes(): Workspace.UISourceCode.UISourceCode[];
     private addViewListeners;
     private removeViewListeners;
-    private scrollChanged;
-    private selectionChanged;
+    private onScrollChanged;
+    private onEditorUpdate;
     private innerShowFile;
     private titleForFile;
     private maybeCloseTab;

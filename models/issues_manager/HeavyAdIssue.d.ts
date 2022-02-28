@@ -3,7 +3,7 @@ import * as Protocol from '../../generated/protocol.js';
 import { Issue, IssueCategory, IssueKind } from './Issue.js';
 import type { MarkdownIssueDescription } from './MarkdownIssueDescription.js';
 export declare class HeavyAdIssue extends Issue {
-    private issueDetails;
+    #private;
     constructor(issueDetails: Protocol.Audits.HeavyAdIssueDetails, issuesModel: SDK.IssuesModel.IssuesModel);
     details(): Protocol.Audits.HeavyAdIssueDetails;
     primaryKey(): string;

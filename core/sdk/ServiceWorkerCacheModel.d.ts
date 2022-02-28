@@ -4,15 +4,10 @@ import type { NameValue } from './NetworkRequest.js';
 import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export declare class ServiceWorkerCacheModel extends SDKModel<EventTypes> implements ProtocolProxyApi.StorageDispatcher {
-    private readonly cachesInternal;
+    #private;
     readonly cacheAgent: ProtocolProxyApi.CacheStorageApi;
-    private readonly storageAgent;
-    private readonly securityOriginManager;
-    private readonly originsUpdated;
-    private readonly throttler;
-    private enabled;
     /**
-     * Invariant: This model can only be constructed on a ServiceWorker target.
+     * Invariant: This #model can only be constructed on a ServiceWorker target.
      */
     constructor(target: Target);
     enable(): void;
@@ -39,6 +34,7 @@ export declare class ServiceWorkerCacheModel extends SDKModel<EventTypes> implem
     cacheStorageContentUpdated({ origin, cacheName }: Protocol.Storage.CacheStorageContentUpdatedEvent): void;
     indexedDBListUpdated(_event: Protocol.Storage.IndexedDBListUpdatedEvent): void;
     indexedDBContentUpdated(_event: Protocol.Storage.IndexedDBContentUpdatedEvent): void;
+    setThrottlerSchedulesAsSoonAsPossibleForTest(): void;
 }
 export declare enum Events {
     CacheAdded = "CacheAdded",
@@ -59,7 +55,7 @@ export declare type EventTypes = {
     [Events.CacheStorageContentUpdated]: CacheStorageContentUpdatedEvent;
 };
 export declare class Cache {
-    private readonly model;
+    #private;
     securityOrigin: string;
     cacheName: string;
     cacheId: Protocol.CacheStorage.CacheId;

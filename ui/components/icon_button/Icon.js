@@ -9,48 +9,51 @@ const isString = (value) => value !== undefined;
 const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
 export class Icon extends HTMLElement {
     static litTagName = LitHtml.literal `devtools-icon`;
-    shadow = this.attachShadow({ mode: 'open' });
-    iconPath = '';
-    color = 'rgb(110 110 110)';
-    width = '100%';
-    height = '100%';
-    iconName;
+    #shadow = this.attachShadow({ mode: 'open' });
+    #iconPath = '';
+    #color = 'rgb(110 110 110)';
+    #width = '100%';
+    #height = '100%';
+    #iconName;
     connectedCallback() {
-        this.shadow.adoptedStyleSheets = [iconStyles];
+        this.#shadow.adoptedStyleSheets = [iconStyles];
     }
     set data(data) {
         const { width, height } = data;
-        this.color = data.color;
-        this.width = isString(width) ? width : (isString(height) ? height : this.width);
-        this.height = isString(height) ? height : (isString(width) ? width : this.height);
+        this.#color = data.color;
+        this.#width = isString(width) ? width : (isString(height) ? height : this.#width);
+        this.#height = isString(height) ? height : (isString(width) ? width : this.#height);
         if ('iconPath' in data) {
-            this.iconPath = data.iconPath;
+            this.#iconPath = data.iconPath;
         }
         else {
-            this.iconPath = new URL(`../../../Images/${data.iconName}.svg`, import.meta.url).toString();
-            this.iconName = data.iconName;
+            this.#iconPath = new URL(`../../../Images/${data.iconName}.svg`, import.meta.url).toString();
+            this.#iconName = data.iconName;
         }
-        this.render();
+        this.#render();
     }
     get data() {
         const commonData = {
-            color: this.color,
-            width: this.width,
-            height: this.height,
+            color: this.#color,
+            width: this.#width,
+            height: this.#height,
         };
-        if (this.iconName) {
+        if (this.#iconName) {
             return {
                 ...commonData,
-                iconName: this.iconName,
+                iconName: this.#iconName,
             };
         }
         return {
             ...commonData,
-            iconPath: this.iconPath,
+            iconPath: this.#iconPath,
         };
     }
-    getStyles() {
-        const { iconPath, width, height, color } = this;
+    #getStyles() {
+        const iconPath = this.#iconPath;
+        const width = this.#width;
+        const height = this.#height;
+        const color = this.#color;
         const commonStyles = {
             width,
             height,
@@ -76,12 +79,12 @@ export class Icon extends HTMLElement {
             backgroundSize: '99%',
         };
     }
-    render() {
-        coordinator.write(() => {
+    #render() {
+        void coordinator.write(() => {
             // clang-format off
             LitHtml.render(LitHtml.html `
-        <div class="icon-basic" style=${LitHtml.Directives.styleMap(this.getStyles())}></div>
-      `, this.shadow, { host: this });
+        <div class="icon-basic" style=${LitHtml.Directives.styleMap(this.#getStyles())}></div>
+      `, this.#shadow, { host: this });
             // clang-format on
         });
     }

@@ -3,16 +3,7 @@ import { OverlayModel } from './OverlayModel.js';
 import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export declare class EmulationModel extends SDKModel<void> {
-    private readonly emulationAgent;
-    private readonly pageAgent;
-    private readonly deviceOrientationAgent;
-    private cssModel;
-    private readonly overlayModelInternal;
-    private readonly mediaConfiguration;
-    private touchEnabled;
-    private touchMobile;
-    private customTouchEnabled;
-    private touchConfiguration;
+    #private;
     constructor(target: Target);
     supportsDeviceEmulation(): boolean;
     resetPageScaleFactor(): Promise<void>;
@@ -26,7 +17,6 @@ export declare class EmulationModel extends SDKModel<void> {
     }): Promise<void>;
     clearIdleOverride(): Promise<void>;
     private emulateCSSMedia;
-    private static parseAutoDarkModeSetting;
     private emulateAutoDarkMode;
     private emulateVisionDeficiency;
     private setLocalFontsDisabled;

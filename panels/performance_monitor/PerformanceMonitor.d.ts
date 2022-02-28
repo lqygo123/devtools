@@ -45,9 +45,10 @@ export declare class ControlPane extends Common.ObjectWrapper.ObjectWrapper<Even
     element: Element;
     private readonly enabledChartsSetting;
     private readonly enabledCharts;
-    private readonly chartsInfo;
-    private readonly indicators;
+    private chartsInfo;
+    private indicators;
     constructor(parent: Element);
+    instantiateMetricData(): void;
     private onToggle;
     charts(): ChartInfo[];
     isActive(metricName: string): boolean;

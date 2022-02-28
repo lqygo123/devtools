@@ -26,10 +26,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as Common from '../../core/common/common.js';
 import * as DOMExtension from '../../core/dom_extension/dom_extension.js';
 import * as Helpers from '../components/helpers/helpers.js';
 import { Constraints, Size } from './Geometry.js';
+import * as ThemeSupport from './theme_support/theme_support.js';
 import * as Utils from './utils/utils.js';
 import { XWidget } from './XWidget.js';
 export class WidgetElement extends HTMLDivElement {
@@ -43,7 +43,7 @@ export class WidgetElement extends HTMLDivElement {
         super();
     }
 }
-export class Widget extends Common.ObjectWrapper.ObjectWrapper {
+export class Widget {
     element;
     contentElement;
     shadowRoot;
@@ -64,7 +64,6 @@ export class Widget extends Common.ObjectWrapper.ObjectWrapper {
     invalidationsRequested;
     externallyManaged;
     constructor(isWebComponent, delegatesFocus) {
-        super();
         this.contentElement = document.createElement('div');
         this.contentElement.classList.add('widget');
         if (isWebComponent) {
@@ -408,10 +407,10 @@ export class Widget extends Common.ObjectWrapper.ObjectWrapper {
     }
     registerRequiredCSS(cssFile) {
         if (this.isWebComponent) {
-            Utils.appendStyle(this.shadowRoot, cssFile);
+            ThemeSupport.ThemeSupport.instance().appendStyle(this.shadowRoot, cssFile);
         }
         else {
-            Utils.appendStyle(this.element, cssFile);
+            ThemeSupport.ThemeSupport.instance().appendStyle(this.element, cssFile);
         }
     }
     registerCSSFiles(cssFiles) {

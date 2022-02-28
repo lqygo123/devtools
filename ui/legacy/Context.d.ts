@@ -12,11 +12,17 @@ export declare class Context {
     }): Context;
     setFlavor<T>(flavorType: ConstructorFn<T>, flavorValue: T | null): void;
     private dispatchFlavorChange;
-    addFlavorChangeListener<T>(flavorType: ConstructorFn<T>, listener: (arg0: Common.EventTarget.EventTargetEvent) => void, thisObject?: Object): void;
-    removeFlavorChangeListener<T>(flavorType: ConstructorFn<T>, listener: (arg0: Common.EventTarget.EventTargetEvent) => void, thisObject?: Object): void;
+    addFlavorChangeListener<T>(flavorType: ConstructorFn<T>, listener: (arg0: Common.EventTarget.EventTargetEvent<T>) => void, thisObject?: Object): void;
+    removeFlavorChangeListener<T>(flavorType: ConstructorFn<T>, listener: (arg0: Common.EventTarget.EventTargetEvent<T>) => void, thisObject?: Object): void;
     flavor<T>(flavorType: ConstructorFn<T>): T | null;
     flavors(): Set<ConstructorFn<unknown>>;
 }
+declare enum Events {
+    FlavorChanged = "FlavorChanged"
+}
+export declare type EventTypes = {
+    [Events.FlavorChanged]: any;
+};
 export declare function registerListener(registration: ContextFlavorListenerRegistration): void;
 export interface ContextFlavorListenerRegistration {
     contextTypes: () => Array<Function>;

@@ -43,8 +43,6 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 let loadedPerfUIModule;
 async function loadPerfUIModule() {
     if (!loadedPerfUIModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('perf_ui');
         loadedPerfUIModule = await import('./perf_ui.js');
     }
     return loadedPerfUIModule;
@@ -61,6 +59,7 @@ UI.ActionRegistration.registerActionExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.PERFORMANCE,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.flamechartMouseWheelAction),
     settingName: 'flamechartMouseWheelAction',
     settingType: Common.Settings.SettingType.ENUM,

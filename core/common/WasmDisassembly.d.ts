@@ -1,5 +1,5 @@
 /**
- * Metadata to map between bytecode offsets and line numbers in the
+ * Metadata to map between bytecode #offsets and line numbers in the
  * disassembly for WebAssembly modules.
  */
 interface FunctionBodyOffset {
@@ -7,8 +7,7 @@ interface FunctionBodyOffset {
     end: number;
 }
 export declare class WasmDisassembly {
-    private readonly offsets;
-    private functionBodyOffsets;
+    #private;
     constructor(offsets: number[], functionBodyOffsets: FunctionBodyOffset[]);
     get lineNumbers(): number;
     bytecodeOffsetToLineNumber(bytecodeOffset: number): number;

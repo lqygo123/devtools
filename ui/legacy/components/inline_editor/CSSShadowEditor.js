@@ -1,10 +1,12 @@
 // Copyright 2016 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+import * as Common from '../../../../core/common/common.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as UI from '../../legacy.js';
 import { CSSLength } from './CSSShadowModel.js';
+import cssShadowEditorStyles from './cssShadowEditor.css.js';
 const UIStrings = {
     /**
     *@description Text that refers to some types
@@ -34,7 +36,7 @@ const maxRange = 20;
 const defaultUnit = 'px';
 const sliderThumbRadius = 6;
 const canvasSize = 88;
-export class CSSShadowEditor extends UI.Widget.VBox {
+export class CSSShadowEditor extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
     typeField;
     outsetButton;
     insetButton;
@@ -53,7 +55,6 @@ export class CSSShadowEditor extends UI.Widget.VBox {
     changedElement;
     constructor() {
         super(true);
-        this.registerRequiredCSS('ui/legacy/components/inline_editor/cssShadowEditor.css');
         this.contentElement.tabIndex = 0;
         this.setDefaultFocusedElement(this.contentElement);
         this.typeField = this.contentElement.createChild('div', 'shadow-editor-field shadow-editor-flex-field');
@@ -92,7 +93,7 @@ export class CSSShadowEditor extends UI.Widget.VBox {
         field.appendChild(textInput);
         textInput.id = propertyName;
         textInput.addEventListener('keydown', this.handleValueModification.bind(this), false);
-        textInput.addEventListener('mousewheel', this.handleValueModification.bind(this), false);
+        textInput.addEventListener('wheel', this.handleValueModification.bind(this), false);
         textInput.addEventListener('input', this.onTextInput.bind(this), false);
         textInput.addEventListener('blur', this.onTextBlur.bind(this), false);
         return textInput;
@@ -101,9 +102,10 @@ export class CSSShadowEditor extends UI.Widget.VBox {
         const slider = UI.UIUtils.createSlider(0, maxRange, -1);
         slider.addEventListener('input', this.onSliderInput.bind(this), false);
         field.appendChild(slider);
-        return /** @type {!HTMLInputElement} */ slider;
+        return slider;
     }
     wasShown() {
+        this.registerCSSFiles([cssShadowEditorStyles]);
         this.updateUI();
     }
     setModel(model) {

@@ -66,7 +66,7 @@ export class CoverageModel extends SDK.SDKModel.SDKModel {
     }
     preciseCoverageDeltaUpdate(timestamp, occasion, coverageData) {
         this.coverageUpdateTimes.add(timestamp);
-        this.backlogOrProcessJSCoverage(coverageData, timestamp);
+        void this.backlogOrProcessJSCoverage(coverageData, timestamp);
     }
     async stop() {
         await this.stopPolling();
@@ -225,7 +225,7 @@ export class CoverageModel extends SDK.SDKModel.SDKModel {
         return results.flat();
     }
     async processJSBacklog() {
-        this.backlogOrProcessJSCoverage([], 0);
+        void this.backlogOrProcessJSCoverage([], 0);
     }
     processJSCoverage(scriptsCoverage, stamp) {
         if (!this.debuggerModel) {
@@ -389,7 +389,7 @@ export class CoverageModel extends SDK.SDKModel.SDKModel {
             result.push(...await urlInfo.entriesForExport());
         }
         await fos.write(JSON.stringify(result, undefined, 2));
-        fos.close();
+        void fos.close();
     }
 }
 SDK.SDKModel.SDKModel.register(CoverageModel, { capabilities: SDK.Target.Capability.None, autostart: false });
@@ -547,9 +547,12 @@ export class URLCoverageInfo extends Common.ObjectWrapper.ObjectWrapper {
     }
 }
 (function (URLCoverageInfo) {
-    URLCoverageInfo.Events = {
-        SizesChanged: Symbol('SizesChanged'),
-    };
+    // TODO(crbug.com/1167717): Make this a const enum again
+    // eslint-disable-next-line rulesdir/const_enum
+    let Events;
+    (function (Events) {
+        Events["SizesChanged"] = "SizesChanged";
+    })(Events = URLCoverageInfo.Events || (URLCoverageInfo.Events = {}));
 })(URLCoverageInfo || (URLCoverageInfo = {}));
 export const mergeSegments = (segmentsA, segmentsB) => {
     const result = [];

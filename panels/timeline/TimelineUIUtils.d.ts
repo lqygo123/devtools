@@ -1,4 +1,3 @@
-import * as Common from '../../core/common/common.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as TimelineModel from '../../models/timeline_model/timeline_model.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
@@ -96,7 +95,7 @@ export declare class EventDispatchTypeDescriptor {
     eventTypes: string[];
     constructor(priority: number, color: string, eventTypes: string[]);
 }
-export declare class TimelineCategory extends Common.ObjectWrapper.ObjectWrapper {
+export declare class TimelineCategory {
     name: string;
     title: string;
     visible: boolean;
@@ -133,3 +132,4 @@ export interface TimelineMarkerStyle {
     tall: boolean;
     lowPriority: boolean;
 }
+export declare function assignLayoutShiftsToClusters(layoutShifts: readonly SDK.TracingModel.Event[]): void;

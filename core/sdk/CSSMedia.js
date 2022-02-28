@@ -4,55 +4,55 @@
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import { CSSQuery } from './CSSQuery.js';
 export class CSSMediaQuery {
-    activeInternal;
-    expressionsInternal;
+    #activeInternal;
+    #expressionsInternal;
     constructor(payload) {
-        this.activeInternal = payload.active;
-        this.expressionsInternal = [];
+        this.#activeInternal = payload.active;
+        this.#expressionsInternal = [];
         for (let j = 0; j < payload.expressions.length; ++j) {
-            this.expressionsInternal.push(CSSMediaQueryExpression.parsePayload(payload.expressions[j]));
+            this.#expressionsInternal.push(CSSMediaQueryExpression.parsePayload(payload.expressions[j]));
         }
     }
     static parsePayload(payload) {
         return new CSSMediaQuery(payload);
     }
     active() {
-        return this.activeInternal;
+        return this.#activeInternal;
     }
     expressions() {
-        return this.expressionsInternal;
+        return this.#expressionsInternal;
     }
 }
 export class CSSMediaQueryExpression {
-    valueInternal;
-    unitInternal;
-    featureInternal;
-    valueRangeInternal;
-    computedLengthInternal;
+    #valueInternal;
+    #unitInternal;
+    #featureInternal;
+    #valueRangeInternal;
+    #computedLengthInternal;
     constructor(payload) {
-        this.valueInternal = payload.value;
-        this.unitInternal = payload.unit;
-        this.featureInternal = payload.feature;
-        this.valueRangeInternal = payload.valueRange ? TextUtils.TextRange.TextRange.fromObject(payload.valueRange) : null;
-        this.computedLengthInternal = payload.computedLength || null;
+        this.#valueInternal = payload.value;
+        this.#unitInternal = payload.unit;
+        this.#featureInternal = payload.feature;
+        this.#valueRangeInternal = payload.valueRange ? TextUtils.TextRange.TextRange.fromObject(payload.valueRange) : null;
+        this.#computedLengthInternal = payload.computedLength || null;
     }
     static parsePayload(payload) {
         return new CSSMediaQueryExpression(payload);
     }
     value() {
-        return this.valueInternal;
+        return this.#valueInternal;
     }
     unit() {
-        return this.unitInternal;
+        return this.#unitInternal;
     }
     feature() {
-        return this.featureInternal;
+        return this.#featureInternal;
     }
     valueRange() {
-        return this.valueRangeInternal;
+        return this.#valueRangeInternal;
     }
     computedLength() {
-        return this.computedLengthInternal;
+        return this.#computedLengthInternal;
     }
 }
 export class CSSMedia extends CSSQuery {

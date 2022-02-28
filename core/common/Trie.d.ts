@@ -1,10 +1,5 @@
 export declare class Trie {
-    private size;
-    private root;
-    private edges;
-    private isWord;
-    private wordsInSubtree;
-    private freeNodes;
+    #private;
     constructor();
     add(word: string): void;
     remove(word: string): boolean;

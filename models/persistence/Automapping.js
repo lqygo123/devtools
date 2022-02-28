@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
+import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
@@ -37,7 +38,7 @@ export class Automapping {
         this.onStatusAdded = onStatusAdded;
         this.onStatusRemoved = onStatusRemoved;
         this.statuses = new Set();
-        this.fileSystemUISourceCodes = new Map();
+        this.fileSystemUISourceCodes = new FileSystemUISourceCodes();
         this.sweepThrottler = new Common.Throttler.Throttler(100);
         this.sourceCodeToProcessingPromiseMap = new WeakMap();
         this.sourceCodeToAutoMappingStatusMap = new WeakMap();
@@ -70,7 +71,7 @@ export class Automapping {
         this.scheduleSweep();
     }
     scheduleSweep() {
-        this.sweepThrottler.schedule(sweepUnmapped.bind(this));
+        void this.sweepThrottler.schedule(sweepUnmapped.bind(this));
         function sweepUnmapped() {
             const networkProjects = this.workspace.projectsForType(Workspace.Workspace.projectTypes.Network);
             for (const networkProject of networkProjects) {
@@ -117,7 +118,7 @@ export class Automapping {
                 return;
             }
             this.filesIndex.addPath(uiSourceCode.url());
-            this.fileSystemUISourceCodes.set(uiSourceCode.url(), uiSourceCode);
+            this.fileSystemUISourceCodes.add(uiSourceCode);
             this.scheduleSweep();
         }
         else if (project.type() === Workspace.Workspace.projectTypes.Network) {
@@ -149,7 +150,7 @@ export class Automapping {
             this.clearNetworkStatus(status.network);
         }
         this.filesIndex.addPath(uiSourceCode.url());
-        this.fileSystemUISourceCodes.set(uiSourceCode.url(), uiSourceCode);
+        this.fileSystemUISourceCodes.add(uiSourceCode);
         this.scheduleSweep();
     }
     computeNetworkStatus(networkSourceCode) {
@@ -247,7 +248,7 @@ export class Automapping {
                     this.scheduleSweep();
                 }
             }
-            this.onStatusAdded.call(null, status);
+            void this.onStatusAdded.call(null, status);
         }
     }
     prevalidationFailedForTest(_binding) {
@@ -272,7 +273,7 @@ export class Automapping {
                 this.activeFoldersIndex.removeFolder(projectFolder);
             }
         }
-        this.onStatusRemoved.call(null, status);
+        void this.onStatusRemoved.call(null, status);
     }
     createBinding(networkSourceCode) {
         const url = networkSourceCode.url();
@@ -417,6 +418,27 @@ class FolderIndex {
         const encodedPath = this.encoder.encode(path);
         const commonPrefix = this.index.longestPrefix(encodedPath, true);
         return this.encoder.decode(commonPrefix);
+    }
+}
+class FileSystemUISourceCodes {
+    sourceCodes;
+    constructor() {
+        this.sourceCodes = new Map();
+    }
+    getPlatformCanonicalFileUrl(path) {
+        return Host.Platform.isWin() ? path.toLowerCase() : path;
+    }
+    add(sourceCode) {
+        const fileUrl = this.getPlatformCanonicalFileUrl(sourceCode.url());
+        this.sourceCodes.set(fileUrl, sourceCode);
+    }
+    get(fileUrl) {
+        fileUrl = this.getPlatformCanonicalFileUrl(fileUrl);
+        return this.sourceCodes.get(fileUrl);
+    }
+    delete(fileUrl) {
+        fileUrl = this.getPlatformCanonicalFileUrl(fileUrl);
+        this.sourceCodes.delete(fileUrl);
     }
 }
 export class AutomappingStatus {

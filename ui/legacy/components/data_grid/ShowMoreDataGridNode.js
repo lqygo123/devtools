@@ -86,13 +86,13 @@ export class ShowMoreDataGridNode extends DataGridNode {
         this.selectable = false;
     }
     showNextChunk() {
-        this.callback(this.startPosition, this.startPosition + this.chunkSize);
+        void this.callback(this.startPosition, this.startPosition + this.chunkSize);
     }
     showAllInternal() {
-        this.callback(this.startPosition, this.endPosition);
+        void this.callback(this.startPosition, this.endPosition);
     }
     showLastChunk() {
-        this.callback(this.endPosition - this.chunkSize, this.endPosition);
+        void this.callback(this.endPosition - this.chunkSize, this.endPosition);
     }
     updateLabels() {
         const totalSize = this.endPosition - this.startPosition;

@@ -22,7 +22,7 @@ export declare class Section {
     private readonly contextMenu;
     readonly items: Item[];
     constructor(contextMenu: ContextMenu | null);
-    appendItem(label: string, handler: () => void, disabled?: boolean): Item;
+    appendItem(label: string, handler: () => void, disabled?: boolean, additionalElement?: Element): Item;
     appendCustomItem(element: Element): Item;
     appendSeparator(): Item;
     appendAction(actionId: string, label?: string, optional?: boolean): void;
@@ -51,6 +51,7 @@ export declare class SubMenu extends Item {
 }
 export interface ContextMenuOptions {
     useSoftMenu?: boolean;
+    onSoftMenuClosed?: () => void;
     x?: number;
     y?: number;
 }
@@ -63,6 +64,7 @@ export declare class ContextMenu extends SubMenu {
     private readonly useSoftMenu;
     private x;
     private y;
+    private onSoftMenuClosed?;
     private readonly handlers;
     idInternal: number;
     private softMenu?;

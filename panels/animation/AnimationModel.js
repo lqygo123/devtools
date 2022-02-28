@@ -5,39 +5,39 @@ import * as SDK from '../../core/sdk/sdk.js';
 export class AnimationModel extends SDK.SDKModel.SDKModel {
     runtimeModel;
     agent;
-    animationsById;
+    #animationsById;
     animationGroups;
-    pendingAnimations;
+    #pendingAnimations;
     playbackRate;
-    screenshotCapture;
-    enabled;
+    #screenshotCapture;
+    #enabled;
     constructor(target) {
         super(target);
         this.runtimeModel = target.model(SDK.RuntimeModel.RuntimeModel);
         this.agent = target.animationAgent();
         target.registerAnimationDispatcher(new AnimationDispatcher(this));
-        this.animationsById = new Map();
+        this.#animationsById = new Map();
         this.animationGroups = new Map();
-        this.pendingAnimations = new Set();
+        this.#pendingAnimations = new Set();
         this.playbackRate = 1;
         const resourceTreeModel = target.model(SDK.ResourceTreeModel.ResourceTreeModel);
         resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.MainFrameNavigated, this.reset, this);
         const screenCaptureModel = target.model(SDK.ScreenCaptureModel.ScreenCaptureModel);
         if (screenCaptureModel) {
-            this.screenshotCapture = new ScreenshotCapture(this, screenCaptureModel);
+            this.#screenshotCapture = new ScreenshotCapture(this, screenCaptureModel);
         }
     }
     reset() {
-        this.animationsById.clear();
+        this.#animationsById.clear();
         this.animationGroups.clear();
-        this.pendingAnimations.clear();
+        this.#pendingAnimations.clear();
         this.dispatchEventToListeners(Events.ModelReset);
     }
     animationCreated(id) {
-        this.pendingAnimations.add(id);
+        this.#pendingAnimations.add(id);
     }
     animationCanceled(id) {
-        this.pendingAnimations.delete(id);
+        this.#pendingAnimations.delete(id);
         this.flushPendingAnimationsIfNeeded();
     }
     animationStarted(payload) {
@@ -52,21 +52,21 @@ export class AnimationModel extends SDK.SDKModel.SDKModel {
         // Ignore Web Animations custom effects & groups.
         const keyframesRule = animation.source().keyframesRule();
         if (animation.type() === 'WebAnimation' && keyframesRule && keyframesRule.keyframes().length === 0) {
-            this.pendingAnimations.delete(animation.id());
+            this.#pendingAnimations.delete(animation.id());
         }
         else {
-            this.animationsById.set(animation.id(), animation);
-            this.pendingAnimations.add(animation.id());
+            this.#animationsById.set(animation.id(), animation);
+            this.#pendingAnimations.add(animation.id());
         }
         this.flushPendingAnimationsIfNeeded();
     }
     flushPendingAnimationsIfNeeded() {
-        for (const id of this.pendingAnimations) {
-            if (!this.animationsById.get(id)) {
+        for (const id of this.#pendingAnimations) {
+            if (!this.#animationsById.get(id)) {
                 return;
             }
         }
-        while (this.pendingAnimations.size) {
+        while (this.#pendingAnimations.size) {
             this.matchExistingGroups(this.createGroupFromPendingAnimations());
         }
     }
@@ -81,26 +81,26 @@ export class AnimationModel extends SDK.SDKModel.SDKModel {
         }
         if (!matchedGroup) {
             this.animationGroups.set(incomingGroup.id(), incomingGroup);
-            if (this.screenshotCapture) {
-                this.screenshotCapture.captureScreenshots(incomingGroup.finiteDuration(), incomingGroup.screenshotsInternal);
+            if (this.#screenshotCapture) {
+                this.#screenshotCapture.captureScreenshots(incomingGroup.finiteDuration(), incomingGroup.screenshotsInternal);
             }
         }
         this.dispatchEventToListeners(Events.AnimationGroupStarted, matchedGroup || incomingGroup);
         return Boolean(matchedGroup);
     }
     createGroupFromPendingAnimations() {
-        console.assert(this.pendingAnimations.size > 0);
-        const firstAnimationId = this.pendingAnimations.values().next().value;
-        this.pendingAnimations.delete(firstAnimationId);
-        const firstAnimation = this.animationsById.get(firstAnimationId);
+        console.assert(this.#pendingAnimations.size > 0);
+        const firstAnimationId = this.#pendingAnimations.values().next().value;
+        this.#pendingAnimations.delete(firstAnimationId);
+        const firstAnimation = this.#animationsById.get(firstAnimationId);
         if (!firstAnimation) {
             throw new Error('Unable to locate first animation');
         }
         const groupedAnimations = [firstAnimation];
         const groupStartTime = firstAnimation.startTime();
         const remainingAnimations = new Set();
-        for (const id of this.pendingAnimations) {
-            const anim = this.animationsById.get(id);
+        for (const id of this.#pendingAnimations) {
+            const anim = this.#animationsById.get(id);
             if (anim.startTime() === groupStartTime) {
                 groupedAnimations.push(anim);
             }
@@ -108,32 +108,32 @@ export class AnimationModel extends SDK.SDKModel.SDKModel {
                 remainingAnimations.add(id);
             }
         }
-        this.pendingAnimations = remainingAnimations;
+        this.#pendingAnimations = remainingAnimations;
         return new AnimationGroup(this, firstAnimationId, groupedAnimations);
     }
     setPlaybackRate(playbackRate) {
         this.playbackRate = playbackRate;
-        this.agent.invoke_setPlaybackRate({ playbackRate });
+        void this.agent.invoke_setPlaybackRate({ playbackRate });
     }
     releaseAnimations(animations) {
-        this.agent.invoke_releaseAnimations({ animations });
+        void this.agent.invoke_releaseAnimations({ animations });
     }
     async suspendModel() {
         this.reset();
         await this.agent.invoke_disable();
     }
     async resumeModel() {
-        if (!this.enabled) {
+        if (!this.#enabled) {
             return;
         }
         await this.agent.invoke_enable();
     }
     async ensureEnabled() {
-        if (this.enabled) {
+        if (this.#enabled) {
             return;
         }
         await this.agent.invoke_enable();
-        this.enabled = true;
+        this.#enabled = true;
     }
 }
 // TODO(crbug.com/1167717): Make this a const enum again
@@ -144,42 +144,42 @@ export var Events;
     Events["ModelReset"] = "ModelReset";
 })(Events || (Events = {}));
 export class AnimationImpl {
-    animationModel;
-    payloadInternal;
-    sourceInternal;
-    playStateInternal;
+    #animationModel;
+    #payloadInternal;
+    #sourceInternal;
+    #playStateInternal;
     constructor(animationModel, payload) {
-        this.animationModel = animationModel;
-        this.payloadInternal = payload;
-        this.sourceInternal =
-            new AnimationEffect(animationModel, this.payloadInternal.source);
+        this.#animationModel = animationModel;
+        this.#payloadInternal = payload;
+        this.#sourceInternal =
+            new AnimationEffect(animationModel, this.#payloadInternal.source);
     }
     static parsePayload(animationModel, payload) {
         return new AnimationImpl(animationModel, payload);
     }
     payload() {
-        return this.payloadInternal;
+        return this.#payloadInternal;
     }
     id() {
-        return this.payloadInternal.id;
+        return this.#payloadInternal.id;
     }
     name() {
-        return this.payloadInternal.name;
+        return this.#payloadInternal.name;
     }
     paused() {
-        return this.payloadInternal.pausedState;
+        return this.#payloadInternal.pausedState;
     }
     playState() {
-        return this.playStateInternal || this.payloadInternal.playState;
+        return this.#playStateInternal || this.#payloadInternal.playState;
     }
     setPlayState(playState) {
-        this.playStateInternal = playState;
+        this.#playStateInternal = playState;
     }
     playbackRate() {
-        return this.payloadInternal.playbackRate;
+        return this.#payloadInternal.playbackRate;
     }
     startTime() {
-        return this.payloadInternal.startTime;
+        return this.#payloadInternal.startTime;
     }
     endTime() {
         if (!this.source().iterations) {
@@ -193,13 +193,13 @@ export class AnimationImpl {
         return this.source().delay() + this.source().duration() * iterations;
     }
     currentTime() {
-        return this.payloadInternal.currentTime;
+        return this.#payloadInternal.currentTime;
     }
     source() {
-        return this.sourceInternal;
+        return this.#sourceInternal;
     }
     type() {
-        return this.payloadInternal.type;
+        return this.#payloadInternal.type;
     }
     overlaps(animation) {
         // Infinite animations
@@ -211,15 +211,15 @@ export class AnimationImpl {
         return firstAnimation.endTime() >= secondAnimation.startTime();
     }
     setTiming(duration, delay) {
-        this.sourceInternal.node().then(node => {
+        void this.#sourceInternal.node().then(node => {
             if (!node) {
                 throw new Error('Unable to find node');
             }
             this.updateNodeStyle(duration, delay, node);
         });
-        this.sourceInternal.durationInternal = duration;
-        this.sourceInternal.delayInternal = delay;
-        this.animationModel.agent.invoke_setTiming({ animationId: this.id(), duration, delay });
+        this.#sourceInternal.durationInternal = duration;
+        this.#sourceInternal.delayInternal = delay;
+        void this.#animationModel.agent.invoke_setTiming({ animationId: this.id(), duration, delay });
     }
     updateNodeStyle(duration, delay, node) {
         let animationPrefix;
@@ -240,174 +240,175 @@ export class AnimationImpl {
         cssModel.setEffectivePropertyValueForNode(node.id, animationPrefix + 'delay', delay + 'ms');
     }
     async remoteObjectPromise() {
-        const payload = await this.animationModel.agent.invoke_resolveAnimation({ animationId: this.id() });
+        const payload = await this.#animationModel.agent.invoke_resolveAnimation({ animationId: this.id() });
         if (!payload) {
             return null;
         }
-        return this.animationModel.runtimeModel.createRemoteObject(payload.remoteObject);
+        return this.#animationModel.runtimeModel.createRemoteObject(payload.remoteObject);
     }
     cssId() {
-        return this.payloadInternal.cssId || '';
+        return this.#payloadInternal.cssId || '';
     }
 }
 export class AnimationEffect {
-    animationModel;
-    payload;
-    keyframesRuleInternal;
+    #animationModel;
+    #payload;
+    #keyframesRuleInternal;
     delayInternal;
     durationInternal;
-    deferredNodeInternal;
+    #deferredNodeInternal;
     constructor(animationModel, payload) {
-        this.animationModel = animationModel;
-        this.payload = payload;
+        this.#animationModel = animationModel;
+        this.#payload = payload;
         if (payload.keyframesRule) {
-            this.keyframesRuleInternal = new KeyframesRule(payload.keyframesRule);
+            this.#keyframesRuleInternal = new KeyframesRule(payload.keyframesRule);
         }
-        this.delayInternal = this.payload.delay;
-        this.durationInternal = this.payload.duration;
+        this.delayInternal = this.#payload.delay;
+        this.durationInternal = this.#payload.duration;
     }
     delay() {
         return this.delayInternal;
     }
     endDelay() {
-        return this.payload.endDelay;
+        return this.#payload.endDelay;
     }
     iterationStart() {
-        return this.payload.iterationStart;
+        return this.#payload.iterationStart;
     }
     iterations() {
         // Animations with zero duration, zero delays and infinite iterations can't be shown.
         if (!this.delay() && !this.endDelay() && !this.duration()) {
             return 0;
         }
-        return this.payload.iterations || Infinity;
+        return this.#payload.iterations || Infinity;
     }
     duration() {
         return this.durationInternal;
     }
     direction() {
-        return this.payload.direction;
+        return this.#payload.direction;
     }
     fill() {
-        return this.payload.fill;
+        return this.#payload.fill;
     }
     node() {
-        if (!this.deferredNodeInternal) {
-            this.deferredNodeInternal = new SDK.DOMModel.DeferredDOMNode(this.animationModel.target(), this.backendNodeId());
+        if (!this.#deferredNodeInternal) {
+            this.#deferredNodeInternal =
+                new SDK.DOMModel.DeferredDOMNode(this.#animationModel.target(), this.backendNodeId());
         }
-        return this.deferredNodeInternal.resolvePromise();
+        return this.#deferredNodeInternal.resolvePromise();
     }
     deferredNode() {
-        return new SDK.DOMModel.DeferredDOMNode(this.animationModel.target(), this.backendNodeId());
+        return new SDK.DOMModel.DeferredDOMNode(this.#animationModel.target(), this.backendNodeId());
     }
     backendNodeId() {
-        return this.payload.backendNodeId;
+        return this.#payload.backendNodeId;
     }
     keyframesRule() {
-        return this.keyframesRuleInternal || null;
+        return this.#keyframesRuleInternal || null;
     }
     easing() {
-        return this.payload.easing;
+        return this.#payload.easing;
     }
 }
 export class KeyframesRule {
-    payload;
-    keyframesInternal;
+    #payload;
+    #keyframesInternal;
     constructor(payload) {
-        this.payload = payload;
-        this.keyframesInternal = this.payload.keyframes.map(function (keyframeStyle) {
+        this.#payload = payload;
+        this.#keyframesInternal = this.#payload.keyframes.map(function (keyframeStyle) {
             return new KeyframeStyle(keyframeStyle);
         });
     }
     setKeyframesPayload(payload) {
-        this.keyframesInternal = payload.map(function (keyframeStyle) {
+        this.#keyframesInternal = payload.map(function (keyframeStyle) {
             return new KeyframeStyle(keyframeStyle);
         });
     }
     name() {
-        return this.payload.name;
+        return this.#payload.name;
     }
     keyframes() {
-        return this.keyframesInternal;
+        return this.#keyframesInternal;
     }
 }
 export class KeyframeStyle {
-    payload;
-    offsetInternal;
+    #payload;
+    #offsetInternal;
     constructor(payload) {
-        this.payload = payload;
-        this.offsetInternal = this.payload.offset;
+        this.#payload = payload;
+        this.#offsetInternal = this.#payload.offset;
     }
     offset() {
-        return this.offsetInternal;
+        return this.#offsetInternal;
     }
     setOffset(offset) {
-        this.offsetInternal = offset * 100 + '%';
+        this.#offsetInternal = offset * 100 + '%';
     }
     offsetAsNumber() {
-        return parseFloat(this.offsetInternal) / 100;
+        return parseFloat(this.#offsetInternal) / 100;
     }
     easing() {
-        return this.payload.easing;
+        return this.#payload.easing;
     }
 }
 export class AnimationGroup {
-    animationModel;
-    idInternal;
-    animationsInternal;
-    pausedInternal;
+    #animationModel;
+    #idInternal;
+    #animationsInternal;
+    #pausedInternal;
     screenshotsInternal;
-    screenshotImages;
+    #screenshotImages;
     constructor(animationModel, id, animations) {
-        this.animationModel = animationModel;
-        this.idInternal = id;
-        this.animationsInternal = animations;
-        this.pausedInternal = false;
+        this.#animationModel = animationModel;
+        this.#idInternal = id;
+        this.#animationsInternal = animations;
+        this.#pausedInternal = false;
         this.screenshotsInternal = [];
-        this.screenshotImages = [];
+        this.#screenshotImages = [];
     }
     id() {
-        return this.idInternal;
+        return this.#idInternal;
     }
     animations() {
-        return this.animationsInternal;
+        return this.#animationsInternal;
     }
     release() {
-        this.animationModel.animationGroups.delete(this.id());
-        this.animationModel.releaseAnimations(this.animationIds());
+        this.#animationModel.animationGroups.delete(this.id());
+        this.#animationModel.releaseAnimations(this.animationIds());
     }
     animationIds() {
         function extractId(animation) {
             return animation.id();
         }
-        return this.animationsInternal.map(extractId);
+        return this.#animationsInternal.map(extractId);
     }
     startTime() {
-        return this.animationsInternal[0].startTime();
+        return this.#animationsInternal[0].startTime();
     }
     finiteDuration() {
         let maxDuration = 0;
-        for (let i = 0; i < this.animationsInternal.length; ++i) {
-            maxDuration = Math.max(maxDuration, this.animationsInternal[i].finiteDuration());
+        for (let i = 0; i < this.#animationsInternal.length; ++i) {
+            maxDuration = Math.max(maxDuration, this.#animationsInternal[i].finiteDuration());
         }
         return maxDuration;
     }
     seekTo(currentTime) {
-        this.animationModel.agent.invoke_seekAnimations({ animations: this.animationIds(), currentTime });
+        void this.#animationModel.agent.invoke_seekAnimations({ animations: this.animationIds(), currentTime });
     }
     paused() {
-        return this.pausedInternal;
+        return this.#pausedInternal;
     }
     togglePause(paused) {
-        if (paused === this.pausedInternal) {
+        if (paused === this.#pausedInternal) {
             return;
         }
-        this.pausedInternal = paused;
-        this.animationModel.agent.invoke_setPaused({ animations: this.animationIds(), paused });
+        this.#pausedInternal = paused;
+        void this.#animationModel.agent.invoke_setPaused({ animations: this.animationIds(), paused });
     }
     currentTimePromise() {
         let longestAnim = null;
-        for (const anim of this.animationsInternal) {
+        for (const anim of this.#animationsInternal) {
             if (!longestAnim || anim.endTime() > longestAnim.endTime()) {
                 longestAnim = anim;
             }
@@ -415,7 +416,7 @@ export class AnimationGroup {
         if (!longestAnim) {
             throw new Error('No longest animation found');
         }
-        return this.animationModel.agent.invoke_getCurrentTime({ id: longestAnim.id() })
+        return this.#animationModel.agent.invoke_getCurrentTime({ id: longestAnim.id() })
             .then(({ currentTime }) => currentTime || 0);
     }
     matches(group) {
@@ -425,11 +426,11 @@ export class AnimationGroup {
             }
             return anim.cssId();
         }
-        if (this.animationsInternal.length !== group.animationsInternal.length) {
+        if (this.#animationsInternal.length !== group.#animationsInternal.length) {
             return false;
         }
-        const left = this.animationsInternal.map(extractId).sort();
-        const right = group.animationsInternal.map(extractId).sort();
+        const left = this.#animationsInternal.map(extractId).sort();
+        const right = group.#animationsInternal.map(extractId).sort();
         for (let i = 0; i < left.length; i++) {
             if (left[i] !== right[i]) {
                 return false;
@@ -438,84 +439,84 @@ export class AnimationGroup {
         return true;
     }
     update(group) {
-        this.animationModel.releaseAnimations(this.animationIds());
-        this.animationsInternal = group.animationsInternal;
+        this.#animationModel.releaseAnimations(this.animationIds());
+        this.#animationsInternal = group.#animationsInternal;
     }
     screenshots() {
         for (let i = 0; i < this.screenshotsInternal.length; ++i) {
             const image = new Image();
             image.src = 'data:image/jpeg;base64,' + this.screenshotsInternal[i];
-            this.screenshotImages.push(image);
+            this.#screenshotImages.push(image);
         }
         this.screenshotsInternal = [];
-        return this.screenshotImages;
+        return this.#screenshotImages;
     }
 }
 export class AnimationDispatcher {
-    animationModel;
+    #animationModel;
     constructor(animationModel) {
-        this.animationModel = animationModel;
+        this.#animationModel = animationModel;
     }
     animationCreated({ id }) {
-        this.animationModel.animationCreated(id);
+        this.#animationModel.animationCreated(id);
     }
     animationCanceled({ id }) {
-        this.animationModel.animationCanceled(id);
+        this.#animationModel.animationCanceled(id);
     }
     animationStarted({ animation }) {
-        this.animationModel.animationStarted(animation);
+        this.#animationModel.animationStarted(animation);
     }
 }
 export class ScreenshotCapture {
-    requests;
-    screenCaptureModel;
-    animationModel;
-    stopTimer;
-    endTime;
-    capturing;
+    #requests;
+    #screenCaptureModel;
+    #animationModel;
+    #stopTimer;
+    #endTime;
+    #capturing;
     constructor(animationModel, screenCaptureModel) {
-        this.requests = [];
-        this.screenCaptureModel = screenCaptureModel;
-        this.animationModel = animationModel;
-        this.animationModel.addEventListener(Events.ModelReset, this.stopScreencast, this);
+        this.#requests = [];
+        this.#screenCaptureModel = screenCaptureModel;
+        this.#animationModel = animationModel;
+        this.#animationModel.addEventListener(Events.ModelReset, this.stopScreencast, this);
     }
     captureScreenshots(duration, screenshots) {
-        const screencastDuration = Math.min(duration / this.animationModel.playbackRate, 3000);
+        const screencastDuration = Math.min(duration / this.#animationModel.playbackRate, 3000);
         const endTime = screencastDuration + window.performance.now();
-        this.requests.push({ endTime: endTime, screenshots: screenshots });
-        if (!this.endTime || endTime > this.endTime) {
-            clearTimeout(this.stopTimer);
-            this.stopTimer = window.setTimeout(this.stopScreencast.bind(this), screencastDuration);
-            this.endTime = endTime;
+        this.#requests.push({ endTime: endTime, screenshots: screenshots });
+        if (!this.#endTime || endTime > this.#endTime) {
+            clearTimeout(this.#stopTimer);
+            this.#stopTimer = window.setTimeout(this.stopScreencast.bind(this), screencastDuration);
+            this.#endTime = endTime;
         }
-        if (this.capturing) {
+        if (this.#capturing) {
             return;
         }
-        this.capturing = true;
-        this.screenCaptureModel.startScreencast("jpeg" /* Jpeg */, 80, undefined, 300, 2, this.screencastFrame.bind(this), _visible => { });
+        this.#capturing = true;
+        this.#screenCaptureModel.startScreencast("jpeg" /* Jpeg */, 80, undefined, 300, 2, this.screencastFrame.bind(this), _visible => { });
     }
     screencastFrame(base64Data, _metadata) {
         function isAnimating(request) {
             return request.endTime >= now;
         }
-        if (!this.capturing) {
+        if (!this.#capturing) {
             return;
         }
         const now = window.performance.now();
-        this.requests = this.requests.filter(isAnimating);
-        for (const request of this.requests) {
+        this.#requests = this.#requests.filter(isAnimating);
+        for (const request of this.#requests) {
             request.screenshots.push(base64Data);
         }
     }
     stopScreencast() {
-        if (!this.capturing) {
+        if (!this.#capturing) {
             return;
         }
-        delete this.stopTimer;
-        delete this.endTime;
-        this.requests = [];
-        this.capturing = false;
-        this.screenCaptureModel.stopScreencast();
+        this.#stopTimer = undefined;
+        this.#endTime = undefined;
+        this.#requests = [];
+        this.#capturing = false;
+        this.#screenCaptureModel.stopScreencast();
     }
 }
 SDK.SDKModel.SDKModel.register(AnimationModel, { capabilities: SDK.Target.Capability.DOM, autostart: false });

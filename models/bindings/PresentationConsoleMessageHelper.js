@@ -70,14 +70,14 @@ export class PresentationConsoleMessageManager {
     }
 }
 export class PresentationConsoleMessageHelper {
-    debuggerModel;
-    pendingConsoleMessages;
-    presentationConsoleMessages;
-    locationPool;
+    #debuggerModel;
+    #pendingConsoleMessages;
+    #presentationConsoleMessages;
+    #locationPool;
     constructor(debuggerModel) {
-        this.debuggerModel = debuggerModel;
-        this.pendingConsoleMessages = new Map();
-        this.presentationConsoleMessages = [];
+        this.#debuggerModel = debuggerModel;
+        this.#pendingConsoleMessages = new Map();
+        this.#presentationConsoleMessages = [];
         // TODO(dgozman): queueMicrotask because we race with DebuggerWorkspaceBinding on ParsedScriptSource event delivery.
         debuggerModel.addEventListener(SDK.DebuggerModel.Events.ParsedScriptSource, event => {
             queueMicrotask(() => {
@@ -85,7 +85,7 @@ export class PresentationConsoleMessageHelper {
             });
         });
         debuggerModel.addEventListener(SDK.DebuggerModel.Events.GlobalObjectCleared, this.debuggerReset, this);
-        this.locationPool = new LiveLocationPool();
+        this.#locationPool = new LiveLocationPool();
     }
     consoleMessageAdded(message) {
         const rawLocation = this.rawLocation(message);
@@ -98,27 +98,27 @@ export class PresentationConsoleMessageHelper {
     }
     rawLocation(message) {
         if (message.scriptId) {
-            return this.debuggerModel.createRawLocationByScriptId(message.scriptId, message.line, message.column);
+            return this.#debuggerModel.createRawLocationByScriptId(message.scriptId, message.line, message.column);
         }
         const callFrame = message.stackTrace && message.stackTrace.callFrames ? message.stackTrace.callFrames[0] : null;
         if (callFrame) {
-            return this.debuggerModel.createRawLocationByScriptId(callFrame.scriptId, callFrame.lineNumber, callFrame.columnNumber);
+            return this.#debuggerModel.createRawLocationByScriptId(callFrame.scriptId, callFrame.lineNumber, callFrame.columnNumber);
         }
         if (message.url) {
-            return this.debuggerModel.createRawLocationByURL(message.url, message.line, message.column);
+            return this.#debuggerModel.createRawLocationByURL(message.url, message.line, message.column);
         }
         return null;
     }
     addConsoleMessageToScript(message, rawLocation) {
-        this.presentationConsoleMessages.push(new PresentationConsoleMessage(message, rawLocation, this.locationPool));
+        this.#presentationConsoleMessages.push(new PresentationConsoleMessage(message, rawLocation, this.#locationPool));
     }
     addPendingConsoleMessage(message) {
         if (!message.url) {
             return;
         }
-        const pendingMessages = this.pendingConsoleMessages.get(message.url);
+        const pendingMessages = this.#pendingConsoleMessages.get(message.url);
         if (!pendingMessages) {
-            this.pendingConsoleMessages.set(message.url, [message]);
+            this.#pendingConsoleMessages.set(message.url, [message]);
         }
         else {
             pendingMessages.push(message);
@@ -126,7 +126,7 @@ export class PresentationConsoleMessageHelper {
     }
     parsedScriptSource(event) {
         const script = event.data;
-        const messages = this.pendingConsoleMessages.get(script.sourceURL);
+        const messages = this.#pendingConsoleMessages.get(script.sourceURL);
         if (!messages) {
             return;
         }
@@ -141,47 +141,47 @@ export class PresentationConsoleMessageHelper {
             }
         }
         if (pendingMessages.length) {
-            this.pendingConsoleMessages.set(script.sourceURL, pendingMessages);
+            this.#pendingConsoleMessages.set(script.sourceURL, pendingMessages);
         }
         else {
-            this.pendingConsoleMessages.delete(script.sourceURL);
+            this.#pendingConsoleMessages.delete(script.sourceURL);
         }
     }
     consoleCleared() {
-        this.pendingConsoleMessages = new Map();
+        this.#pendingConsoleMessages = new Map();
         this.debuggerReset();
     }
     debuggerReset() {
-        for (const message of this.presentationConsoleMessages) {
+        for (const message of this.#presentationConsoleMessages) {
             message.dispose();
         }
-        this.presentationConsoleMessages = [];
-        this.locationPool.disposeAll();
+        this.#presentationConsoleMessages = [];
+        this.#locationPool.disposeAll();
     }
 }
 export class PresentationConsoleMessage extends Workspace.UISourceCode.Message {
-    uiSourceCode;
+    #uiSourceCode;
     constructor(message, rawLocation, locationPool) {
         const level = message.level === "error" /* Error */ ? Workspace.UISourceCode.Message.Level.Error :
             Workspace.UISourceCode.Message.Level.Warning;
         super(level, message.messageText);
-        DebuggerWorkspaceBinding.instance().createLiveLocation(rawLocation, this.updateLocation.bind(this), locationPool);
+        void DebuggerWorkspaceBinding.instance().createLiveLocation(rawLocation, this.updateLocation.bind(this), locationPool);
     }
     async updateLocation(liveLocation) {
-        if (this.uiSourceCode) {
-            this.uiSourceCode.removeMessage(this);
+        if (this.#uiSourceCode) {
+            this.#uiSourceCode.removeMessage(this);
         }
         const uiLocation = await liveLocation.uiLocation();
         if (!uiLocation) {
             return;
         }
         this.range = TextUtils.TextRange.TextRange.createFromLocation(uiLocation.lineNumber, uiLocation.columnNumber || 0);
-        this.uiSourceCode = uiLocation.uiSourceCode;
-        this.uiSourceCode.addMessage(this);
+        this.#uiSourceCode = uiLocation.uiSourceCode;
+        this.#uiSourceCode.addMessage(this);
     }
     dispose() {
-        if (this.uiSourceCode) {
-            this.uiSourceCode.removeMessage(this);
+        if (this.#uiSourceCode) {
+            this.#uiSourceCode.removeMessage(this);
         }
     }
 }

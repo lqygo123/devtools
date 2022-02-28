@@ -8,6 +8,7 @@ export interface SourceMap {
     sourceContentProvider(sourceURL: string, contentType: Common.ResourceType.ResourceType): TextUtils.ContentProvider.ContentProvider;
     embeddedContentByURL(sourceURL: string): string | null;
     findEntry(lineNumber: number, columnNumber: number): SourceMapEntry | null;
+    findReverseRanges(sourceURL: string, lineNumber: number, columnNumber: number): TextUtils.TextRange.TextRange[];
     sourceLineMapping(sourceURL: string, lineNumber: number, columnNumber: number): SourceMapEntry | null;
     mappings(): SourceMapEntry[];
     mapsOrigin(): boolean;
@@ -45,13 +46,7 @@ export declare class SourceMapEntry {
     static compare(entry1: SourceMapEntry, entry2: SourceMapEntry): number;
 }
 export declare class TextSourceMap implements SourceMap {
-    private readonly initiator;
-    private json;
-    private readonly compiledURLInternal;
-    private readonly sourceMappingURL;
-    private readonly baseURL;
-    private mappingsInternal;
-    private readonly sourceInfos;
+    #private;
     /**
      * Implements Source Map V3 model. See https://github.com/google/closure-compiler/wiki/Source-Maps
      * for format description.
@@ -68,7 +63,9 @@ export declare class TextSourceMap implements SourceMap {
     embeddedContentByURL(sourceURL: string): string | null;
     findEntry(lineNumber: number, columnNumber: number): SourceMapEntry | null;
     sourceLineMapping(sourceURL: string, lineNumber: number, columnNumber: number): SourceMapEntry | null;
+    private findReverseIndices;
     findReverseEntries(sourceURL: string, lineNumber: number, columnNumber: number): SourceMapEntry[];
+    findReverseRanges(sourceURL: string, lineNumber: number, columnNumber: number): TextUtils.TextRange.TextRange[];
     mappings(): SourceMapEntry[];
     private reversedMappings;
     private eachSection;
@@ -93,7 +90,7 @@ export declare namespace TextSourceMap {
     }
     class SourceInfo {
         content: string | null;
-        reverseMappings: SourceMapEntry[] | null;
-        constructor(content: string | null, reverseMappings: SourceMapEntry[] | null);
+        reverseMappings: number[] | null;
+        constructor(content: string | null, reverseMappings: number[] | null);
     }
 }

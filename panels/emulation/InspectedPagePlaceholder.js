@@ -3,12 +3,13 @@
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import inspectedPagePlaceholderStyles from './inspectedPagePlaceholder.css.legacy.js';
 let inspectedPagePlaceholderInstance;
 export class InspectedPagePlaceholder extends Common.ObjectWrapper.eventMixin(UI.Widget.Widget) {
     updateId;
     constructor() {
         super(true);
-        this.registerRequiredCSS('panels/emulation/inspectedPagePlaceholder.css');
+        this.registerRequiredCSS(inspectedPagePlaceholderStyles);
         UI.ZoomManager.ZoomManager.instance().addEventListener("ZoomChanged" /* ZoomChanged */, this.onResize, this);
         this.restoreMinimumSize();
     }

@@ -6,6 +6,7 @@ import type * as Protocol from '../../generated/protocol.js';
 export declare class CallStackSidebarPane extends UI.View.SimpleView implements UI.ContextFlavorListener.ContextFlavorListener, UI.ListControl.ListDelegate<Item> {
     private readonly ignoreListMessageElement;
     private readonly notPausedMessageElement;
+    private readonly callFrameWarningsElement;
     private readonly items;
     private list;
     private readonly showMoreMessageElement;
@@ -58,7 +59,7 @@ export declare class Item {
     isAsyncHeader: boolean;
     updateDelegate: (arg0: Item) => void;
     static createForDebuggerCallFrame(frame: SDK.DebuggerModel.CallFrame, locationPool: Bindings.LiveLocation.LiveLocationPool, updateDelegate: (arg0: Item) => void): Promise<Item>;
-    static createItemsForAsyncStack(title: string, debuggerModel: SDK.DebuggerModel.DebuggerModel | null, frames: Protocol.Runtime.CallFrame[], locationPool: Bindings.LiveLocation.LiveLocationPool, updateDelegate: (arg0: Item) => void): Promise<Item[]>;
+    static createItemsForAsyncStack(title: string, debuggerModel: SDK.DebuggerModel.DebuggerModel, frames: Protocol.Runtime.CallFrame[], locationPool: Bindings.LiveLocation.LiveLocationPool, updateDelegate: (arg0: Item) => void): Promise<Item[]>;
     constructor(title: string, updateDelegate: (arg0: Item) => void);
     private update;
 }

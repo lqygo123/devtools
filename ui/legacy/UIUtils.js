@@ -31,7 +31,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as Common from '../../core/common/common.js';
 import * as DOMExtension from '../../core/dom_extension/dom_extension.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
@@ -43,10 +42,16 @@ import { Size } from './Geometry.js';
 import { GlassPane } from './GlassPane.js';
 import { Icon } from './Icon.js';
 import { KeyboardShortcut } from './KeyboardShortcut.js';
-import * as ThemeSupport from './theme_support/theme_support.js'; // eslint-disable-line rulesdir/es_modules_import
 import * as Utils from './utils/utils.js';
 import { Toolbar } from './Toolbar.js';
 import { Tooltip } from './Tooltip.js';
+import checkboxTextLabelStyles from './checkboxTextLabel.css.legacy.js';
+import closeButtonStyles from './closeButton.css.legacy.js';
+import confirmDialogStyles from './confirmDialog.css.legacy.js';
+import inlineButtonStyles from './inlineButton.css.legacy.js';
+import radioButtonStyles from './radioButton.css.legacy.js';
+import sliderStyles from './slider.css.legacy.js';
+import smallBubbleStyles from './smallBubble.css.legacy.js';
 const UIStrings = {
     /**
     *@description label to open link externally
@@ -120,9 +125,9 @@ export function installDragHandle(element, elementDragStart, elementDrag, elemen
         startTimer = null;
     }
     let startTimer;
-    element.addEventListener('mousedown', onMouseDown, false);
+    element.addEventListener('pointerdown', onMouseDown, false);
     if (startDelay) {
-        element.addEventListener('mouseup', onMouseUp, false);
+        element.addEventListener('pointerup', onMouseUp, false);
     }
     if (hoverCursor !== null) {
         element.style.cursor = hoverCursor || cursor || '';
@@ -196,12 +201,12 @@ class DragHandler {
         catch (e) {
             this.dragEventsTargetDocumentTop = this.dragEventsTargetDocument;
         }
-        targetDocument.addEventListener('mousemove', this.elementDragMove, true);
-        targetDocument.addEventListener('mouseup', this.elementDragEnd, true);
+        targetDocument.addEventListener('pointermove', this.elementDragMove, true);
+        targetDocument.addEventListener('pointerup', this.elementDragEnd, true);
         DragHandler.rootForMouseOut &&
-            DragHandler.rootForMouseOut.addEventListener('mouseout', this.mouseOutWhileDragging, { capture: true });
+            DragHandler.rootForMouseOut.addEventListener('pointerout', this.mouseOutWhileDragging, { capture: true });
         if (this.dragEventsTargetDocumentTop && targetDocument !== this.dragEventsTargetDocumentTop) {
-            this.dragEventsTargetDocumentTop.addEventListener('mouseup', this.elementDragEnd, true);
+            this.dragEventsTargetDocumentTop.addEventListener('pointerup', this.elementDragEnd, true);
         }
         const targetHtmlElement = targetElement;
         if (typeof cursor === 'string') {
@@ -224,16 +229,16 @@ class DragHandler {
         if (!DragHandler.rootForMouseOut) {
             return;
         }
-        DragHandler.rootForMouseOut.removeEventListener('mouseout', this.mouseOutWhileDragging, { capture: true });
+        DragHandler.rootForMouseOut.removeEventListener('pointerout', this.mouseOutWhileDragging, { capture: true });
     }
     unregisterDragEvents() {
         if (!this.dragEventsTargetDocument) {
             return;
         }
-        this.dragEventsTargetDocument.removeEventListener('mousemove', this.elementDragMove, true);
-        this.dragEventsTargetDocument.removeEventListener('mouseup', this.elementDragEnd, true);
+        this.dragEventsTargetDocument.removeEventListener('pointermove', this.elementDragMove, true);
+        this.dragEventsTargetDocument.removeEventListener('pointerup', this.elementDragEnd, true);
         if (this.dragEventsTargetDocumentTop && this.dragEventsTargetDocument !== this.dragEventsTargetDocumentTop) {
-            this.dragEventsTargetDocumentTop.removeEventListener('mouseup', this.elementDragEnd, true);
+            this.dragEventsTargetDocumentTop.removeEventListener('pointerup', this.elementDragEnd, true);
         }
         delete this.dragEventsTargetDocument;
         delete this.dragEventsTargetDocumentTop;
@@ -298,7 +303,9 @@ export function isEditing() {
     if (!focused) {
         return false;
     }
-    return focused.classList.contains('text-prompt') || focused.nodeName === 'INPUT' || focused.nodeName === 'TEXTAREA';
+    return focused.classList.contains('text-prompt') || focused.nodeName === 'INPUT' || focused.nodeName === 'TEXTAREA' ||
+        (focused.contentEditable === 'true' ||
+            focused.contentEditable === 'plaintext-only');
 }
 export function markBeingEdited(element, value) {
     if (value) {
@@ -392,7 +399,7 @@ function modifiedHexValue(hexString, event) {
     }
     return resultString;
 }
-function modifiedFloatNumber(number, event, modifierMultiplier) {
+export function modifiedFloatNumber(number, event, modifierMultiplier) {
     const direction = getValueModificationDirection(event);
     if (!direction) {
         return null;
@@ -495,17 +502,6 @@ export function handleElementValueModifications(event, element, finishHandler, s
     }
     return false;
 }
-export function formatLocalized(format, substitutions) {
-    const formatters = {
-        s: (substitution) => substitution,
-    };
-    function append(a, b) {
-        a.appendChild(typeof b === 'string' ? document.createTextNode(b) : b);
-        return a;
-    }
-    return Platform.StringUtilities.format(format, substitutions, formatters, document.createElement('span'), append)
-        .formattedResult;
-}
 export function openLinkExternallyLabel() {
     return i18nString(UIStrings.openInNewTab);
 }
@@ -518,13 +514,20 @@ export function copyFileNameLabel() {
 export function anotherProfilerActiveLabel() {
     return i18nString(UIStrings.anotherProfilerIsAlreadyActive);
 }
-export function asyncStackTraceLabel(description) {
+export function asyncStackTraceLabel(description, previousCallFrames) {
     if (description) {
         if (description === 'Promise.resolve') {
             return i18nString(UIStrings.promiseResolvedAsync);
         }
         if (description === 'Promise.reject') {
             return i18nString(UIStrings.promiseRejectedAsync);
+        }
+        // TODO(crbug.com/1254259): Remove the check for 'async function'
+        // once the relevant V8 inspector CL rolls into Node LTS.
+        if ((description === 'await' || description === 'async function') && previousCallFrames.length !== 0) {
+            const lastPreviousFrame = previousCallFrames[previousCallFrames.length - 1];
+            const lastPreviousFrameName = beautifyFunctionName(lastPreviousFrame.functionName);
+            description = `await in ${lastPreviousFrameName}`;
         }
         return i18nString(UIStrings.sAsync, { PH1: description });
     }
@@ -818,14 +821,13 @@ export function animateFunction(window, func, params, duration, animationComplet
     }
     return () => window.cancelAnimationFrame(raf);
 }
-export class LongClickController extends Common.ObjectWrapper.ObjectWrapper {
+export class LongClickController {
     element;
     callback;
     editKey;
     longClickData;
     longClickInterval;
     constructor(element, callback, isEditKeyFunc = (event) => isEnterOrSpaceKey(event)) {
-        super();
         this.element = element;
         this.callback = callback;
         this.editKey = isEditKeyFunc;
@@ -848,9 +850,9 @@ export class LongClickController extends Common.ObjectWrapper.ObjectWrapper {
         const boundReset = this.reset.bind(this);
         this.element.addEventListener('keydown', boundKeyDown, false);
         this.element.addEventListener('keyup', boundKeyUp, false);
-        this.element.addEventListener('mousedown', boundMouseDown, false);
-        this.element.addEventListener('mouseout', boundReset, false);
-        this.element.addEventListener('mouseup', boundMouseUp, false);
+        this.element.addEventListener('pointerdown', boundMouseDown, false);
+        this.element.addEventListener('pointerout', boundReset, false);
+        this.element.addEventListener('pointerup', boundMouseUp, false);
         this.element.addEventListener('click', boundReset, true);
         this.longClickData = { mouseUp: boundMouseUp, mouseDown: boundMouseDown, reset: boundReset };
         function keyDown(e) {
@@ -882,25 +884,21 @@ export class LongClickController extends Common.ObjectWrapper.ObjectWrapper {
         if (!this.longClickData) {
             return;
         }
-        this.element.removeEventListener('mousedown', this.longClickData.mouseDown, false);
-        this.element.removeEventListener('mouseout', this.longClickData.reset, false);
-        this.element.removeEventListener('mouseup', this.longClickData.mouseUp, false);
+        this.element.removeEventListener('poinerdown', this.longClickData.mouseDown, false);
+        this.element.removeEventListener('pointerout', this.longClickData.reset, false);
+        this.element.removeEventListener('pointerup', this.longClickData.mouseUp, false);
         this.element.addEventListener('click', this.longClickData.reset, true);
         delete this.longClickData;
     }
     static TIME_MS = 200;
 }
-export function initializeUIUtils(document, themeSetting) {
+export function initializeUIUtils(document) {
     document.body.classList.toggle('inactive', !document.hasFocus());
     if (document.defaultView) {
         document.defaultView.addEventListener('focus', windowFocused.bind(undefined, document), false);
         document.defaultView.addEventListener('blur', windowBlurred.bind(undefined, document), false);
     }
     document.addEventListener('focus', Utils.focusChanged.bind(undefined), true);
-    if (!ThemeSupport.ThemeSupport.hasInstance()) {
-        ThemeSupport.ThemeSupport.instance({ forceNew: true, setting: themeSetting });
-    }
-    ThemeSupport.ThemeSupport.instance().applyTheme(document);
     const body = document.body;
     GlassPane.setContainer(body);
 }
@@ -943,7 +941,7 @@ export function createInput(className, type) {
     if (type) {
         element.type = type;
     }
-    return /** @type {!HTMLInputElement} */ element;
+    return element;
 }
 export function createSelect(name, options) {
     const select = document.createElement('select');
@@ -1011,7 +1009,8 @@ export class CheckboxLabel extends HTMLSpanElement {
         super();
         CheckboxLabel.lastId = CheckboxLabel.lastId + 1;
         const id = 'ui-checkbox-label' + CheckboxLabel.lastId;
-        this.shadowRootInternal = Utils.createShadowRootWithCoreStyles(this, { cssFile: 'ui/legacy/checkboxTextLabel.css', delegatesFocus: undefined });
+        this.shadowRootInternal =
+            Utils.createShadowRootWithCoreStyles(this, { cssFile: checkboxTextLabelStyles, delegatesFocus: undefined });
         this.checkboxElement = this.shadowRootInternal.createChild('input');
         this.checkboxElement.type = 'checkbox';
         this.checkboxElement.setAttribute('id', id);
@@ -1080,7 +1079,7 @@ export class DevToolsRadioButton extends HTMLSpanElement {
         this.radioElement.id = id;
         this.radioElement.type = 'radio';
         this.labelElement.htmlFor = id;
-        const root = Utils.createShadowRootWithCoreStyles(this, { cssFile: 'ui/legacy/radioButton.css', delegatesFocus: undefined });
+        const root = Utils.createShadowRootWithCoreStyles(this, { cssFile: radioButtonStyles, delegatesFocus: undefined });
         root.createChild('slot');
         this.addEventListener('click', this.radioClickHandler.bind(this), false);
     }
@@ -1098,7 +1097,7 @@ export class DevToolsSlider extends HTMLSpanElement {
     sliderElement;
     constructor() {
         super();
-        const root = Utils.createShadowRootWithCoreStyles(this, { cssFile: 'ui/legacy/slider.css', delegatesFocus: undefined });
+        const root = Utils.createShadowRootWithCoreStyles(this, { cssFile: sliderStyles, delegatesFocus: undefined });
         this.sliderElement = document.createElement('input');
         this.sliderElement.classList.add('dt-range-input');
         this.sliderElement.type = 'range';
@@ -1116,7 +1115,7 @@ export class DevToolsSmallBubble extends HTMLSpanElement {
     textElement;
     constructor() {
         super();
-        const root = Utils.createShadowRootWithCoreStyles(this, { cssFile: 'ui/legacy/smallBubble.css', delegatesFocus: undefined });
+        const root = Utils.createShadowRootWithCoreStyles(this, { cssFile: smallBubbleStyles, delegatesFocus: undefined });
         this.textElement = root.createChild('div');
         this.textElement.className = 'info';
         this.textElement.createChild('slot');
@@ -1132,7 +1131,7 @@ export class DevToolsCloseButton extends HTMLDivElement {
     activeIcon;
     constructor() {
         super();
-        const root = Utils.createShadowRootWithCoreStyles(this, { cssFile: 'ui/legacy/closeButton.css', delegatesFocus: undefined });
+        const root = Utils.createShadowRootWithCoreStyles(this, { cssFile: closeButtonStyles, delegatesFocus: undefined });
         this.buttonElement = root.createChild('div', 'close-button');
         Tooltip.install(this.buttonElement, i18nString(UIStrings.close));
         ARIAUtils.setAccessibleName(this.buttonElement, i18nString(UIStrings.close));
@@ -1294,7 +1293,7 @@ export function addReferrerToURL(url) {
  * 'web.dev' or 'developers.google.com'.
  */
 export function addReferrerToURLIfNecessary(url) {
-    if (/(\/\/developers.google.com\/|\/\/web.dev\/)/.test(url)) {
+    if (/(\/\/developers.google.com\/|\/\/web.dev\/|\/\/developer.chrome.com\/)/.test(url)) {
         return addReferrerToURL(url);
     }
     return url;
@@ -1328,7 +1327,7 @@ export class MessageDialog {
         const dialog = new Dialog();
         dialog.setSizeBehavior("MeasureContent" /* MeasureContent */);
         dialog.setDimmed(true);
-        const shadowRoot = Utils.createShadowRootWithCoreStyles(dialog.contentElement, { cssFile: 'ui/legacy/confirmDialog.css', delegatesFocus: undefined });
+        const shadowRoot = Utils.createShadowRootWithCoreStyles(dialog.contentElement, { cssFile: confirmDialogStyles, delegatesFocus: undefined });
         const content = shadowRoot.createChild('div', 'widget');
         await new Promise(resolve => {
             const okButton = createTextButton(i18nString(UIStrings.ok), resolve, '', true);
@@ -1350,7 +1349,7 @@ export class ConfirmDialog {
         dialog.setSizeBehavior("MeasureContent" /* MeasureContent */);
         dialog.setDimmed(true);
         ARIAUtils.setAccessibleName(dialog.contentElement, message);
-        const shadowRoot = Utils.createShadowRootWithCoreStyles(dialog.contentElement, { cssFile: 'ui/legacy/confirmDialog.css', delegatesFocus: undefined });
+        const shadowRoot = Utils.createShadowRootWithCoreStyles(dialog.contentElement, { cssFile: confirmDialogStyles, delegatesFocus: undefined });
         const content = shadowRoot.createChild('div', 'widget');
         content.createChild('div', 'message').createChild('span').textContent = message;
         const buttonsBar = content.createChild('div', 'button');
@@ -1373,7 +1372,7 @@ export class ConfirmDialog {
 }
 export function createInlineButton(toolbarButton) {
     const element = document.createElement('span');
-    const shadowRoot = Utils.createShadowRootWithCoreStyles(element, { cssFile: 'ui/legacy/inlineButton.css', delegatesFocus: undefined });
+    const shadowRoot = Utils.createShadowRootWithCoreStyles(element, { cssFile: inlineButtonStyles, delegatesFocus: undefined });
     element.classList.add('inline-button');
     const toolbar = new Toolbar('');
     toolbar.appendToolbarItem(toolbarButton);

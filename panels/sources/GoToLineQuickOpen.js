@@ -12,6 +12,10 @@ const UIStrings = {
     */
     noFileSelected: 'No file selected.',
     /**
+    *@description Text to show no results have been found
+    */
+    noResultsFound: 'No results found',
+    /**
     *@description Text in Go To Line Quick Open of the Sources panel
     */
     typeANumberToGoToThatLine: 'Type a number to go to that line.',
@@ -49,6 +53,7 @@ const str_ = i18n.i18n.registerUIStrings('panels/sources/GoToLineQuickOpen.ts', 
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 let goToLineQuickOpenInstance;
 export class GoToLineQuickOpen extends QuickOpen.FilteredListWidget.Provider {
+    #goToLineStrings = [];
     static instance(opts = { forceNew: null }) {
         const { forceNew } = opts;
         if (!goToLineQuickOpenInstance || forceNew) {
@@ -56,7 +61,7 @@ export class GoToLineQuickOpen extends QuickOpen.FilteredListWidget.Provider {
         }
         return goToLineQuickOpenInstance;
     }
-    selectItem(itemIndex, promptValue) {
+    selectItem(_itemIndex, promptValue) {
         const uiSourceCode = this.currentUISourceCode();
         if (!uiSourceCode) {
             return;
@@ -65,40 +70,69 @@ export class GoToLineQuickOpen extends QuickOpen.FilteredListWidget.Provider {
         if (!position) {
             return;
         }
-        Common.Revealer.reveal(uiSourceCode.uiLocation(position.line - 1, position.column - 1));
+        void Common.Revealer.reveal(uiSourceCode.uiLocation(position.line - 1, position.column - 1));
     }
-    notFoundText(query) {
+    updateGoToLineStrings(query) {
+        this.#goToLineStrings = [];
         if (!this.currentUISourceCode()) {
-            return i18nString(UIStrings.noFileSelected);
+            return;
         }
         const position = this.parsePosition(query);
         const sourceFrame = this.currentSourceFrame();
         if (!position) {
             if (!sourceFrame) {
-                return i18nString(UIStrings.typeANumberToGoToThatLine);
+                this.#goToLineStrings.push(i18nString(UIStrings.typeANumberToGoToThatLine));
+                return;
             }
+            const editorState = sourceFrame.textEditor.state;
             const disassembly = sourceFrame.wasmDisassembly;
-            const currentLineNumber = sourceFrame.textEditor.currentLineNumber();
+            const currentLineNumber = editorState.doc.lineAt(editorState.selection.main.head).number - 1;
             if (disassembly) {
                 const lastBytecodeOffset = disassembly.lineNumberToBytecodeOffset(disassembly.lineNumbers - 1);
                 const bytecodeOffsetDigits = lastBytecodeOffset.toString(16).length;
                 const currentPosition = disassembly.lineNumberToBytecodeOffset(currentLineNumber);
-                return i18nString(UIStrings.currentPositionXsTypeAnOffset, {
+                this.#goToLineStrings.push(i18nString(UIStrings.currentPositionXsTypeAnOffset, {
                     PH1: currentPosition.toString(16).padStart(bytecodeOffsetDigits, '0'),
                     PH2: '0'.padStart(bytecodeOffsetDigits, '0'),
                     PH3: lastBytecodeOffset.toString(16),
-                });
+                }));
+                return;
             }
-            const linesCount = sourceFrame.textEditor.linesCount;
-            return i18nString(UIStrings.currentLineSTypeALineNumber, { PH1: currentLineNumber + 1, PH2: linesCount });
+            const linesCount = editorState.doc.lines;
+            this.#goToLineStrings.push(i18nString(UIStrings.currentLineSTypeALineNumber, { PH1: currentLineNumber + 1, PH2: linesCount }));
+            return;
         }
         if (sourceFrame && sourceFrame.wasmDisassembly) {
-            return i18nString(UIStrings.goToOffsetXs, { PH1: (position.column - 1).toString(16) });
+            this.#goToLineStrings.push(i18nString(UIStrings.goToOffsetXs, { PH1: (position.column - 1).toString(16) }));
+            return;
         }
         if (position.column && position.column > 1) {
-            return i18nString(UIStrings.goToLineSAndColumnS, { PH1: position.line, PH2: position.column });
+            this.#goToLineStrings.push(i18nString(UIStrings.goToLineSAndColumnS, { PH1: position.line, PH2: position.column }));
+            return;
         }
-        return i18nString(UIStrings.goToLineS, { PH1: position.line });
+        if (sourceFrame && position.line > sourceFrame.textEditor.state.doc.lines) {
+            return;
+        }
+        this.#goToLineStrings.push(i18nString(UIStrings.goToLineS, { PH1: position.line }));
+    }
+    itemCount() {
+        return this.#goToLineStrings.length;
+    }
+    renderItem(itemIndex, _query, titleElement, _subtitleElement) {
+        UI.UIUtils.createTextChild(titleElement, this.#goToLineStrings[itemIndex]);
+    }
+    rewriteQuery(_query) {
+        // For Go to Line Quick Open, we don't need to filter any item, set query to empty string, so the filter regex matching will be skipped
+        return '';
+    }
+    queryChanged(query) {
+        this.updateGoToLineStrings(query);
+    }
+    notFoundText(_query) {
+        if (!this.currentUISourceCode()) {
+            return i18nString(UIStrings.noFileSelected);
+        }
+        return i18nString(UIStrings.noResultsFound);
     }
     parsePosition(query) {
         const sourceFrame = this.currentSourceFrame();

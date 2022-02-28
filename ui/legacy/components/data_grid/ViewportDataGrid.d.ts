@@ -1,6 +1,16 @@
+import * as Common from '../../../../core/common/common.js';
+import * as Platform from '../../../../core/platform/platform.js';
 import type { DataGridData, Parameters } from './DataGrid.js';
 import { DataGridImpl, DataGridNode } from './DataGrid.js';
-export declare class ViewportDataGrid<T> extends DataGridImpl<ViewportDataGridNode<T>> {
+declare const ViewportDataGrid_base: (new (...args: any[]) => {
+    "__#6@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T_1 extends Events.ViewportCalculated>(eventType: T_1, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_1]>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T_1>;
+    once<T_1 extends Events.ViewportCalculated>(eventType: T_1): Promise<EventTypes[T_1]>;
+    removeEventListener<T_2 extends Events.ViewportCalculated>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2]>) => void, thisObject?: Object | undefined): void;
+    hasEventListeners(eventType: Events.ViewportCalculated): boolean;
+    dispatchEventToListeners<T_3 extends Events.ViewportCalculated>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+}) & typeof DataGridImpl;
+export declare class ViewportDataGrid<T> extends ViewportDataGrid_base<ViewportDataGridNode<T>> {
     private readonly onScrollBound;
     private visibleNodes;
     stickToBottom: boolean;
@@ -28,6 +38,9 @@ export declare class ViewportDataGrid<T> extends DataGridImpl<ViewportDataGridNo
 export declare enum Events {
     ViewportCalculated = "ViewportCalculated"
 }
+export declare type EventTypes = {
+    [Events.ViewportCalculated]: void;
+};
 export declare class ViewportDataGridNode<T> extends DataGridNode<ViewportDataGridNode<T>> {
     private stale;
     private flatNodes;
@@ -49,3 +62,4 @@ export declare class ViewportDataGridNode<T> extends DataGridNode<ViewportDataGr
     reveal(): void;
     recalculateSiblings(index: number): void;
 }
+export {};

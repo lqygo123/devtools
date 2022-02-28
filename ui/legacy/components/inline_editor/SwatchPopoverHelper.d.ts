@@ -12,7 +12,8 @@ export declare class SwatchPopoverHelper extends Common.ObjectWrapper.ObjectWrap
     private focusRestorer?;
     constructor();
     private onFocusOut;
-    isShowing(): boolean;
+    setAnchorElement(anchorElement: Element): void;
+    isShowing(view?: UI.Widget.Widget): boolean;
     show(view: UI.Widget.Widget, anchorElement: Element, hiddenCallback?: ((arg0: boolean) => void)): void;
     reposition(): void;
     hide(commitEdit?: boolean): void;

@@ -6,17 +6,12 @@ import { ResourceTreeModel } from './ResourceTreeModel.js';
 import type { Target } from './Target.js';
 import type { SDKModelObserver } from './TargetManager.js';
 /**
- * The FrameManager is a central storage for all frames. It collects frames from all
- * ResourceTreeModel-instances (one per target), so that frames can be found by id
+ * The FrameManager is a central storage for all #frames. It collects #frames from all
+ * ResourceTreeModel-instances (one per target), so that #frames can be found by id
  * without needing to know their target.
  */
 export declare class FrameManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements SDKModelObserver<ResourceTreeModel> {
-    private readonly eventListeners;
-    private frames;
-    private readonly framesForTarget;
-    private topFrame;
-    private creationStackTraceDataForTransferringFrame;
-    private awaitedFrames;
+    #private;
     constructor();
     static instance({ forceNew }?: {
         forceNew: boolean;
@@ -29,9 +24,9 @@ export declare class FrameManager extends Common.ObjectWrapper.ObjectWrapper<Eve
     private resourceAdded;
     private decreaseOrRemoveFrame;
     /**
-     * Looks for the top frame in `frames` and sets `topFrame` accordingly.
+     * Looks for the top frame in `#frames` and sets `#topFrame` accordingly.
      *
-     * Important: This method needs to be called everytime `frames` is updated.
+     * Important: This method needs to be called everytime `#frames` is updated.
      */
     private resetTopFrame;
     /**

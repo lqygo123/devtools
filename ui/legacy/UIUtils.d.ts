@@ -1,4 +1,3 @@
-import * as Common from '../../core/common/common.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import { Size } from './Geometry.js';
 import type { ToolbarButton } from './Toolbar.js';
@@ -12,14 +11,16 @@ export declare function isEditing(): boolean;
 export declare function markBeingEdited(element: Element, value: boolean): boolean;
 export declare const StyleValueDelimiters = " \u00A0\t\n\"':;,/()";
 export declare function getValueModificationDirection(event: Event): string | null;
+export declare function modifiedFloatNumber(number: number, event: Event, modifierMultiplier?: number): number | null;
 export declare function createReplacementString(wordString: string, event: Event, customNumberHandler?: ((arg0: string, arg1: number, arg2: string) => string)): string | null;
 export declare function handleElementValueModifications(event: Event, element: Element, finishHandler?: ((arg0: string, arg1: string) => void), suggestionHandler?: ((arg0: string) => boolean), customNumberHandler?: ((arg0: string, arg1: number, arg2: string) => string)): boolean;
-export declare function formatLocalized<U>(format: string, substitutions: ArrayLike<U> | null): Element;
 export declare function openLinkExternallyLabel(): string;
 export declare function copyLinkAddressLabel(): string;
 export declare function copyFileNameLabel(): string;
 export declare function anotherProfilerActiveLabel(): string;
-export declare function asyncStackTraceLabel(description: string | undefined): string;
+export declare function asyncStackTraceLabel(description: string | undefined, previousCallFrames: {
+    functionName: string;
+}[]): string;
 export declare function installComponentRootStyles(element: Element): void;
 export declare class ElementFocusRestorer {
     private element;
@@ -41,7 +42,7 @@ export declare function animateFunction(window: Window, func: Function, params: 
     from: number;
     to: number;
 }[], duration: number, animationComplete?: (() => void)): () => void;
-export declare class LongClickController extends Common.ObjectWrapper.ObjectWrapper {
+export declare class LongClickController {
     private readonly element;
     private readonly callback;
     private readonly editKey;
@@ -53,7 +54,7 @@ export declare class LongClickController extends Common.ObjectWrapper.ObjectWrap
     dispose(): void;
     static readonly TIME_MS = 200;
 }
-export declare function initializeUIUtils(document: Document, themeSetting: Common.Settings.Setting<string>): void;
+export declare function initializeUIUtils(document: Document): void;
 export declare function beautifyFunctionName(name: string): string;
 export declare const createTextChild: (element: Element | DocumentFragment, text: string) => Text;
 export declare const createTextChildren: (element: Element | DocumentFragment, ...childrenText: string[]) => void;

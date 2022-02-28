@@ -1,3 +1,6 @@
+// Copyright 2021 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 /*
  * Copyright (C) 2012 Google Inc. All rights reserved.
  *
@@ -11,7 +14,7 @@
  * copyright notice, this list of conditions and the following disclaimer
  * in the documentation and/or other materials provided with the
  * distribution.
- *     * Neither the name of Google Inc. nor the names of its
+ *     * Neither the #name of Google Inc. nor the names of its
  * contributors may be used to endorse or promote products derived from
  * this software without specific prior written permission.
  *
@@ -103,27 +106,27 @@ for (let i = 0; i < base64Digits.length; ++i) {
 }
 const sourceMapToSourceList = new WeakMap();
 export class TextSourceMap {
-    initiator;
-    json;
-    compiledURLInternal;
-    sourceMappingURL;
-    baseURL;
-    mappingsInternal;
-    sourceInfos;
+    #initiator;
+    #json;
+    #compiledURLInternal;
+    #sourceMappingURL;
+    #baseURL;
+    #mappingsInternal;
+    #sourceInfos;
     /**
      * Implements Source Map V3 model. See https://github.com/google/closure-compiler/wiki/Source-Maps
      * for format description.
      */
     constructor(compiledURL, sourceMappingURL, payload, initiator) {
-        this.initiator = initiator;
-        this.json = payload;
-        this.compiledURLInternal = compiledURL;
-        this.sourceMappingURL = sourceMappingURL;
-        this.baseURL = sourceMappingURL.startsWith('data:') ? compiledURL : sourceMappingURL;
-        this.mappingsInternal = null;
-        this.sourceInfos = new Map();
-        if (this.json.sections) {
-            const sectionWithURL = Boolean(this.json.sections.find(section => Boolean(section.url)));
+        this.#initiator = initiator;
+        this.#json = payload;
+        this.#compiledURLInternal = compiledURL;
+        this.#sourceMappingURL = sourceMappingURL;
+        this.#baseURL = sourceMappingURL.startsWith('data:') ? compiledURL : sourceMappingURL;
+        this.#mappingsInternal = null;
+        this.#sourceInfos = new Map();
+        if (this.#json.sections) {
+            const sectionWithURL = Boolean(this.#json.sections.find(section => Boolean(section.url)));
             if (sectionWithURL) {
                 Common.Console.Console.instance().warn(`SourceMap "${sourceMappingURL}" contains unsupported "URL" field in one of its sections.`);
             }
@@ -154,23 +157,23 @@ export class TextSourceMap {
         }
     }
     compiledURL() {
-        return this.compiledURLInternal;
+        return this.#compiledURLInternal;
     }
     url() {
-        return this.sourceMappingURL;
+        return this.#sourceMappingURL;
     }
     sourceURLs() {
-        return [...this.sourceInfos.keys()];
+        return [...this.#sourceInfos.keys()];
     }
     sourceContentProvider(sourceURL, contentType) {
-        const info = this.sourceInfos.get(sourceURL);
+        const info = this.#sourceInfos.get(sourceURL);
         if (info && info.content) {
             return TextUtils.StaticContentProvider.StaticContentProvider.fromString(sourceURL, contentType, info.content);
         }
-        return new CompilerSourceMappingContentProvider(sourceURL, contentType, this.initiator);
+        return new CompilerSourceMappingContentProvider(sourceURL, contentType, this.#initiator);
     }
     embeddedContentByURL(sourceURL) {
-        const entry = this.sourceInfos.get(sourceURL);
+        const entry = this.#sourceInfos.get(sourceURL);
         if (!entry) {
             return null;
         }
@@ -182,51 +185,82 @@ export class TextSourceMap {
         return index ? mappings[index - 1] : null;
     }
     sourceLineMapping(sourceURL, lineNumber, columnNumber) {
-        const mappings = this.reversedMappings(sourceURL);
-        const first = Platform.ArrayUtilities.lowerBound(mappings, lineNumber, lineComparator);
-        const last = Platform.ArrayUtilities.upperBound(mappings, lineNumber, lineComparator);
-        if (first >= mappings.length || mappings[first].sourceLineNumber !== lineNumber) {
+        const mappings = this.mappings();
+        const reverseMappings = this.reversedMappings(sourceURL);
+        const first = Platform.ArrayUtilities.lowerBound(reverseMappings, lineNumber, lineComparator);
+        const last = Platform.ArrayUtilities.upperBound(reverseMappings, lineNumber, lineComparator);
+        if (first >= reverseMappings.length || mappings[reverseMappings[first]].sourceLineNumber !== lineNumber) {
             return null;
         }
-        const columnMappings = mappings.slice(first, last);
+        const columnMappings = reverseMappings.slice(first, last);
         if (!columnMappings.length) {
             return null;
         }
-        const index = Platform.ArrayUtilities.lowerBound(columnMappings, columnNumber, (columnNumber, mapping) => columnNumber - mapping.sourceColumnNumber);
-        return index >= columnMappings.length ? columnMappings[columnMappings.length - 1] : columnMappings[index];
-        function lineComparator(lineNumber, mapping) {
-            return lineNumber - mapping.sourceLineNumber;
+        const index = Platform.ArrayUtilities.lowerBound(columnMappings, columnNumber, (columnNumber, i) => columnNumber - mappings[i].sourceColumnNumber);
+        return index >= columnMappings.length ? mappings[columnMappings[columnMappings.length - 1]] :
+            mappings[columnMappings[index]];
+        function lineComparator(lineNumber, i) {
+            return lineNumber - mappings[i].sourceLineNumber;
         }
     }
-    findReverseEntries(sourceURL, lineNumber, columnNumber) {
-        const mappings = this.reversedMappings(sourceURL);
-        const endIndex = Platform.ArrayUtilities.upperBound(mappings, undefined, (unused, entry) => lineNumber - entry.sourceLineNumber || columnNumber - entry.sourceColumnNumber);
+    findReverseIndices(sourceURL, lineNumber, columnNumber) {
+        const mappings = this.mappings();
+        const reverseMappings = this.reversedMappings(sourceURL);
+        const endIndex = Platform.ArrayUtilities.upperBound(reverseMappings, undefined, (unused, i) => lineNumber - mappings[i].sourceLineNumber || columnNumber - mappings[i].sourceColumnNumber);
         let startIndex = endIndex;
-        while (startIndex > 0 && mappings[startIndex - 1].sourceLineNumber === mappings[endIndex - 1].sourceLineNumber &&
-            mappings[startIndex - 1].sourceColumnNumber === mappings[endIndex - 1].sourceColumnNumber) {
+        while (startIndex > 0 &&
+            mappings[reverseMappings[startIndex - 1]].sourceLineNumber ===
+                mappings[reverseMappings[endIndex - 1]].sourceLineNumber &&
+            mappings[reverseMappings[startIndex - 1]].sourceColumnNumber ===
+                mappings[reverseMappings[endIndex - 1]].sourceColumnNumber) {
             --startIndex;
         }
-        return mappings.slice(startIndex, endIndex);
+        return reverseMappings.slice(startIndex, endIndex);
+    }
+    findReverseEntries(sourceURL, lineNumber, columnNumber) {
+        const mappings = this.mappings();
+        return this.findReverseIndices(sourceURL, lineNumber, columnNumber).map(i => mappings[i]);
+    }
+    findReverseRanges(sourceURL, lineNumber, columnNumber) {
+        const mappings = this.mappings();
+        const indices = this.findReverseIndices(sourceURL, lineNumber, columnNumber);
+        const ranges = [];
+        for (let i = 0; i < indices.length; ++i) {
+            const startIndex = indices[i];
+            // Merge adjacent ranges.
+            let endIndex = startIndex + 1;
+            while (i + 1 < indices.length && endIndex === indices[i + 1]) {
+                ++endIndex;
+                ++i;
+            }
+            const endLine = endIndex < mappings.length ? mappings[endIndex].lineNumber : Infinity;
+            const endColumn = endIndex < mappings.length ? mappings[endIndex].columnNumber : 0;
+            ranges.push(new TextUtils.TextRange.TextRange(mappings[startIndex].lineNumber, mappings[startIndex].columnNumber, endLine, endColumn));
+        }
+        return ranges;
     }
     mappings() {
-        if (this.mappingsInternal === null) {
-            this.mappingsInternal = [];
+        if (this.#mappingsInternal === null) {
+            this.#mappingsInternal = [];
             this.eachSection(this.parseMap.bind(this));
-            this.json = null;
+            this.#json = null;
         }
-        return /** @type {!Array<!SourceMapEntry>} */ this.mappingsInternal;
+        return this.#mappingsInternal;
     }
     reversedMappings(sourceURL) {
-        const info = this.sourceInfos.get(sourceURL);
+        const info = this.#sourceInfos.get(sourceURL);
         if (!info) {
             return [];
         }
         const mappings = this.mappings();
         if (info.reverseMappings === null) {
-            info.reverseMappings = mappings.filter(mapping => mapping.sourceURL === sourceURL).sort(sourceMappingComparator);
+            const indexes = Array(mappings.length).fill(0).map((_, i) => i);
+            info.reverseMappings = indexes.filter(i => mappings[i].sourceURL === sourceURL).sort(sourceMappingComparator);
         }
         return info.reverseMappings;
-        function sourceMappingComparator(a, b) {
+        function sourceMappingComparator(indexA, indexB) {
+            const a = mappings[indexA];
+            const b = mappings[indexB];
             if (a.sourceLineNumber !== b.sourceLineNumber) {
                 return a.sourceLineNumber - b.sourceLineNumber;
             }
@@ -240,14 +274,14 @@ export class TextSourceMap {
         }
     }
     eachSection(callback) {
-        if (!this.json) {
+        if (!this.#json) {
             return;
         }
-        if (!this.json.sections) {
-            callback(this.json, 0, 0);
+        if (!this.#json.sections) {
+            callback(this.#json, 0, 0);
             return;
         }
-        for (const section of this.json.sections) {
+        for (const section of this.#json.sections) {
             callback(section.map, section.offset.line, section.offset.column);
         }
     }
@@ -259,12 +293,12 @@ export class TextSourceMap {
         }
         for (let i = 0; i < sourceMap.sources.length; ++i) {
             const href = sourceRoot + sourceMap.sources[i];
-            let url = Common.ParsedURL.ParsedURL.completeURL(this.baseURL, href) || href;
+            let url = Common.ParsedURL.ParsedURL.completeURL(this.#baseURL, href) || href;
             const source = sourceMap.sourcesContent && sourceMap.sourcesContent[i];
-            if (url === this.compiledURLInternal && source) {
+            if (url === this.#compiledURLInternal && source) {
                 url += '? [sm]';
             }
-            this.sourceInfos.set(url, new TextSourceMap.SourceInfo(source || null, null));
+            this.#sourceInfos.set(url, new TextSourceMap.SourceInfo(source || null, null));
             sourcesList.push(url);
         }
         sourceMapToSourceList.set(sourceMap, sourcesList);
@@ -341,20 +375,24 @@ export class TextSourceMap {
         return negative ? -result : result;
     }
     reverseMapTextRange(url, textRange) {
-        function comparator(position, mapping) {
-            if (position.lineNumber !== mapping.sourceLineNumber) {
-                return position.lineNumber - mapping.sourceLineNumber;
+        function comparator(position, mappingIndex) {
+            if (position.lineNumber !== mappings[mappingIndex].sourceLineNumber) {
+                return position.lineNumber - mappings[mappingIndex].sourceLineNumber;
             }
-            return position.columnNumber - mapping.sourceColumnNumber;
+            return position.columnNumber - mappings[mappingIndex].sourceColumnNumber;
         }
-        const mappings = this.reversedMappings(url);
-        if (!mappings.length) {
+        const reverseMappings = this.reversedMappings(url);
+        const mappings = this.mappings();
+        if (!reverseMappings.length) {
             return null;
         }
-        const startIndex = Platform.ArrayUtilities.lowerBound(mappings, { lineNumber: textRange.startLine, columnNumber: textRange.startColumn }, comparator);
-        const endIndex = Platform.ArrayUtilities.upperBound(mappings, { lineNumber: textRange.endLine, columnNumber: textRange.endColumn }, comparator);
-        const startMapping = mappings[startIndex];
-        const endMapping = mappings[endIndex];
+        const startIndex = Platform.ArrayUtilities.lowerBound(reverseMappings, { lineNumber: textRange.startLine, columnNumber: textRange.startColumn }, comparator);
+        const endIndex = Platform.ArrayUtilities.upperBound(reverseMappings, { lineNumber: textRange.endLine, columnNumber: textRange.endColumn }, comparator);
+        if (endIndex >= reverseMappings.length) {
+            return null;
+        }
+        const startMapping = mappings[reverseMappings[startIndex]];
+        const endMapping = mappings[reverseMappings[endIndex]];
         return new TextUtils.TextRange.TextRange(startMapping.lineNumber, startMapping.columnNumber, endMapping.lineNumber, endMapping.columnNumber);
     }
     mapsOrigin() {

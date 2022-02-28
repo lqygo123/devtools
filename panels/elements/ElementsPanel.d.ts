@@ -23,8 +23,8 @@ export declare class ElementsPanel extends UI.Panel.Panel implements UI.Searchab
     private readonly adornerManager;
     private adornerSettingsPane;
     private readonly adornersByName;
-    accessibilityTreeButton?: HTMLButtonElement;
-    domTreeButton?: HTMLButtonElement;
+    accessibilityTreeButton?: HTMLElement;
+    domTreeButton?: HTMLElement;
     private selectedNodeOnReset?;
     private hasNonDefaultSelectedNode?;
     private searchConfig?;

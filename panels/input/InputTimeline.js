@@ -67,7 +67,7 @@ export class InputTimeline extends UI.Widget.VBox {
         this.loadButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, () => this.selectFileToLoad());
         this.saveButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.saveProfile), 'largeicon-download');
         this.saveButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, _event => {
-            this.saveToFile();
+            void this.saveToFile();
         });
         this.panelToolbar.appendSeparator();
         this.panelToolbar.appendToolbarItem(this.loadButton);
@@ -122,17 +122,17 @@ export class InputTimeline extends UI.Widget.VBox {
     toggleRecording() {
         switch (this.state) {
             case "Recording" /* Recording */: {
-                this.stopRecording();
+                void this.stopRecording();
                 break;
             }
             case "Idle" /* Idle */: {
-                this.startRecording();
+                void this.startRecording();
                 break;
             }
         }
     }
     startReplay() {
-        this.replayEvents();
+        void this.replayEvents();
     }
     toggleReplayPause() {
         switch (this.state) {
@@ -162,7 +162,7 @@ export class InputTimeline extends UI.Widget.VBox {
         }
         const backingStorage = this.tracingModel.backingStorage();
         await backingStorage.writeToStream(stream);
-        stream.close();
+        void stream.close();
     }
     selectFileToLoad() {
         if (this.fileSelectorElement) {
@@ -251,7 +251,7 @@ export class ActionDelegate {
     }
     handleAction(context, actionId) {
         const inputViewId = 'Inputs';
-        UI.ViewManager.ViewManager.instance()
+        void UI.ViewManager.ViewManager.instance()
             .showView(inputViewId)
             .then(() => UI.ViewManager.ViewManager.instance().view(inputViewId).widget())
             .then(widget => this.innerHandleAction(widget, actionId));

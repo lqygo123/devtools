@@ -31,16 +31,9 @@ export declare function getHideIssueByCodeSetting(): Common.Settings.Setting<Hid
  * `IssuesManager#issues()`.
  */
 export declare class IssuesManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements SDK.TargetManager.SDKModelObserver<SDK.IssuesModel.IssuesModel> {
+    #private;
     private readonly showThirdPartyIssuesSetting?;
     private readonly hideIssueSetting?;
-    private eventListeners;
-    private allIssues;
-    private filteredIssues;
-    private issueCounts;
-    private hiddenIssueCount;
-    private hasSeenTopFrameNavigated;
-    private sourceFrameIssuesManager;
-    private issuesById;
     constructor(showThirdPartyIssuesSetting?: Common.Settings.Setting<boolean> | undefined, hideIssueSetting?: Common.Settings.Setting<HideIssueMenuSetting> | undefined);
     static instance(opts?: IssuesManagerCreationOptions): IssuesManager;
     /**
@@ -50,19 +43,13 @@ export declare class IssuesManager extends Common.ObjectWrapper.ObjectWrapper<Ev
      * during navigation.
      */
     reloadForAccurateInformationRequired(): boolean;
-    private onTopFrameNavigated;
-    private onFrameAddedToTarget;
     modelAdded(issuesModel: SDK.IssuesModel.IssuesModel): void;
     modelRemoved(issuesModel: SDK.IssuesModel.IssuesModel): void;
-    private onIssueAddedEvent;
     addIssue(issuesModel: SDK.IssuesModel.IssuesModel, issue: Issue): void;
     issues(): Iterable<Issue>;
     numberOfIssues(kind?: IssueKind): number;
-    numberOfHiddenIssues(): number;
+    numberOfHiddenIssues(kind?: IssueKind): number;
     numberOfAllStoredIssues(): number;
-    private issueFilter;
-    private updateIssueHiddenStatus;
-    private updateFilteredIssues;
     unhideAllIssues(): void;
     getIssueById(id: string): Issue | undefined;
 }

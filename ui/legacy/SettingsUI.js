@@ -29,6 +29,7 @@
  */
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
+import * as Settings from '../components/settings/settings.js';
 import * as ARIAUtils from './ARIAUtils.js';
 import { InspectorView } from './InspectorView.js';
 import { Tooltip } from './Tooltip.js';
@@ -94,6 +95,7 @@ const createSettingSelect = function (name, options, requiresReload, setting, su
                 select.selectedIndex = i;
             }
         }
+        select.disabled = setting.disabled();
     }
     function selectChanged() {
         // Don't use event.target.value to avoid conversion of the value to string.
@@ -132,8 +134,11 @@ export const createCustomSetting = function (name, element) {
 export const createControlForSetting = function (setting, subtitle) {
     const uiTitle = setting.title();
     switch (setting.type()) {
-        case Common.Settings.SettingType.BOOLEAN:
-            return createSettingCheckbox(uiTitle, setting);
+        case Common.Settings.SettingType.BOOLEAN: {
+            const component = new Settings.SettingCheckbox.SettingCheckbox();
+            component.data = { setting: setting };
+            return component;
+        }
         case Common.Settings.SettingType.ENUM:
             if (Array.isArray(setting.options())) {
                 return createSettingSelect(uiTitle, setting.options(), setting.reloadRequired(), setting, subtitle);

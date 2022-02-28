@@ -5,10 +5,7 @@ import * as Workspace from '../workspace/workspace.js';
 import { ContentProviderBasedProject } from './ContentProviderBasedProject.js';
 import type { SourceMapping } from './CSSWorkspaceBinding.js';
 export declare class StylesSourceMapping implements SourceMapping {
-    private cssModel;
-    private project;
-    private readonly styleFiles;
-    private readonly eventListeners;
+    #private;
     constructor(cssModel: SDK.CSSModel.CSSModel, workspace: Workspace.Workspace.WorkspaceImpl);
     rawLocationToUILocation(rawLocation: SDK.CSSModel.CSSLocation): Workspace.UISourceCode.UILocation | null;
     uiLocationToRawLocations(uiLocation: Workspace.UISourceCode.UILocation): SDK.CSSModel.CSSLocation[];
@@ -19,15 +16,9 @@ export declare class StylesSourceMapping implements SourceMapping {
     dispose(): void;
 }
 export declare class StyleFile implements TextUtils.ContentProvider.ContentProvider {
-    private readonly cssModel;
-    private readonly project;
+    #private;
     headers: Set<SDK.CSSStyleSheetHeader.CSSStyleSheetHeader>;
     uiSourceCode: Workspace.UISourceCode.UISourceCode;
-    private readonly eventListeners;
-    private readonly throttler;
-    private terminated;
-    private isAddingRevision?;
-    private isUpdatingHeaders?;
     constructor(cssModel: SDK.CSSModel.CSSModel, project: ContentProviderBasedProject, header: SDK.CSSStyleSheetHeader.CSSStyleSheetHeader);
     addHeader(header: SDK.CSSStyleSheetHeader.CSSStyleSheetHeader): void;
     removeHeader(header: SDK.CSSStyleSheetHeader.CSSStyleSheetHeader): void;

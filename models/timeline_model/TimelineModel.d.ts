@@ -34,7 +34,7 @@ export declare class TimelineModelImpl {
     private tracingModelInternal;
     private mainFrameLayerTreeId?;
     constructor();
-    static forEachEvent(events: SDK.TracingModel.Event[], onStartEvent: (arg0: SDK.TracingModel.Event) => void, onEndEvent: (arg0: SDK.TracingModel.Event) => void, onInstantEvent?: ((arg0: SDK.TracingModel.Event, arg1: SDK.TracingModel.Event | null) => any), startTime?: number, endTime?: number, filter?: ((arg0: SDK.TracingModel.Event) => boolean)): void;
+    static forEachEvent(events: SDK.TracingModel.Event[], onStartEvent: (arg0: SDK.TracingModel.Event) => void, onEndEvent: (arg0: SDK.TracingModel.Event) => void, onInstantEvent?: ((arg0: SDK.TracingModel.Event, arg1: SDK.TracingModel.Event | null) => void), startTime?: number, endTime?: number, filter?: ((arg0: SDK.TracingModel.Event) => boolean)): void;
     private static topLevelEventEndingAfter;
     isMarkerEvent(event: SDK.TracingModel.Event): boolean;
     isInteractiveTimeEvent(event: SDK.TracingModel.Event): boolean;

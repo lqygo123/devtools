@@ -28,10 +28,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 export class WorkerWrapper {
-    workerPromise;
-    disposed;
+    #workerPromise;
+    #disposed;
     constructor(workerLocation) {
-        this.workerPromise = new Promise(fulfill => {
+        this.#workerPromise = new Promise(fulfill => {
             const worker = new Worker(workerLocation, { type: 'module' });
             worker.onmessage = (event) => {
                 console.assert(event.data === 'workerReady');
@@ -44,26 +44,26 @@ export class WorkerWrapper {
         return new WorkerWrapper(url);
     }
     postMessage(message) {
-        this.workerPromise.then(worker => {
-            if (!this.disposed) {
+        void this.#workerPromise.then(worker => {
+            if (!this.#disposed) {
                 worker.postMessage(message);
             }
         });
     }
     dispose() {
-        this.disposed = true;
-        this.workerPromise.then(worker => worker.terminate());
+        this.#disposed = true;
+        void this.#workerPromise.then(worker => worker.terminate());
     }
     terminate() {
         this.dispose();
     }
     set onmessage(listener) {
-        this.workerPromise.then(worker => {
+        void this.#workerPromise.then(worker => {
             worker.onmessage = listener;
         });
     }
     set onerror(listener) {
-        this.workerPromise.then(worker => {
+        void this.#workerPromise.then(worker => {
             worker.onerror = listener;
         });
     }

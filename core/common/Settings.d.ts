@@ -1,22 +1,22 @@
 import type * as Platform from '../platform/platform.js';
 import type { Color } from './Color.js';
 import { Format } from './Color.js';
-import type { EventDescriptor, EventTargetEvent } from './EventTarget.js';
+import type { GenericEvents, EventDescriptor, EventTargetEvent } from './EventTarget.js';
 import { ObjectWrapper } from './Object.js';
-import { getLocalizedSettingsCategory, getRegisteredSettings, maybeRemoveSettingExtension, RegExpSettingItem, registerSettingExtension, registerSettingsForTest, resetSettings, SettingCategory, SettingExtensionOption, SettingRegistration, SettingType } from './SettingRegistration.js';
+import { getLocalizedSettingsCategory, getRegisteredSettings, maybeRemoveSettingExtension, type RegExpSettingItem, registerSettingExtension, registerSettingsForTest, resetSettings, SettingCategory, type SettingExtensionOption, type SettingRegistration, SettingType } from './SettingRegistration.js';
 export declare class Settings {
+    #private;
+    private readonly syncedStorage;
     readonly globalStorage: SettingsStorage;
     private readonly localStorage;
-    private readonly sessionStorage;
     settingNameSet: Set<string>;
     orderValuesBySettingCategory: Map<SettingCategory, Set<number>>;
-    private eventSupport;
-    private registry;
     readonly moduleSettings: Map<string, Setting<unknown>>;
     private constructor();
     static hasInstance(): boolean;
     static instance(opts?: {
         forceNew: boolean | null;
+        syncedStorage: SettingsStorage | null;
         globalStorage: SettingsStorage | null;
         localStorage: SettingsStorage | null;
     }): Settings;
@@ -32,6 +32,8 @@ export declare class Settings {
     getRegistry(): Map<string, Setting<unknown>>;
 }
 export interface SettingsBackingStore {
+    register(setting: string): void;
+    get(setting: string): Promise<string>;
     set(setting: string, value: string): void;
     remove(setting: string): void;
     clear(): void;
@@ -42,35 +44,33 @@ export declare class SettingsStorage {
     private readonly backingStore;
     private readonly storagePrefix;
     constructor(object: Record<string, string>, backingStore?: SettingsBackingStore, storagePrefix?: string);
+    register(name: string): void;
     set(name: string, value: string): void;
     has(name: string): boolean;
     get(name: string): string;
+    forceGet(originalName: string): Promise<string>;
     remove(name: string): void;
     removeAll(): void;
     dumpSizes(): void;
 }
 export declare class Setting<V> {
-    private nameInternal;
-    private defaultValueInternal;
+    #private;
+    readonly name: string;
+    readonly defaultValue: V;
     private readonly eventSupport;
-    private storage;
-    private titleFunction;
-    private titleInternal;
-    private registration;
-    private requiresUserAction?;
-    private value?;
-    private serializer;
-    private hadUserAction?;
-    constructor(name: string, defaultValue: V, eventSupport: ObjectWrapper, storage: SettingsStorage);
+    readonly storage: SettingsStorage;
+    constructor(name: string, defaultValue: V, eventSupport: ObjectWrapper<GenericEvents>, storage: SettingsStorage);
     setSerializer(serializer: Serializer<unknown, V>): void;
-    addChangeListener(listener: (arg0: EventTargetEvent) => void, thisObject?: Object): EventDescriptor;
-    removeChangeListener(listener: (arg0: EventTargetEvent) => void, thisObject?: Object): void;
-    get name(): string;
+    addChangeListener(listener: (arg0: EventTargetEvent<V>) => void, thisObject?: Object): EventDescriptor;
+    removeChangeListener(listener: (arg0: EventTargetEvent<V>) => void, thisObject?: Object): void;
     title(): string;
     setTitleFunction(titleFunction: (() => Platform.UIString.LocalizedString) | undefined): void;
     setTitle(title: string): void;
     setRequiresUserAction(requiresUserAction: boolean): void;
+    disabled(): boolean;
+    setDisabled(disabled: boolean): void;
     get(): V;
+    forceGet(): Promise<V>;
     set(value: V): void;
     setRegistration(registration: SettingRegistration): void;
     type(): SettingType | null;
@@ -80,13 +80,10 @@ export declare class Setting<V> {
     tags(): string | null;
     order(): number | null;
     private printSettingsSavingError;
-    defaultValue(): V;
-    getStorage(): SettingsStorage;
 }
 export declare class RegExpSetting extends Setting<any> {
-    private regexFlags;
-    private regex?;
-    constructor(name: string, defaultValue: string, eventSupport: ObjectWrapper, storage: SettingsStorage, regexFlags?: string);
+    #private;
+    constructor(name: string, defaultValue: string, eventSupport: ObjectWrapper<GenericEvents>, storage: SettingsStorage, regexFlags?: string);
     get(): string;
     getAsArray(): RegExpSettingItem[];
     set(value: string): void;
@@ -133,8 +130,16 @@ export declare class VersionController {
     private clearBreakpointsWhenTooMany;
 }
 export declare enum SettingStorageType {
+    /**
+     * Synced storage persists settings with the active Chrome profile but also
+     * syncs the settings across devices via Chrome Sync.
+     */
+    Synced = "Synced",
+    /** Global storage persists settings with the active Chrome profile */
     Global = "Global",
+    /** Uses Window.localStorage */
     Local = "Local",
+    /** Session storage dies when DevTools window closes */
     Session = "Session"
 }
 export declare function moduleSetting(settingName: string): Setting<unknown>;

@@ -9,9 +9,9 @@ export declare class AudioContextSelector extends Common.ObjectWrapper.ObjectWra
     private selectedContextInternal;
     constructor();
     private onListItemReplaced;
-    contextCreated(event: Common.EventTarget.EventTargetEvent): void;
-    contextDestroyed(event: Common.EventTarget.EventTargetEvent): void;
-    contextChanged(event: Common.EventTarget.EventTargetEvent): void;
+    contextCreated({ data: context }: Common.EventTarget.EventTargetEvent<Protocol.WebAudio.BaseAudioContext>): void;
+    contextDestroyed({ data: contextId }: Common.EventTarget.EventTargetEvent<string>): void;
+    contextChanged({ data: changedContext }: Common.EventTarget.EventTargetEvent<Protocol.WebAudio.BaseAudioContext>): void;
     createElementForItem(item: Protocol.WebAudio.BaseAudioContext): Element;
     selectedContext(): Protocol.WebAudio.BaseAudioContext | null;
     highlightedItemChanged(from: Protocol.WebAudio.BaseAudioContext | null, to: Protocol.WebAudio.BaseAudioContext | null, fromElement: Element | null, toElement: Element | null): void;

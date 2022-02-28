@@ -3,7 +3,7 @@ import * as Protocol from '../../generated/protocol.js';
 import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export declare class LogModel extends SDKModel<EventTypes> implements ProtocolProxyApi.LogDispatcher {
-    private readonly logAgent;
+    #private;
     constructor(target: Target);
     entryAdded({ entry }: Protocol.Log.EntryAddedEvent): void;
     requestClear(): void;

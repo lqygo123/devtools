@@ -9,23 +9,14 @@ export declare class ValueNode extends SDK.RemoteObject.RemoteObjectImpl {
     constructor(callFrame: SDK.DebuggerModel.CallFrame, objectId: Protocol.Runtime.RemoteObjectId | undefined, type: string, subtype: string | undefined, value: any, inspectableAddress?: number, unserializableValue?: string, description?: string, preview?: Protocol.Runtime.ObjectPreview, customPreview?: Protocol.Runtime.CustomPreview, className?: string);
 }
 declare class SourceScopeRemoteObject extends SDK.RemoteObject.RemoteObjectImpl {
+    #private;
     variables: Chrome.DevTools.Variable[];
-    private callFrame;
-    private plugin;
-    private readonly location;
-    constructor(callFrame: SDK.DebuggerModel.CallFrame, plugin: DebuggerLanguagePlugin, location: Chrome.DevTools.RawLocation);
+    constructor(callFrame: SDK.DebuggerModel.CallFrame, plugin: DebuggerLanguagePlugin);
     doGetProperties(ownProperties: boolean, accessorPropertiesOnly: boolean, _generatePreview: boolean): Promise<SDK.RemoteObject.GetPropertiesResult>;
 }
 export declare class SourceScope implements SDK.DebuggerModel.ScopeChainEntry {
-    private readonly callFrameInternal;
-    private readonly typeInternal;
-    private readonly typeNameInternal;
-    private readonly iconInternal;
-    private readonly objectInternal;
-    private readonly nameInternal;
-    private readonly startLocationInternal;
-    private readonly endLocationInternal;
-    constructor(callFrame: SDK.DebuggerModel.CallFrame, type: string, typeName: string, icon: string | undefined, plugin: DebuggerLanguagePlugin, location: Chrome.DevTools.RawLocation);
+    #private;
+    constructor(callFrame: SDK.DebuggerModel.CallFrame, type: string, typeName: string, icon: string | undefined, plugin: DebuggerLanguagePlugin);
     getVariableValue(name: string): Promise<SDK.RemoteObject.RemoteObject | null>;
     callFrame(): SDK.DebuggerModel.CallFrame;
     type(): string;
@@ -38,11 +29,7 @@ export declare class SourceScope implements SDK.DebuggerModel.ScopeChainEntry {
     icon(): string | undefined;
 }
 export declare class DebuggerLanguagePluginManager implements SDK.TargetManager.SDKModelObserver<SDK.DebuggerModel.DebuggerModel> {
-    private readonly workspace;
-    private readonly debuggerWorkspaceBinding;
-    private plugins;
-    private readonly debuggerModelToData;
-    private readonly rawModuleHandles;
+    #private;
     constructor(targetManager: SDK.TargetManager.TargetManager, workspace: Workspace.Workspace.WorkspaceImpl, debuggerWorkspaceBinding: DebuggerWorkspaceBinding);
     private evaluateOnCallFrame;
     private expandCallFrames;
@@ -53,12 +40,12 @@ export declare class DebuggerLanguagePluginManager implements SDK.TargetManager.
     removePlugin(plugin: DebuggerLanguagePlugin): void;
     hasPluginForScript(script: SDK.Script.Script): boolean;
     /**
-     * Returns the responsible language plugin and the raw module ID for a script.
+     * Returns the responsible language #plugin and the raw module ID for a script.
      *
      * This ensures that the `addRawModule` call finishes first such that the
-     * caller can immediately issue calls to the returned plugin without the
-     * risk of racing with the `addRawModule` call. The returned plugin will be
-     * set to undefined to indicate that there's no plugin for the script.
+     * caller can immediately issue calls to the returned #plugin without the
+     * risk of racing with the `addRawModule` call. The returned #plugin will be
+     * set to undefined to indicate that there's no #plugin for the script.
      */
     private rawModuleIdAndPluginForScript;
     uiSourceCodeForURL(debuggerModel: SDK.DebuggerModel.DebuggerModel, url: string): Workspace.UISourceCode.UISourceCode | null;
@@ -90,23 +77,23 @@ export declare class DebuggerLanguagePlugin {
     constructor(name: string);
     handleScript(_script: SDK.Script.Script): boolean;
     dispose(): void;
-    /** Notify the plugin about a new script
+    /** Notify the #plugin about a new script
       */
     addRawModule(_rawModuleId: string, _symbolsURL: string, _rawModule: Chrome.DevTools.RawModule): Promise<string[]>;
-    /** Find locations in raw modules from a location in a source file
+    /** Find #locations in raw modules from a #location in a source file
       */
     sourceLocationToRawLocation(_sourceLocation: Chrome.DevTools.SourceLocation): Promise<Chrome.DevTools.RawLocationRange[]>;
-    /** Find locations in source files from a location in a raw module
+    /** Find #locations in source files from a #location in a raw module
       */
     rawLocationToSourceLocation(_rawLocation: Chrome.DevTools.RawLocation): Promise<Chrome.DevTools.SourceLocation[]>;
     /** Return detailed information about a scope
        */
     getScopeInfo(_type: string): Promise<Chrome.DevTools.ScopeInfo>;
-    /** List all variables in lexical scope at a given location in a raw module
+    /** List all variables in lexical scope at a given #location in a raw module
       */
     listVariablesInScope(_rawLocation: Chrome.DevTools.RawLocation): Promise<Chrome.DevTools.Variable[]>;
     /**
-     * Notifies the plugin that a script is removed.
+     * Notifies the #plugin that a script is removed.
      */
     removeRawModule(_rawModuleId: string): Promise<void>;
     getTypeInfo(_expression: string, _context: Chrome.DevTools.RawLocation): Promise<{
@@ -126,19 +113,19 @@ export declare class DebuggerLanguagePlugin {
         js: string;
     }>;
     /**
-     * Find locations in source files from a location in a raw module
+     * Find #locations in source files from a #location in a raw module
      */
     getFunctionInfo(_rawLocation: Chrome.DevTools.RawLocation): Promise<{
         frames: Array<Chrome.DevTools.FunctionInfo>;
         missingSymbolFiles?: Array<string>;
     }>;
     /**
-     * Find locations in raw modules corresponding to the inline function
+     * Find #locations in raw modules corresponding to the inline function
      * that rawLocation is in. Used for stepping out of an inline function.
      */
     getInlinedFunctionRanges(_rawLocation: Chrome.DevTools.RawLocation): Promise<Chrome.DevTools.RawLocationRange[]>;
     /**
-     * Find locations in raw modules corresponding to inline functions
+     * Find #locations in raw modules corresponding to inline functions
      * called by the function or inline frame that rawLocation is in.
      * Used for stepping over inline functions.
      */

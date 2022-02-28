@@ -2,7 +2,7 @@ import * as Common from '../../core/common/common.js';
 import type * as SDK from '../../core/sdk/sdk.js';
 import type { ChunkedReader } from './FileUtils.js';
 export declare class TempFile {
-    private lastBlob;
+    #private;
     constructor();
     write(pieces: (string | Blob)[]): void;
     read(): Promise<string | null>;
@@ -12,9 +12,7 @@ export declare class TempFile {
     remove(): void;
 }
 export declare class TempFileBackingStorage implements SDK.TracingModel.BackingStorage {
-    private file;
-    private strings;
-    private stringsLength;
+    #private;
     constructor();
     appendString(string: string): void;
     appendAccessibleString(string: string): () => Promise<string | null>;

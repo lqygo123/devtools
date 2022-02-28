@@ -7,15 +7,11 @@ import { Resource } from './Resource.js';
 import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export declare class ResourceTreeModel extends SDKModel<EventTypes> {
+    #private;
     readonly agent: ProtocolProxyApi.PageApi;
-    private readonly securityOriginManager;
     readonly framesInternal: Map<string, ResourceTreeFrame>;
-    private cachedResourcesProcessed;
-    private pendingReloadOptions;
-    private reloadSuspensionCount;
     isInterstitialShowing: boolean;
     mainFrame: ResourceTreeFrame | null;
-    private pendingBackForwardCacheNotUsedEvents;
     constructor(target: Target);
     static frameForRequest(request: NetworkRequest): ResourceTreeFrame | null;
     static frames(): ResourceTreeFrame[];
@@ -56,7 +52,7 @@ export declare class ResourceTreeModel extends SDKModel<EventTypes> {
     getManifestIcons(): Promise<{
         primaryIcon: string | null;
     }>;
-    getAppId(): Promise<string | undefined>;
+    getAppId(): Promise<Protocol.Page.GetAppIdResponse>;
     private executionContextComparator;
     private getSecurityOriginData;
     private updateSecurityOrigins;
@@ -112,28 +108,13 @@ export declare type EventTypes = {
     [Events.BackForwardCacheDetailsUpdated]: ResourceTreeFrame;
 };
 export declare class ResourceTreeFrame {
-    private model;
-    private sameTargetParentFrameInternal;
-    private readonly idInternal;
+    #private;
     crossTargetParentFrameId: string | null;
-    private loaderIdInternal;
-    private nameInternal;
-    private urlInternal;
-    private domainAndRegistryInternal;
-    private securityOriginInternal;
-    private mimeType;
-    private unreachableUrlInternal;
-    private adFrameStatusInternal?;
-    private secureContextType;
-    private crossOriginIsolatedContextType;
-    private gatedAPIFeatures;
-    private creationStackTrace;
-    private creationStackTraceTarget;
-    private childFramesInternal;
     resourcesMap: Map<string, Resource>;
     backForwardCacheDetails: {
         restoredFromCache: boolean | undefined;
         explanations: Protocol.Page.BackForwardCacheNotRestoredExplanation[];
+        explanationsTree: Protocol.Page.BackForwardCacheNotRestoredExplanationTree | undefined;
     };
     constructor(model: ResourceTreeModel, parentFrame: ResourceTreeFrame | null, frameId: Protocol.Page.FrameId, payload: Protocol.Page.Frame | null, creationStackTrace: Protocol.Runtime.StackTrace | null);
     isSecureContext(): boolean;
@@ -158,11 +139,11 @@ export declare class ResourceTreeFrame {
     adFrameStatus(): Protocol.Page.AdFrameStatus | undefined;
     get childFrames(): ResourceTreeFrame[];
     /**
-     * Returns the parent frame if both frames are part of the same process/target.
+     * Returns the parent frame if both #frames are part of the same process/target.
      */
     sameTargetParentFrame(): ResourceTreeFrame | null;
     /**
-     * Returns the parent frame if both frames are part of different processes/targets (child is an OOPIF).
+     * Returns the parent frame if both #frames are part of different processes/targets (child is an OOPIF).
      */
     crossTargetParentFrame(): ResourceTreeFrame | null;
     /**
@@ -202,7 +183,7 @@ export declare class ResourceTreeFrame {
     getResourcesMap(): Map<string, Resource>;
 }
 export declare class PageDispatcher implements ProtocolProxyApi.PageDispatcher {
-    private resourceTreeModel;
+    #private;
     constructor(resourceTreeModel: ResourceTreeModel);
     backForwardCacheNotUsed(params: Protocol.Page.BackForwardCacheNotUsedEvent): void;
     domContentEventFired({ timestamp }: Protocol.Page.DomContentEventFiredEvent): void;

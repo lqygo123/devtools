@@ -91,10 +91,10 @@ export class DOMStorageItemsView extends StorageItemsView {
             refreshCallback: this.refreshItems.bind(this),
         });
         this.dataGrid.addEventListener(DataGrid.DataGrid.Events.SelectedNode, event => {
-            this.previewEntry(event.data);
+            void this.previewEntry(event.data);
         });
-        this.dataGrid.addEventListener(DataGrid.DataGrid.Events.DeselectedNode, _event => {
-            this.previewEntry(null);
+        this.dataGrid.addEventListener(DataGrid.DataGrid.Events.DeselectedNode, () => {
+            void this.previewEntry(null);
         });
         this.dataGrid.setStriped(true);
         this.dataGrid.setName('DOMStorageItemsView');
@@ -179,7 +179,7 @@ export class DOMStorageItemsView extends StorageItemsView {
         if (!childNode.selected) {
             return;
         }
-        this.previewEntry(childNode);
+        void this.previewEntry(childNode);
         this.setCanDeleteSelected(true);
     }
     showDOMStorageItems(items) {
@@ -220,7 +220,7 @@ export class DOMStorageItemsView extends StorageItemsView {
         this.deleteCallback(this.dataGrid.selectedNode);
     }
     refreshItems() {
-        this.domStorage.getItems().then(items => items && this.showDOMStorageItems(items));
+        void this.domStorage.getItems().then(items => items && this.showDOMStorageItems(items));
     }
     deleteAllItems() {
         this.domStorage.clear();

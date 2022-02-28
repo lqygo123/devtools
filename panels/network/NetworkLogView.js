@@ -337,7 +337,7 @@ const UIStrings = {
 };
 const str_ = i18n.i18n.registerUIStrings('panels/network/NetworkLogView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-export class NetworkLogView extends UI.Widget.VBox {
+export class NetworkLogView extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
     networkInvertFilterSetting;
     networkHideDataURLSetting;
     networkShowIssuesOnlySetting;
@@ -644,7 +644,7 @@ export class NetworkLogView extends UI.Widget.VBox {
         }
         const file = items[0].getAsFile();
         if (file) {
-            this.onLoadFromFile(file);
+            void this.onLoadFromFile(file);
         }
     }
     async onLoadFromFile(file) {
@@ -824,6 +824,17 @@ export class NetworkLogView extends UI.Widget.VBox {
             if (isEnterOrSpaceKey(event)) {
                 this.dispatchEventToListeners(Events.RequestActivated, { showPanel: true, takeFocus: true });
                 event.consume(true);
+            }
+        });
+        this.dataGrid.element.addEventListener('keyup', event => {
+            if ((event.key === 'r' || event.key === 'R') && this.dataGrid.selectedNode) {
+                const request = this.dataGrid.selectedNode.request();
+                if (!request) {
+                    return;
+                }
+                if (SDK.NetworkManager.NetworkManager.canReplayRequest(request)) {
+                    SDK.NetworkManager.NetworkManager.replayRequest(request);
+                }
             }
         });
         this.dataGrid.element.addEventListener('focus', this.onDataGridFocus.bind(this), true);
@@ -1282,9 +1293,11 @@ export class NetworkLogView extends UI.Widget.VBox {
                 footerSection.appendItem(i18nString(UIStrings.copyAllAsCurlBash), this.copyAllCurlCommand.bind(this, 'unix'));
             }
             else {
+                footerSection.appendItem(i18nString(UIStrings.copyAsPowershell), this.copyPowerShellCommand.bind(this, request), disableIfBlob);
                 footerSection.appendItem(i18nString(UIStrings.copyAsFetch), this.copyFetchCall.bind(this, request, 0 /* Browser */), disableIfBlob);
                 footerSection.appendItem(i18nString(UIStrings.copyAsNodejsFetch), this.copyFetchCall.bind(this, request, 1 /* NodeJs */), disableIfBlob);
                 footerSection.appendItem(i18nString(UIStrings.copyAsCurl), this.copyCurlCommand.bind(this, request, 'unix'), disableIfBlob);
+                footerSection.appendItem(i18nString(UIStrings.copyAllAsPowershell), this.copyAllPowerShellCommand.bind(this));
                 footerSection.appendItem(i18nString(UIStrings.copyAllAsFetch), this.copyAllFetchCall.bind(this, 0 /* Browser */));
                 footerSection.appendItem(i18nString(UIStrings.copyAllAsNodejsFetch), this.copyAllFetchCall.bind(this, 1 /* NodeJs */));
                 footerSection.appendItem(i18nString(UIStrings.copyAllAsCurl), this.copyAllCurlCommand.bind(this, 'unix'));
@@ -1305,12 +1318,12 @@ export class NetworkLogView extends UI.Widget.VBox {
                 patterns.push({ enabled: true, url: url });
                 manager.setBlockedPatterns(patterns);
                 manager.setBlockingEnabled(true);
-                UI.ViewManager.ViewManager.instance().showView('network.blocked-urls');
+                void UI.ViewManager.ViewManager.instance().showView('network.blocked-urls');
             }
             function removeBlockedURL(url) {
                 patterns = patterns.filter(pattern => pattern.url !== url);
                 manager.setBlockedPatterns(patterns);
-                UI.ViewManager.ViewManager.instance().showView('network.blocked-urls');
+                void UI.ViewManager.ViewManager.instance().showView('network.blocked-urls');
             }
             const urlWithoutScheme = request.parsedURL.urlWithoutScheme();
             if (urlWithoutScheme && !patterns.find(pattern => pattern.url === urlWithoutScheme)) {
@@ -1386,7 +1399,7 @@ export class NetworkLogView extends UI.Widget.VBox {
         this.progressBarContainer.appendChild(progressIndicator.element);
         await HAR.Writer.Writer.write(stream, this.harRequests(), progressIndicator);
         progressIndicator.done();
-        stream.close();
+        void stream.close();
     }
     clearBrowserCache() {
         if (confirm(i18nString(UIStrings.areYouSureYouWantToClearBrowser))) {
@@ -1888,13 +1901,10 @@ export class NetworkLogView extends UI.Widget.VBox {
         return commands.join(';\r\n');
     }
     static getDCLEventColor() {
-        if (ThemeSupport.ThemeSupport.instance().themeName() === 'dark') {
-            return '#03A9F4';
-        }
-        return '#0867CB';
+        return ThemeSupport.ThemeSupport.instance().getComputedValue('--color-syntax-3');
     }
     static getLoadEventColor() {
-        return ThemeSupport.ThemeSupport.instance().patchColorText('#B31412', ThemeSupport.ThemeSupport.ColorUsage.Foreground);
+        return ThemeSupport.ThemeSupport.instance().getComputedValue('--color-syntax-1');
     }
 }
 export function computeStackTraceText(stackTrace) {

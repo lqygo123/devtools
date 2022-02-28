@@ -347,7 +347,7 @@ export class PaintProfilerView extends Common.ObjectWrapper.eventMixin(UI.Widget
         if (!this.snapshot) {
             return;
         }
-        this.snapshot.replay(scale, left, right).then(image => {
+        void this.snapshot.replay(scale, left, right).then(image => {
             if (!image) {
                 return;
             }

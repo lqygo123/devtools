@@ -4,6 +4,7 @@
  * and satisfy TypeScript that the value is present.
  */
 export declare function assertNotNullOrUndefined<T>(val: T): asserts val is NonNullable<T>;
+export declare function assertNever(type: never, message: string): never;
 /**
  * This is useful to check on the type-level that the unhandled cases of
  * a switch are exactly `T` (where T is usually a union type of enum values).

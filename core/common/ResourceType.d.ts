@@ -1,9 +1,6 @@
 import type * as Platform from '../platform/platform.js';
 export declare class ResourceType {
-    private readonly nameInternal;
-    private readonly titleInternal;
-    private readonly categoryInternal;
-    private readonly isTextTypeInternal;
+    #private;
     constructor(name: string, title: () => Platform.UIString.LocalizedString, category: ResourceCategory, isTextType: boolean);
     static fromMimeType(mimeType: string | null): ResourceType;
     static fromMimeTypeOverride(mimeType: string | null): ResourceType | null;

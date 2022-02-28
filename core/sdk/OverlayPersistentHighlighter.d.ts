@@ -1,19 +1,7 @@
 import * as Protocol from '../../generated/protocol.js';
 import * as Common from '../common/common.js';
 export declare class OverlayPersistentHighlighter {
-    private readonly model;
-    private readonly gridHighlights;
-    private readonly scrollSnapHighlights;
-    private readonly flexHighlights;
-    private readonly containerQueryHighlights;
-    private readonly colors;
-    private gridColorGenerator;
-    private flexColorGenerator;
-    private flexEnabled;
-    private readonly showGridLineLabelsSetting;
-    private readonly extendGridLinesSetting;
-    private readonly showGridAreasSetting;
-    private readonly showGridTrackSizesSetting;
+    #private;
     constructor(model: OverlayModel, flexEnabled?: boolean);
     private onSettingChange;
     private buildGridHighlightConfig;
@@ -36,6 +24,10 @@ export declare class OverlayPersistentHighlighter {
     hideContainerQueryInOverlay(nodeId: Protocol.DOM.NodeId): void;
     isContainerQueryHighlighted(nodeId: Protocol.DOM.NodeId): boolean;
     private buildContainerQueryContainerHighlightConfig;
+    highlightIsolatedElementInOverlay(nodeId: Protocol.DOM.NodeId): void;
+    hideIsolatedElementInOverlay(nodeId: Protocol.DOM.NodeId): void;
+    isIsolatedElementHighlighted(nodeId: Protocol.DOM.NodeId): boolean;
+    private buildIsolationModeHighlightConfig;
     hideAllInOverlay(): void;
     refreshHighlights(): void;
     private updateHighlightsForDeletedNodes;
@@ -45,16 +37,11 @@ export declare class OverlayPersistentHighlighter {
     private updateFlexHighlightsInOverlay;
     private updateScrollSnapHighlightsInOverlay;
     updateContainerQueryHighlightsInOverlay(): void;
+    updateIsolatedElementHighlightsInOverlay(): void;
 }
-/**
- * @interface
- */
 export interface DOMModel {
     nodeForId(nodeId: Protocol.DOM.NodeId): void;
 }
-/**
- * @interface
- */
 export interface OverlayAgent {
     invoke_setShowGridOverlays(param: {
         gridNodeHighlightConfigs: Array<{
@@ -79,16 +66,16 @@ export interface OverlayAgent {
             containerQueryContainerHighlightConfig: Protocol.Overlay.ContainerQueryContainerHighlightConfig;
         }>;
     }): void;
+    invoke_setShowIsolatedElements(param: {
+        isolatedElementHighlightConfigs: Array<{
+            nodeId: number;
+            isolationModeHighlightConfig: Protocol.Overlay.IsolationModeHighlightConfig;
+        }>;
+    }): void;
 }
-/**
- * @interface
- */
 export interface Target {
     overlayAgent(): OverlayAgent;
 }
-/**
- * @interface
- */
 export interface OverlayModel {
     getDOMModel(): DOMModel;
     target(): Target;

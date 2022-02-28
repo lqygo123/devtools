@@ -5,7 +5,6 @@ import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import * as ConsoleComponents from './components/components.js';
 import { ConsoleFilter, FilterType } from './ConsoleFilter.js';
 import consoleSidebarStyles from './consoleSidebar.css.js';
 const UIStrings = {
@@ -52,8 +51,6 @@ export class ConsoleSidebar extends Common.ObjectWrapper.eventMixin(UI.Widget.VB
         this.setMinimumSize(125, 0);
         this.tree = new UI.TreeOutline.TreeOutlineInShadow();
         this.tree.addEventListener(UI.TreeOutline.Events.ElementSelected, this.selectionChanged.bind(this));
-        const deprecationWarning = new ConsoleComponents.SidebarDeprecation.SidebarDeprecation();
-        this.contentElement.appendChild(deprecationWarning);
         this.contentElement.appendChild(this.tree.element);
         this.selectedTreeElement = null;
         this.treeElements = [];

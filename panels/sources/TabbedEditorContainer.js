@@ -127,7 +127,7 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         return this.tabbedPane.visibleView;
     }
     fileViews() {
-        return /** @type {!Array.<!UI.Widget.Widget>} */ this.tabbedPane.tabViews();
+        return this.tabbedPane.tabViews();
     }
     leftToolbar() {
         return this.tabbedPane.leftToolbar();
@@ -178,37 +178,42 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         if (!this.currentView || !(this.currentView instanceof SourceFrame.SourceFrame.SourceFrameImpl)) {
             return;
         }
-        this.currentView.textEditor.addEventListener(SourceFrame.SourcesTextEditor.Events.ScrollChanged, this.scrollChanged, this);
-        this.currentView.textEditor.addEventListener(SourceFrame.SourcesTextEditor.Events.SelectionChanged, this.selectionChanged, this);
+        this.currentView.addEventListener("EditorUpdate" /* EditorUpdate */, this.onEditorUpdate, this);
+        this.currentView.addEventListener("EditorScroll" /* EditorScroll */, this.onScrollChanged, this);
     }
     removeViewListeners() {
         if (!this.currentView || !(this.currentView instanceof SourceFrame.SourceFrame.SourceFrameImpl)) {
             return;
         }
-        this.currentView.textEditor.removeEventListener(SourceFrame.SourcesTextEditor.Events.ScrollChanged, this.scrollChanged, this);
-        this.currentView.textEditor.removeEventListener(SourceFrame.SourcesTextEditor.Events.SelectionChanged, this.selectionChanged, this);
+        this.currentView.removeEventListener("EditorUpdate" /* EditorUpdate */, this.onEditorUpdate, this);
+        this.currentView.removeEventListener("EditorScroll" /* EditorScroll */, this.onScrollChanged, this);
     }
-    scrollChanged(event) {
-        if (this.scrollTimer) {
-            clearTimeout(this.scrollTimer);
+    onScrollChanged() {
+        if (this.currentView instanceof SourceFrame.SourceFrame.SourceFrameImpl) {
+            if (this.scrollTimer) {
+                clearTimeout(this.scrollTimer);
+            }
+            this.scrollTimer = window.setTimeout(() => this.history.save(this.previouslyViewedFilesSetting), 100);
+            if (this.currentFileInternal) {
+                const { editor } = this.currentView.textEditor;
+                const topBlock = editor.blockAtHeight(editor.scrollDOM.getBoundingClientRect().top);
+                const topLine = editor.state.doc.lineAt(topBlock.from).number - 1;
+                this.history.updateScrollLineNumber(this.currentFileInternal.url(), topLine);
+            }
         }
-        const lineNumber = event.data;
-        this.scrollTimer = window.setTimeout(saveHistory.bind(this), 100);
-        if (this.currentFileInternal) {
-            this.history.updateScrollLineNumber(this.currentFileInternal.url(), lineNumber);
-        }
-        function saveHistory() {
+    }
+    onEditorUpdate({ data: update }) {
+        if (update.docChanged || update.selectionSet) {
+            const { main } = update.state.selection;
+            const lineFrom = update.state.doc.lineAt(main.from), lineTo = update.state.doc.lineAt(main.to);
+            const range = new TextUtils.TextRange.TextRange(lineFrom.number - 1, main.from - lineFrom.from, lineTo.number - 1, main.to - lineTo.from);
+            if (this.currentFileInternal) {
+                this.history.updateSelectionRange(this.currentFileInternal.url(), range);
+            }
             this.history.save(this.previouslyViewedFilesSetting);
-        }
-    }
-    selectionChanged(event) {
-        const range = event.data;
-        if (this.currentFileInternal) {
-            this.history.updateSelectionRange(this.currentFileInternal.url(), range);
-        }
-        this.history.save(this.previouslyViewedFilesSetting);
-        if (this.currentFileInternal) {
-            Extensions.ExtensionServer.ExtensionServer.instance().sourceSelectionChanged(this.currentFileInternal.url(), range);
+            if (this.currentFileInternal) {
+                Extensions.ExtensionServer.ExtensionServer.instance().sourceSelectionChanged(this.currentFileInternal.url(), range);
+            }
         }
     }
     innerShowFile(uiSourceCode, userGesture) {
@@ -386,14 +391,14 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
             const savedScrollLineNumber = this.history.scrollLineNumber(uiSourceCode.url());
             this.restoreEditorProperties(view, savedSelectionRange, savedScrollLineNumber);
         }
-        this.tabbedPane.appendTab(tabId, title, view, tooltip, userGesture, undefined, index);
+        this.tabbedPane.appendTab(tabId, title, view, tooltip, userGesture, undefined, undefined, index);
         this.updateFileTitle(uiSourceCode);
         this.addUISourceCodeListeners(uiSourceCode);
         if (uiSourceCode.loadError()) {
             this.addLoadErrorIcon(tabId);
         }
         else if (!uiSourceCode.contentLoaded()) {
-            uiSourceCode.requestContent().then(_content => {
+            void uiSourceCode.requestContent().then(_content => {
                 if (uiSourceCode.loadError()) {
                     this.addLoadErrorIcon(tabId);
                 }
@@ -423,8 +428,7 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         }
     }
     tabClosed(event) {
-        const tabId = event.data.tabId;
-        const userGesture = event.data.isUserGesture;
+        const { tabId, isUserGesture } = event.data;
         const uiSourceCode = this.files.get(tabId);
         if (this.currentFileInternal === uiSourceCode) {
             this.removeViewListeners();
@@ -438,17 +442,16 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         if (uiSourceCode) {
             this.removeUISourceCodeListeners(uiSourceCode);
             this.dispatchEventToListeners(Events.EditorClosed, uiSourceCode);
-            if (userGesture) {
+            if (isUserGesture) {
                 this.editorClosedByUserAction(uiSourceCode);
             }
         }
     }
     tabSelected(event) {
-        const tabId = event.data.tabId;
-        const userGesture = event.data.isUserGesture;
+        const { tabId, isUserGesture } = event.data;
         const uiSourceCode = this.files.get(tabId);
         if (uiSourceCode) {
-            this.innerShowFile(uiSourceCode, userGesture);
+            this.innerShowFile(uiSourceCode, isUserGesture);
         }
     }
     addUISourceCodeListeners(uiSourceCode) {

@@ -1,3 +1,6 @@
+// Copyright 2021 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 /*
  * Copyright (C) 2010 Google Inc. All rights reserved.
  *
@@ -11,7 +14,7 @@
  * copyright notice, this list of conditions and the following disclaimer
  * in the documentation and/or other materials provided with the
  * distribution.
- *     * Neither the name of Google Inc. nor the names of its
+ *     * Neither the #name of Google Inc. nor the names of its
  * contributors may be used to endorse or promote products derived from
  * this software without specific prior written permission.
  *
@@ -43,55 +46,53 @@ import { Capability } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 import { SourceMapManager } from './SourceMapManager.js';
 export class CSSModel extends SDKModel {
-    isEnabledInternal;
-    cachedMatchedCascadeNode;
-    cachedMatchedCascadePromise;
-    domModelInternal;
-    sourceMapManagerInternal;
     agent;
-    styleLoader;
-    resourceTreeModel;
-    styleSheetIdToHeader;
-    styleSheetIdsForURL;
-    originalStyleSheetTextInternal;
-    isRuleUsageTrackingEnabled;
-    fontFacesInternal;
-    cssPropertyTracker;
-    isCSSPropertyTrackingEnabled;
-    isTrackingRequestPending;
-    trackedCSSProperties;
-    stylePollingThrottler;
+    #domModel;
+    #fontFaces;
+    #originalStyleSheetText;
+    #resourceTreeModel;
+    #sourceMapManager;
+    #styleLoader;
+    #stylePollingThrottler;
+    #styleSheetIdsForURL;
+    #styleSheetIdToHeader;
+    #cachedMatchedCascadeNode;
+    #cachedMatchedCascadePromise;
+    #cssPropertyTracker;
+    #isCSSPropertyTrackingEnabled;
+    #isEnabled;
+    #isRuleUsageTrackingEnabled;
+    #isTrackingRequestPending;
     constructor(target) {
         super(target);
-        this.isEnabledInternal = false;
-        this.cachedMatchedCascadeNode = null;
-        this.cachedMatchedCascadePromise = null;
-        this.domModelInternal = target.model(DOMModel);
-        this.sourceMapManagerInternal = new SourceMapManager(target);
+        this.#isEnabled = false;
+        this.#cachedMatchedCascadeNode = null;
+        this.#cachedMatchedCascadePromise = null;
+        this.#domModel = target.model(DOMModel);
+        this.#sourceMapManager = new SourceMapManager(target);
         this.agent = target.cssAgent();
-        this.styleLoader = new ComputedStyleLoader(this);
-        this.resourceTreeModel = target.model(ResourceTreeModel);
-        if (this.resourceTreeModel) {
-            this.resourceTreeModel.addEventListener(ResourceTreeModelEvents.MainFrameNavigated, this.resetStyleSheets, this);
+        this.#styleLoader = new ComputedStyleLoader(this);
+        this.#resourceTreeModel = target.model(ResourceTreeModel);
+        if (this.#resourceTreeModel) {
+            this.#resourceTreeModel.addEventListener(ResourceTreeModelEvents.MainFrameNavigated, this.onMainFrameNavigated, this);
         }
         target.registerCSSDispatcher(new CSSDispatcher(this));
         if (!target.suspended()) {
-            this.enable();
+            void this.enable();
         }
-        this.styleSheetIdToHeader = new Map();
-        this.styleSheetIdsForURL = new Map();
-        this.originalStyleSheetTextInternal = new Map();
-        this.isRuleUsageTrackingEnabled = false;
-        this.fontFacesInternal = new Map();
-        this.cssPropertyTracker = null; // TODO: support multiple trackers when we refactor the backend
-        this.isCSSPropertyTrackingEnabled = false;
-        this.isTrackingRequestPending = false;
-        this.trackedCSSProperties = new Map();
-        this.stylePollingThrottler = new Common.Throttler.Throttler(StylePollingInterval);
-        this.sourceMapManagerInternal.setEnabled(Common.Settings.Settings.instance().moduleSetting('cssSourceMapsEnabled').get());
+        this.#styleSheetIdToHeader = new Map();
+        this.#styleSheetIdsForURL = new Map();
+        this.#originalStyleSheetText = new Map();
+        this.#isRuleUsageTrackingEnabled = false;
+        this.#fontFaces = new Map();
+        this.#cssPropertyTracker = null; // TODO: support multiple trackers when we refactor the backend
+        this.#isCSSPropertyTrackingEnabled = false;
+        this.#isTrackingRequestPending = false;
+        this.#stylePollingThrottler = new Common.Throttler.Throttler(StylePollingInterval);
+        this.#sourceMapManager.setEnabled(Common.Settings.Settings.instance().moduleSetting('cssSourceMapsEnabled').get());
         Common.Settings.Settings.instance()
             .moduleSetting('cssSourceMapsEnabled')
-            .addChangeListener(event => this.sourceMapManagerInternal.setEnabled(event.data));
+            .addChangeListener(event => this.#sourceMapManager.setEnabled(event.data));
     }
     headersForSourceURL(sourceURL) {
         const headers = [];
@@ -123,7 +124,7 @@ export class CSSModel extends SDKModel {
         }
     }
     sourceMapManager() {
-        return this.sourceMapManagerInternal;
+        return this.#sourceMapManager;
     }
     static trimSourceURL(text) {
         let sourceURLIndex = text.lastIndexOf('/*# sourceURL=');
@@ -145,7 +146,7 @@ export class CSSModel extends SDKModel {
         return text.substr(0, sourceURLLineIndex) + text.substr(sourceURLLineIndex + sourceURLLine.length + 1);
     }
     domModel() {
-        return this.domModelInternal;
+        return this.#domModel;
     }
     async setStyleText(styleSheetId, range, text, majorChange) {
         try {
@@ -154,7 +155,7 @@ export class CSSModel extends SDKModel {
             if (!styles || styles.length !== 1) {
                 return false;
             }
-            this.domModelInternal.markUndoableState(!majorChange);
+            this.#domModel.markUndoableState(!majorChange);
             const edit = new Edit(styleSheetId, range, text, styles[0]);
             this.fireStyleSheetChanged(styleSheetId, edit);
             return true;
@@ -171,7 +172,7 @@ export class CSSModel extends SDKModel {
             if (!selectorList) {
                 return false;
             }
-            this.domModelInternal.markUndoableState();
+            this.#domModel.markUndoableState();
             const edit = new Edit(styleSheetId, range, text, selectorList);
             this.fireStyleSheetChanged(styleSheetId, edit);
             return true;
@@ -188,7 +189,7 @@ export class CSSModel extends SDKModel {
             if (!keyText) {
                 return false;
             }
-            this.domModelInternal.markUndoableState();
+            this.#domModel.markUndoableState();
             const edit = new Edit(styleSheetId, range, text, keyText);
             this.fireStyleSheetChanged(styleSheetId, edit);
             return true;
@@ -198,7 +199,7 @@ export class CSSModel extends SDKModel {
         }
     }
     startCoverage() {
-        this.isRuleUsageTrackingEnabled = true;
+        this.#isRuleUsageTrackingEnabled = true;
         return this.agent.invoke_startRuleUsageTracking();
     }
     async takeCoverageDelta() {
@@ -213,7 +214,7 @@ export class CSSModel extends SDKModel {
         });
     }
     async stopCoverage() {
-        this.isRuleUsageTrackingEnabled = false;
+        this.#isRuleUsageTrackingEnabled = false;
         await this.agent.invoke_stopRuleUsageTracking();
     }
     async mediaQueriesPromise() {
@@ -221,12 +222,12 @@ export class CSSModel extends SDKModel {
         return medias ? CSSMedia.parseMediaArrayPayload(this, medias) : [];
     }
     isEnabled() {
-        return this.isEnabledInternal;
+        return this.#isEnabled;
     }
     async enable() {
         await this.agent.invoke_enable();
-        this.isEnabledInternal = true;
-        if (this.isRuleUsageTrackingEnabled) {
+        this.#isEnabled = true;
+        if (this.#isRuleUsageTrackingEnabled) {
             await this.startCoverage();
         }
         this.dispatchEventToListeners(Events.ModelWasEnabled);
@@ -236,7 +237,7 @@ export class CSSModel extends SDKModel {
         if (response.getError()) {
             return null;
         }
-        const node = this.domModelInternal.nodeForId(nodeId);
+        const node = this.#domModel.nodeForId(nodeId);
         if (!node) {
             return null;
         }
@@ -247,7 +248,7 @@ export class CSSModel extends SDKModel {
         return classNames || [];
     }
     computedStylePromise(nodeId) {
-        return this.styleLoader.computedStylePromise(nodeId);
+        return this.#styleLoader.computedStylePromise(nodeId);
     }
     async backgroundColorsPromise(nodeId) {
         const response = await this.agent.invoke_getBackgroundColors({ nodeId });
@@ -265,7 +266,7 @@ export class CSSModel extends SDKModel {
         return fonts;
     }
     allStyleSheets() {
-        const values = [...this.styleSheetIdToHeader.values()];
+        const values = [...this.#styleSheetIdToHeader.values()];
         function styleSheetComparator(a, b) {
             if (a.sourceURL < b.sourceURL) {
                 return -1;
@@ -314,7 +315,7 @@ export class CSSModel extends SDKModel {
         if (node.id === undefined) {
             return false;
         }
-        this.agent.invoke_forcePseudoState({ nodeId: node.id, forcedPseudoClasses });
+        void this.agent.invoke_forcePseudoState({ nodeId: node.id, forcedPseudoClasses });
         this.dispatchEventToListeners(Events.PseudoStateForced, { node: node, pseudoClass: pseudoClass, enable: enable });
         return true;
     }
@@ -329,7 +330,7 @@ export class CSSModel extends SDKModel {
             if (!media) {
                 return false;
             }
-            this.domModelInternal.markUndoableState();
+            this.#domModel.markUndoableState();
             const edit = new Edit(styleSheetId, range, newMediaText, media);
             this.fireStyleSheetChanged(styleSheetId, edit);
             return true;
@@ -346,7 +347,7 @@ export class CSSModel extends SDKModel {
             if (!containerQuery) {
                 return false;
             }
-            this.domModelInternal.markUndoableState();
+            this.#domModel.markUndoableState();
             const edit = new Edit(styleSheetId, range, newContainerQueryText, containerQuery);
             this.fireStyleSheetChanged(styleSheetId, edit);
             return true;
@@ -362,7 +363,7 @@ export class CSSModel extends SDKModel {
             if (!rule) {
                 return null;
             }
-            this.domModelInternal.markUndoableState();
+            this.#domModel.markUndoableState();
             const edit = new Edit(styleSheetId, ruleLocation, ruleText, rule);
             this.fireStyleSheetChanged(styleSheetId, edit);
             return new CSSStyleRule(this, rule);
@@ -373,8 +374,8 @@ export class CSSModel extends SDKModel {
     }
     async requestViaInspectorStylesheet(node) {
         const frameId = node.frameId() ||
-            (this.resourceTreeModel && this.resourceTreeModel.mainFrame ? this.resourceTreeModel.mainFrame.id : null);
-        const headers = [...this.styleSheetIdToHeader.values()];
+            (this.#resourceTreeModel && this.#resourceTreeModel.mainFrame ? this.#resourceTreeModel.mainFrame.id : null);
+        const headers = [...this.#styleSheetIdToHeader.values()];
         const styleSheetHeader = headers.find(header => header.frameId === frameId && header.isViaInspector());
         if (styleSheetHeader) {
             return styleSheetHeader;
@@ -387,7 +388,7 @@ export class CSSModel extends SDKModel {
             if (!styleSheetId) {
                 return null;
             }
-            return this.styleSheetIdToHeader.get(styleSheetId) || null;
+            return this.#styleSheetIdToHeader.get(styleSheetId) || null;
         }
         catch (e) {
             return null;
@@ -398,18 +399,18 @@ export class CSSModel extends SDKModel {
     }
     fontsUpdated(fontFace) {
         if (fontFace) {
-            this.fontFacesInternal.set(fontFace.src, new CSSFontFace(fontFace));
+            this.#fontFaces.set(fontFace.src, new CSSFontFace(fontFace));
         }
         this.dispatchEventToListeners(Events.FontsUpdated);
     }
     fontFaces() {
-        return [...this.fontFacesInternal.values()];
+        return [...this.#fontFaces.values()];
     }
     styleSheetHeaderForId(id) {
-        return this.styleSheetIdToHeader.get(id) || null;
+        return this.#styleSheetIdToHeader.get(id) || null;
     }
     styleSheetHeaders() {
-        return [...this.styleSheetIdToHeader.values()];
+        return [...this.#styleSheetIdToHeader.values()];
     }
     fireStyleSheetChanged(styleSheetId, edit) {
         this.dispatchEventToListeners(Events.StyleSheetChanged, { styleSheetId: styleSheetId, edit: edit });
@@ -419,10 +420,10 @@ export class CSSModel extends SDKModel {
         if (!header) {
             return Promise.resolve(null);
         }
-        let promise = this.originalStyleSheetTextInternal.get(header);
+        let promise = this.#originalStyleSheetText.get(header);
         if (!promise) {
             promise = this.getStyleSheetText(header.id);
-            this.originalStyleSheetTextInternal.set(header, promise);
+            this.#originalStyleSheetText.set(header, promise);
             this.originalContentRequestedForTest(header);
         }
         return promise;
@@ -433,17 +434,17 @@ export class CSSModel extends SDKModel {
         return this.ensureOriginalStyleSheetText(header.id);
     }
     getAllStyleSheetHeaders() {
-        return this.styleSheetIdToHeader.values();
+        return this.#styleSheetIdToHeader.values();
     }
     styleSheetAdded(header) {
-        console.assert(!this.styleSheetIdToHeader.get(header.styleSheetId));
+        console.assert(!this.#styleSheetIdToHeader.get(header.styleSheetId));
         const styleSheetHeader = new CSSStyleSheetHeader(this, header);
-        this.styleSheetIdToHeader.set(header.styleSheetId, styleSheetHeader);
+        this.#styleSheetIdToHeader.set(header.styleSheetId, styleSheetHeader);
         const url = styleSheetHeader.resourceURL();
-        let frameIdToStyleSheetIds = this.styleSheetIdsForURL.get(url);
+        let frameIdToStyleSheetIds = this.#styleSheetIdsForURL.get(url);
         if (!frameIdToStyleSheetIds) {
             frameIdToStyleSheetIds = new Map();
-            this.styleSheetIdsForURL.set(url, frameIdToStyleSheetIds);
+            this.#styleSheetIdsForURL.set(url, frameIdToStyleSheetIds);
         }
         if (frameIdToStyleSheetIds) {
             let styleSheetIds = frameIdToStyleSheetIds.get(styleSheetHeader.frameId);
@@ -453,18 +454,18 @@ export class CSSModel extends SDKModel {
             }
             styleSheetIds.add(styleSheetHeader.id);
         }
-        this.sourceMapManagerInternal.attachSourceMap(styleSheetHeader, styleSheetHeader.sourceURL, styleSheetHeader.sourceMapURL);
+        this.#sourceMapManager.attachSourceMap(styleSheetHeader, styleSheetHeader.sourceURL, styleSheetHeader.sourceMapURL);
         this.dispatchEventToListeners(Events.StyleSheetAdded, styleSheetHeader);
     }
     styleSheetRemoved(id) {
-        const header = this.styleSheetIdToHeader.get(id);
+        const header = this.#styleSheetIdToHeader.get(id);
         console.assert(Boolean(header));
         if (!header) {
             return;
         }
-        this.styleSheetIdToHeader.delete(id);
+        this.#styleSheetIdToHeader.delete(id);
         const url = header.resourceURL();
-        const frameIdToStyleSheetIds = this.styleSheetIdsForURL.get(url);
+        const frameIdToStyleSheetIds = this.#styleSheetIdsForURL.get(url);
         console.assert(Boolean(frameIdToStyleSheetIds), 'No frameId to styleSheetId map is available for given style sheet URL.');
         if (frameIdToStyleSheetIds) {
             const stylesheetIds = frameIdToStyleSheetIds.get(header.frameId);
@@ -473,17 +474,17 @@ export class CSSModel extends SDKModel {
                 if (!stylesheetIds.size) {
                     frameIdToStyleSheetIds.delete(header.frameId);
                     if (!frameIdToStyleSheetIds.size) {
-                        this.styleSheetIdsForURL.delete(url);
+                        this.#styleSheetIdsForURL.delete(url);
                     }
                 }
             }
         }
-        this.originalStyleSheetTextInternal.delete(header);
-        this.sourceMapManagerInternal.detachSourceMap(header);
+        this.#originalStyleSheetText.delete(header);
+        this.#sourceMapManager.detachSourceMap(header);
         this.dispatchEventToListeners(Events.StyleSheetRemoved, header);
     }
     getStyleSheetIdsForURL(url) {
-        const frameIdToStyleSheetIds = this.styleSheetIdsForURL.get(url);
+        const frameIdToStyleSheetIds = this.#styleSheetIdsForURL.get(url);
         if (!frameIdToStyleSheetIds) {
             return [];
         }
@@ -494,7 +495,7 @@ export class CSSModel extends SDKModel {
         return result;
     }
     async setStyleSheetText(styleSheetId, newText, majorChange) {
-        const header = this.styleSheetIdToHeader.get(styleSheetId);
+        const header = this.#styleSheetIdToHeader.get(styleSheetId);
         if (!header) {
             return 'Unknown stylesheet in CSS.setStyleSheetText';
         }
@@ -505,13 +506,13 @@ export class CSSModel extends SDKModel {
         await this.ensureOriginalStyleSheetText(styleSheetId);
         const response = await this.agent.invoke_setStyleSheetText({ styleSheetId: header.id, text: newText });
         const sourceMapURL = response.sourceMapURL;
-        this.sourceMapManagerInternal.detachSourceMap(header);
+        this.#sourceMapManager.detachSourceMap(header);
         header.setSourceMapURL(sourceMapURL);
-        this.sourceMapManagerInternal.attachSourceMap(header, header.sourceURL, header.sourceMapURL);
+        this.#sourceMapManager.attachSourceMap(header, header.sourceURL, header.sourceMapURL);
         if (sourceMapURL === null) {
             return 'Error in CSS.setStyleSheetText';
         }
-        this.domModelInternal.markUndoableState(!majorChange);
+        this.#domModel.markUndoableState(!majorChange);
         this.fireStyleSheetChanged(styleSheetId);
         return null;
     }
@@ -524,20 +525,36 @@ export class CSSModel extends SDKModel {
             return null;
         }
     }
+    async onMainFrameNavigated(event) {
+        // If the main frame was restored from the back-forward cache, the order of CDP
+        // is different from the regular navigations. In this case, events about CSS
+        // stylesheet has already been received and they are mixed with the previous page
+        // stylesheets. Therefore, we re-enable the CSS agent to get fresh events.
+        // For the regular navigatons, we can just clear the local data because events about
+        // stylesheets will arrive later.
+        if (event.data.backForwardCacheDetails.restoredFromCache) {
+            await this.suspendModel();
+            await this.resumeModel();
+        }
+        else {
+            this.resetStyleSheets();
+            this.resetFontFaces();
+        }
+    }
     resetStyleSheets() {
-        const headers = [...this.styleSheetIdToHeader.values()];
-        this.styleSheetIdsForURL.clear();
-        this.styleSheetIdToHeader.clear();
+        const headers = [...this.#styleSheetIdToHeader.values()];
+        this.#styleSheetIdsForURL.clear();
+        this.#styleSheetIdToHeader.clear();
         for (const header of headers) {
-            this.sourceMapManagerInternal.detachSourceMap(header);
+            this.#sourceMapManager.detachSourceMap(header);
             this.dispatchEventToListeners(Events.StyleSheetRemoved, header);
         }
     }
     resetFontFaces() {
-        this.fontFacesInternal.clear();
+        this.#fontFaces.clear();
     }
     async suspendModel() {
-        this.isEnabledInternal = false;
+        this.#isEnabled = false;
         await this.agent.invoke_disable();
         this.resetStyleSheets();
         this.resetFontFaces();
@@ -546,26 +563,26 @@ export class CSSModel extends SDKModel {
         return this.enable();
     }
     setEffectivePropertyValueForNode(nodeId, propertyName, value) {
-        this.agent.invoke_setEffectivePropertyValueForNode({ nodeId, propertyName, value });
+        void this.agent.invoke_setEffectivePropertyValueForNode({ nodeId, propertyName, value });
     }
     cachedMatchedCascadeForNode(node) {
-        if (this.cachedMatchedCascadeNode !== node) {
+        if (this.#cachedMatchedCascadeNode !== node) {
             this.discardCachedMatchedCascade();
         }
-        this.cachedMatchedCascadeNode = node;
-        if (!this.cachedMatchedCascadePromise) {
+        this.#cachedMatchedCascadeNode = node;
+        if (!this.#cachedMatchedCascadePromise) {
             if (node.id) {
-                this.cachedMatchedCascadePromise = this.matchedStylesPromise(node.id);
+                this.#cachedMatchedCascadePromise = this.matchedStylesPromise(node.id);
             }
             else {
                 return Promise.resolve(null);
             }
         }
-        return this.cachedMatchedCascadePromise;
+        return this.#cachedMatchedCascadePromise;
     }
     discardCachedMatchedCascade() {
-        this.cachedMatchedCascadeNode = null;
-        this.cachedMatchedCascadePromise = null;
+        this.#cachedMatchedCascadeNode = null;
+        this.#cachedMatchedCascadePromise = null;
     }
     createCSSPropertyTracker(propertiesToTrack) {
         const cssPropertyTracker = new CSSPropertyTracker(this, propertiesToTrack);
@@ -576,44 +593,42 @@ export class CSSModel extends SDKModel {
         if (propertiesToTrack.length === 0) {
             return;
         }
-        this.agent.invoke_trackComputedStyleUpdates({ propertiesToTrack });
-        this.isCSSPropertyTrackingEnabled = true;
-        this.cssPropertyTracker = cssPropertyTracker;
-        this.pollComputedStyleUpdates();
+        void this.agent.invoke_trackComputedStyleUpdates({ propertiesToTrack });
+        this.#isCSSPropertyTrackingEnabled = true;
+        this.#cssPropertyTracker = cssPropertyTracker;
+        void this.pollComputedStyleUpdates();
     }
     // Since we only support one tracker at a time, this call effectively disables
     // style tracking.
     disableCSSPropertyTracker() {
-        this.isCSSPropertyTrackingEnabled = false;
-        this.cssPropertyTracker = null;
+        this.#isCSSPropertyTrackingEnabled = false;
+        this.#cssPropertyTracker = null;
         // Sending an empty list to the backend signals the close of style tracking
-        this.agent.invoke_trackComputedStyleUpdates({ propertiesToTrack: [] });
+        void this.agent.invoke_trackComputedStyleUpdates({ propertiesToTrack: [] });
     }
     async pollComputedStyleUpdates() {
-        if (this.isTrackingRequestPending) {
+        if (this.#isTrackingRequestPending) {
             return;
         }
-        if (this.isCSSPropertyTrackingEnabled) {
-            this.isTrackingRequestPending = true;
+        if (this.#isCSSPropertyTrackingEnabled) {
+            this.#isTrackingRequestPending = true;
             const result = await this.agent.invoke_takeComputedStyleUpdates();
-            this.isTrackingRequestPending = false;
-            if (result.getError() || !result.nodeIds || !this.isCSSPropertyTrackingEnabled) {
+            this.#isTrackingRequestPending = false;
+            if (result.getError() || !result.nodeIds || !this.#isCSSPropertyTrackingEnabled) {
                 return;
             }
-            if (this.cssPropertyTracker) {
-                this.cssPropertyTracker.dispatchEventToListeners(CSSPropertyTrackerEvents.TrackedCSSPropertiesUpdated, {
-                    domNodes: result.nodeIds.map(nodeId => this.domModelInternal.nodeForId(nodeId)),
-                });
+            if (this.#cssPropertyTracker) {
+                this.#cssPropertyTracker.dispatchEventToListeners(CSSPropertyTrackerEvents.TrackedCSSPropertiesUpdated, result.nodeIds.map(nodeId => this.#domModel.nodeForId(nodeId)));
             }
         }
-        if (this.isCSSPropertyTrackingEnabled) {
-            this.stylePollingThrottler.schedule(this.pollComputedStyleUpdates.bind(this));
+        if (this.#isCSSPropertyTrackingEnabled) {
+            void this.#stylePollingThrottler.schedule(this.pollComputedStyleUpdates.bind(this));
         }
     }
     dispose() {
         this.disableCSSPropertyTracker();
         super.dispose();
-        this.sourceMapManagerInternal.dispose();
+        this.#sourceMapManager.dispose();
     }
     getAgent() {
         return this.agent;
@@ -647,60 +662,60 @@ export class Edit {
     }
 }
 export class CSSLocation {
-    cssModelInternal;
+    #cssModelInternal;
     styleSheetId;
     url;
     lineNumber;
     columnNumber;
     constructor(header, lineNumber, columnNumber) {
-        this.cssModelInternal = header.cssModel();
+        this.#cssModelInternal = header.cssModel();
         this.styleSheetId = header.id;
         this.url = header.resourceURL();
         this.lineNumber = lineNumber;
         this.columnNumber = columnNumber || 0;
     }
     cssModel() {
-        return this.cssModelInternal;
+        return this.#cssModelInternal;
     }
     header() {
-        return this.cssModelInternal.styleSheetHeaderForId(this.styleSheetId);
+        return this.#cssModelInternal.styleSheetHeaderForId(this.styleSheetId);
     }
 }
 class CSSDispatcher {
-    cssModel;
+    #cssModel;
     constructor(cssModel) {
-        this.cssModel = cssModel;
+        this.#cssModel = cssModel;
     }
     mediaQueryResultChanged() {
-        this.cssModel.mediaQueryResultChanged();
+        this.#cssModel.mediaQueryResultChanged();
     }
     fontsUpdated({ font }) {
-        this.cssModel.fontsUpdated(font);
+        this.#cssModel.fontsUpdated(font);
     }
     styleSheetChanged({ styleSheetId }) {
-        this.cssModel.fireStyleSheetChanged(styleSheetId);
+        this.#cssModel.fireStyleSheetChanged(styleSheetId);
     }
     styleSheetAdded({ header }) {
-        this.cssModel.styleSheetAdded(header);
+        this.#cssModel.styleSheetAdded(header);
     }
     styleSheetRemoved({ styleSheetId }) {
-        this.cssModel.styleSheetRemoved(styleSheetId);
+        this.#cssModel.styleSheetRemoved(styleSheetId);
     }
 }
 class ComputedStyleLoader {
-    cssModel;
-    nodeIdToPromise;
+    #cssModel;
+    #nodeIdToPromise;
     constructor(cssModel) {
-        this.cssModel = cssModel;
-        this.nodeIdToPromise = new Map();
+        this.#cssModel = cssModel;
+        this.#nodeIdToPromise = new Map();
     }
     computedStylePromise(nodeId) {
-        let promise = this.nodeIdToPromise.get(nodeId);
+        let promise = this.#nodeIdToPromise.get(nodeId);
         if (promise) {
             return promise;
         }
-        promise = this.cssModel.getAgent().invoke_getComputedStyleForNode({ nodeId }).then(({ computedStyle }) => {
-            this.nodeIdToPromise.delete(nodeId);
+        promise = this.#cssModel.getAgent().invoke_getComputedStyleForNode({ nodeId }).then(({ computedStyle }) => {
+            this.#nodeIdToPromise.delete(nodeId);
             if (!computedStyle || !computedStyle.length) {
                 return null;
             }
@@ -710,7 +725,7 @@ class ComputedStyleLoader {
             }
             return result;
         });
-        this.nodeIdToPromise.set(nodeId, promise);
+        this.#nodeIdToPromise.set(nodeId, promise);
         return promise;
     }
 }
@@ -723,21 +738,21 @@ export class InlineStyleResult {
     }
 }
 export class CSSPropertyTracker extends Common.ObjectWrapper.ObjectWrapper {
-    cssModel;
-    properties;
+    #cssModel;
+    #properties;
     constructor(cssModel, propertiesToTrack) {
         super();
-        this.cssModel = cssModel;
-        this.properties = propertiesToTrack;
+        this.#cssModel = cssModel;
+        this.#properties = propertiesToTrack;
     }
     start() {
-        this.cssModel.enableCSSPropertyTracker(this);
+        this.#cssModel.enableCSSPropertyTracker(this);
     }
     stop() {
-        this.cssModel.disableCSSPropertyTracker();
+        this.#cssModel.disableCSSPropertyTracker();
     }
     getTrackedProperties() {
-        return this.properties;
+        return this.#properties;
     }
 }
 const StylePollingInterval = 1000; // throttling interval for style polling, in milliseconds

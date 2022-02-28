@@ -1,6 +1,9 @@
 import * as Platform from '../../../core/platform/platform.js';
 import type * as LitHtml from '../../../ui/lit-html/lit-html.js';
 import * as IconButton from '../../../ui/components/icon_button/icon_button.js';
+export interface CSSStylesObject {
+    readonly [name: string]: string;
+}
 /**
   * A column is an object with the following properties:
   *
@@ -14,14 +17,17 @@ import * as IconButton from '../../../ui/components/icon_button/icon_button.js';
   *   Note, if you're rendering a data-grid yourself you likely  shouldn't set
   *   this. It's set by the `data-grid-controller`, which is the component you
   *   want if your table needs to be sortable.
+  * - `styles`: an optional property of key-value sets of CSS properties and values.
 */
 export interface Column {
     id: string;
     title: string;
+    titleElement?: LitHtml.TemplateResult;
     sortable?: boolean;
     widthWeighting: number;
     hideable: boolean;
     visible: boolean;
+    styles?: CSSStylesObject;
 }
 export declare type CellValue = string | number | boolean | IconButton.Icon.Icon | null;
 /**
@@ -38,13 +44,10 @@ export interface Cell {
     renderer?: (value: CellValue) => LitHtml.TemplateResult | typeof LitHtml.nothing;
 }
 export declare function getStringifiedCellValues(cells: Cell[]): string;
-export interface RowCSSStylesObject {
-    readonly [name: string]: string;
-}
 export declare type Row = {
     cells: Cell[];
     hidden?: boolean;
-    styles?: RowCSSStylesObject;
+    styles?: CSSStylesObject;
 };
 export declare const enum SortDirection {
     ASC = "ASC",
@@ -91,3 +94,4 @@ export declare const calculateFirstFocusableCell: (options: {
     columns: readonly Column[];
     rows: readonly Row[];
 }) => [colIndex: number, rowIndex: number];
+export declare const getCellTitleFromCellContent: (text: string) => string;

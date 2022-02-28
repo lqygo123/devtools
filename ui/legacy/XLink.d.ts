@@ -1,9 +1,7 @@
+import * as LitHtml from '../lit-html/lit-html.js';
 import type { ContextMenu, Provider } from './ContextMenu.js';
 import { XElement } from './XElement.js';
 export declare class XLink extends XElement {
-    tabIndex: number;
-    target: string;
-    rel: string;
     hrefInternal: string | null;
     private clickable;
     private readonly onClick;
@@ -21,3 +19,4 @@ export declare class ContextMenuProvider implements Provider {
     }): ContextMenuProvider;
     appendApplicableItems(event: Event, contextMenu: ContextMenu, target: Object): void;
 }
+export declare const sample: LitHtml.TemplateResult<2 | 1>;

@@ -6,8 +6,7 @@ export declare class Segment<T> {
     intersects(that: Segment<T>): boolean;
 }
 export declare class SegmentedRange<T> {
-    private segmentsInternal;
-    private readonly mergeCallback;
+    #private;
     constructor(mergeCallback?: ((arg0: Segment<T>, arg1: Segment<T>) => Segment<T> | null));
     append(newSegment: Segment<T>): void;
     appendRange(that: SegmentedRange<T>): void;

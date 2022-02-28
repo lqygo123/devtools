@@ -10,9 +10,7 @@ export declare class PaintProfilerModel extends SDKModel<void> {
     makeSnapshot(layerId: Protocol.LayerTree.LayerId): Promise<PaintProfilerSnapshot | null>;
 }
 export declare class PaintProfilerSnapshot {
-    private readonly paintProfilerModel;
-    private readonly id;
-    private refCount;
+    #private;
     constructor(paintProfilerModel: PaintProfilerModel, snapshotId: Protocol.LayerTree.SnapshotId);
     release(): void;
     addReference(): void;

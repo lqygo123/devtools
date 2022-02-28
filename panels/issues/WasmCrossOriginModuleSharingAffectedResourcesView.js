@@ -41,7 +41,7 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/issues/WasmCrossOriginModuleSharingAffectedResourcesView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class WasmCrossOriginModuleSharingAffectedResourcesView extends AffectedResourcesView {
-    appendIssues(issues) {
+    #appendIssues(issues) {
         const header = document.createElement('tr');
         this.appendColumnTitle(header, i18nString(UIStrings.wasmModuleUrl));
         this.appendColumnTitle(header, i18nString(UIStrings.sourceOrigin));
@@ -50,7 +50,7 @@ export class WasmCrossOriginModuleSharingAffectedResourcesView extends AffectedR
         this.affectedResources.appendChild(header);
         let count = 0;
         for (const issue of issues) {
-            this.appendDetails(issue.details());
+            this.#appendDetails(issue.details());
             count++;
         }
         this.updateAffectedResourceCount(count);
@@ -58,7 +58,7 @@ export class WasmCrossOriginModuleSharingAffectedResourcesView extends AffectedR
     getResourceNameWithCount(count) {
         return i18nString(UIStrings.nModuleTransfers, { n: count });
     }
-    appendDetails(details) {
+    #appendDetails(details) {
         const element = document.createElement('tr');
         element.appendChild(this.createIssueDetailCell(details.wasmModuleUrl));
         element.appendChild(this.createIssueDetailCell(details.sourceOrigin));
@@ -68,7 +68,7 @@ export class WasmCrossOriginModuleSharingAffectedResourcesView extends AffectedR
     }
     update() {
         this.clear();
-        this.appendIssues(this.issue.getWasmCrossOriginModuleSharingIssue());
+        this.#appendIssues(this.issue.getWasmCrossOriginModuleSharingIssue());
     }
 }
 //# sourceMappingURL=WasmCrossOriginModuleSharingAffectedResourcesView.js.map

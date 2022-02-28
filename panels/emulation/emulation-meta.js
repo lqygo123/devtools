@@ -42,11 +42,11 @@ const UIStrings = {
     /**
     *@description Command that shows measuring rulers next to the emulated device.
     */
-    showRulers: 'Show rulers',
+    showRulers: 'Show rulers in the Device Mode toolbar',
     /**
     *@description Command that hides measuring rulers next to the emulated device.
     */
-    hideRulers: 'Hide rulers',
+    hideRulers: 'Hide rulers in the Device Mode toolbar',
     /**
     *@description Command that shows a frame (like a picture frame) around the emulated device.
     */
@@ -61,8 +61,6 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 let loadedEmulationModule;
 async function loadEmulationModule() {
     if (!loadedEmulationModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/emulation');
         loadedEmulationModule = await import('./emulation.js');
     }
     return loadedEmulationModule;

@@ -11,7 +11,7 @@ export declare class OutlineQuickOpen extends QuickOpen.FilteredListWidget.Provi
     itemCount(): number;
     itemKeyAt(itemIndex: number): string;
     itemScoreAt(itemIndex: number, query: string): number;
-    renderItem(itemIndex: number, query: string, titleElement: Element, subtitleElement: Element): void;
+    renderItem(itemIndex: number, query: string, titleElement: Element, _subtitleElement: Element): void;
     selectItem(itemIndex: number | null, _promptValue: string): void;
     private currentUISourceCode;
     notFoundText(): string;

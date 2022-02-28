@@ -440,7 +440,7 @@ export class TimelinePanel extends UI.Panel.Panel {
         this.saveButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.saveProfile), 'largeicon-download');
         this.saveButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, _event => {
             Host.userMetrics.actionTaken(Host.UserMetrics.Action.PerfPanelTraceExported);
-            this.saveToFile();
+            void this.saveToFile();
         });
         this.panelToolbar.appendSeparator();
         this.panelToolbar.appendToolbarItem(this.loadButton);
@@ -542,7 +542,7 @@ export class TimelinePanel extends UI.Panel.Panel {
     contextMenu(event) {
         const contextMenu = new UI.ContextMenu.ContextMenu(event);
         contextMenu.appendItemsAtLocation('timelineMenu');
-        contextMenu.show();
+        void contextMenu.show();
     }
     async saveToFile() {
         if (this.state !== State.Idle) {
@@ -670,7 +670,7 @@ export class TimelinePanel extends UI.Panel.Panel {
     }
     async getCoverageViewWidget() {
         const view = UI.ViewManager.ViewManager.instance().view('coverage');
-        return /** @type {!Coverage.CoverageView.CoverageView} */ await view.widget();
+        return await view.widget();
     }
     async startRecording() {
         console.assert(!this.statusPane, 'Status pane is already opened.');
@@ -734,7 +734,7 @@ export class TimelinePanel extends UI.Panel.Panel {
     }
     recordingFailed(error) {
         if (this.statusPane) {
-            this.statusPane.hide();
+            this.statusPane.remove();
         }
         this.statusPane = new StatusPane({
             description: error,
@@ -772,11 +772,11 @@ export class TimelinePanel extends UI.Panel.Panel {
     toggleRecording() {
         if (this.state === State.Idle) {
             this.recordingPageReload = false;
-            this.startRecording();
+            void this.startRecording();
             Host.userMetrics.actionTaken(Host.UserMetrics.Action.TimelineStarted);
         }
         else if (this.state === State.Recording) {
-            this.stopRecording();
+            void this.stopRecording();
         }
     }
     recordReload() {
@@ -784,7 +784,7 @@ export class TimelinePanel extends UI.Panel.Panel {
             return;
         }
         this.recordingPageReload = true;
-        this.startRecording();
+        void this.startRecording();
         Host.userMetrics.actionTaken(Host.UserMetrics.Action.TimelinePageReloadStarted);
     }
     onClearButton() {
@@ -894,7 +894,7 @@ export class TimelinePanel extends UI.Panel.Panel {
     loadingStarted() {
         this.hideLandingPage();
         if (this.statusPane) {
-            this.statusPane.hide();
+            this.statusPane.remove();
         }
         this.statusPane = new StatusPane({
             showProgress: true,
@@ -925,7 +925,7 @@ export class TimelinePanel extends UI.Panel.Panel {
         delete this.loader;
         this.setState(State.Idle);
         if (this.statusPane) {
-            this.statusPane.hide();
+            this.statusPane.remove();
         }
         this.statusPane = null;
         if (!tracingModel) {
@@ -939,7 +939,7 @@ export class TimelinePanel extends UI.Panel.Panel {
         this.setModel(this.performanceModel);
         this.historyManager.addRecording(this.performanceModel);
         if (this.startCoverage.get()) {
-            UI.ViewManager.ViewManager.instance()
+            void UI.ViewManager.ViewManager.instance()
                 .showView('coverage')
                 .then(() => this.getCoverageViewWidget())
                 .then(widget => widget.processBacklog())
@@ -987,17 +987,17 @@ export class TimelinePanel extends UI.Panel.Panel {
             return;
         }
         const controller = this.controller;
-        await new Promise(r => setTimeout(r, this.millisecondsToRecordAfterLoadEvent));
+        await new Promise(r => window.setTimeout(r, this.millisecondsToRecordAfterLoadEvent));
         // Check if we're still in the same recording session.
         if (controller !== this.controller || this.state !== State.Recording) {
             return;
         }
-        this.stopRecording();
+        void this.stopRecording();
     }
     frameForSelection(selection) {
         switch (selection.type()) {
             case TimelineSelection.Type.Frame:
-                return /** @type {!TimelineModel.TimelineFrameModel.TimelineFrame} */ selection.object();
+                return selection.object();
             case TimelineSelection.Type.Range:
                 return null;
             case TimelineSelection.Type.TraceEvent:
@@ -1198,9 +1198,10 @@ export class StatusPane extends UI.Widget.VBox {
         this.stopTimer();
         this.button.disabled = true;
     }
-    hide() {
+    remove() {
         this.element.parentNode.classList.remove('tinted');
         this.arrangeDialog(this.element.parentNode);
+        this.stopTimer();
         this.element.remove();
     }
     showPane(parent) {
@@ -1262,7 +1263,7 @@ export class LoadTimelineHandler {
         return loadTimelineHandlerInstance;
     }
     handleQueryParam(value) {
-        UI.ViewManager.ViewManager.instance().showView('timeline').then(() => {
+        void UI.ViewManager.ViewManager.instance().showView('timeline').then(() => {
             TimelinePanel.instance().loadFromURL(window.decodeURIComponent(value));
         });
     }
@@ -1287,7 +1288,7 @@ export class ActionDelegate {
                 panel.recordReload();
                 return true;
             case 'timeline.save-to-file':
-                panel.saveToFile();
+                void panel.saveToFile();
                 return true;
             case 'timeline.load-from-file':
                 panel.selectFileToLoad();
@@ -1299,7 +1300,7 @@ export class ActionDelegate {
                 panel.jumpToFrame(1);
                 return true;
             case 'timeline.show-history':
-                panel.showHistory();
+                void panel.showHistory();
                 return true;
             case 'timeline.previous-recording':
                 panel.navigateHistory(1);

@@ -57,7 +57,8 @@ export class AdvancedApp {
         this.toolboxWindow = window.open(url, undefined);
     }
     deviceModeEmulationFrameLoaded(toolboxDocument) {
-        UI.UIUtils.initializeUIUtils(toolboxDocument, Common.Settings.Settings.instance().createSetting('uiTheme', 'default'));
+        Common.Settings.Settings.instance().createSetting('uiTheme', 'default');
+        UI.UIUtils.initializeUIUtils(toolboxDocument);
         UI.UIUtils.installComponentRootStyles(toolboxDocument.body);
         UI.ContextMenu.ContextMenu.installHandler(toolboxDocument);
         this.toolboxRootView = new UI.RootView.RootView();

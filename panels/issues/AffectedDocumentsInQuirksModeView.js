@@ -25,20 +25,20 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/issues/AffectedDocumentsInQuirksModeView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class AffectedDocumentsInQuirksModeView extends AffectedElementsView {
-    runningUpdatePromise = Promise.resolve();
+    #runningUpdatePromise = Promise.resolve();
     update() {
         // Ensure that doUpdate is invoked atomically by serializing the update calls
         // because it's not re-entrace safe.
-        this.runningUpdatePromise = this.runningUpdatePromise.then(this.doUpdate.bind(this));
+        this.#runningUpdatePromise = this.#runningUpdatePromise.then(this.#doUpdate.bind(this));
     }
     getResourceName(count) {
         return i18nString(UIStrings.nDocuments, { n: count });
     }
-    async doUpdate() {
+    async #doUpdate() {
         this.clear();
-        await this.appendQuirksModeDocuments(this.issue.getQuirksModeIssues());
+        await this.#appendQuirksModeDocuments(this.issue.getQuirksModeIssues());
     }
-    async appendQuirksModeDocument(issue) {
+    async #appendQuirksModeDocument(issue) {
         const row = document.createElement('tr');
         row.classList.add('affected-resource-quirks-mode');
         const details = issue.details();
@@ -48,7 +48,7 @@ export class AffectedDocumentsInQuirksModeView extends AffectedElementsView {
         this.appendIssueDetailCell(row, details.url);
         this.affectedResources.appendChild(row);
     }
-    async appendQuirksModeDocuments(issues) {
+    async #appendQuirksModeDocuments(issues) {
         const header = document.createElement('tr');
         this.appendColumnTitle(header, i18nString(UIStrings.documentInTheDOMTree));
         this.appendColumnTitle(header, i18nString(UIStrings.mode));
@@ -57,7 +57,7 @@ export class AffectedDocumentsInQuirksModeView extends AffectedElementsView {
         let count = 0;
         for (const issue of issues) {
             count++;
-            await this.appendQuirksModeDocument(issue);
+            await this.#appendQuirksModeDocument(issue);
         }
         this.updateAffectedResourceCount(count);
     }

@@ -37,7 +37,7 @@ export class NetworkThrottlingSelector {
         this.populateOptions();
     }
     revealAndUpdate() {
-        Common.Revealer.reveal(this.customNetworkConditionsSetting);
+        void Common.Revealer.reveal(this.customNetworkConditionsSetting);
         this.networkConditionsChanged();
     }
     optionSelected(conditions) {

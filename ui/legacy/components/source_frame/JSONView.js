@@ -32,6 +32,7 @@ import * as Platform from '../../../../core/platform/platform.js';
 import * as SDK from '../../../../core/sdk/sdk.js';
 import * as UI from '../../legacy.js';
 import * as ObjectUI from '../object_ui/object_ui.js';
+import jsonViewStyles from './jsonView.css.legacy.js';
 const UIStrings = {
     /**
     *@description Text to find an item
@@ -52,7 +53,7 @@ export class JSONView extends UI.Widget.VBox {
     constructor(parsedJSON, startCollapsed) {
         super();
         this.initialized = false;
-        this.registerRequiredCSS('ui/legacy/components/source_frame/jsonView.css');
+        this.registerRequiredCSS(jsonViewStyles);
         this.parsedJSON = parsedJSON;
         this.startCollapsed = Boolean(startCollapsed);
         this.element.classList.add('json-view');
@@ -203,7 +204,7 @@ export class JSONView extends UI.Widget.VBox {
         let newIndex = this.currentSearchFocusIndex;
         const previousSearchFocusElement = this.currentSearchTreeElements[newIndex];
         this.searchCanceled();
-        this.searchRegex = searchConfig.toSearchRegex(true);
+        this.searchRegex = searchConfig.toSearchRegex(true).regex;
         let element;
         for (element = this.treeOutline.rootElement(); element; element = element.traverseNextTreeElement(false)) {
             if (!(element instanceof ObjectUI.ObjectPropertiesSection.ObjectPropertyTreeElement)) {

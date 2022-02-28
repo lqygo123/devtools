@@ -27,7 +27,7 @@ export class I18n {
      * - the default locale if no match is found
      */
     lookupClosestSupportedLocale(locale) {
-        // @ts-ignore TODO(crbug.com/1163928) Wait for Intl support.
+        // @ts-expect-error https://github.com/microsoft/TypeScript/issues/29129
         const canonicalLocale = Intl.getCanonicalLocales(locale)[0];
         const localeParts = canonicalLocale.split('-');
         while (localeParts.length) {

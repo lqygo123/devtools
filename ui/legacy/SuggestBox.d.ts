@@ -1,9 +1,6 @@
 import type * as TextUtils from '../../models/text_utils/text_utils.js';
 import { AnchorBehavior } from './GlassPane.js';
 import type { ListDelegate } from './ListControl.js';
-/**
- * @interface
- */
 export interface SuggestBoxDelegate {
     applySuggestion(suggestion: Suggestion | null, isIntermediateSuggestion?: boolean): void;
     /**

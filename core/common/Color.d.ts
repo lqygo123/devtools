@@ -1,9 +1,5 @@
 export declare class Color {
-    private hslaInternal;
-    private rgbaInternal;
-    private originalText;
-    private readonly originalTextIsValid;
-    private formatInternal;
+    #private;
     constructor(rgba: number[], format: Format, originalText?: string);
     static parse(text: string): Color | null;
     static fromRGBA(rgba: number[]): Color;
@@ -55,6 +51,7 @@ export declare class Color {
     blendWith(fgColor: Color): Color;
     blendWithAlpha(alpha: number): Color;
     setFormat(format: Format): void;
+    equal(other: Color): boolean;
 }
 export declare const Regex: RegExp;
 export declare enum Format {
@@ -94,12 +91,13 @@ export declare const SourceOrderHighlight: {
     ParentOutline: Color;
     ChildOutline: Color;
 };
+export declare const IsolationModeHighlight: {
+    Resizer: Color;
+    ResizerHandle: Color;
+    Mask: Color;
+};
 export declare class Generator {
-    private readonly hueSpace;
-    private readonly satSpace;
-    private readonly lightnessSpace;
-    private readonly alphaSpace;
-    private readonly colors;
+    #private;
     constructor(hueSpace?: number | {
         min: number;
         max: number;

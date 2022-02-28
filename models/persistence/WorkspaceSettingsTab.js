@@ -40,6 +40,7 @@ export class WorkspaceSettingsTab extends UI.Widget.VBox {
     mappingViewByPath;
     constructor() {
         super();
+        this.element.classList.add('workspace-settings-tab');
         const header = this.element.createChild('header');
         UI.UIUtils.createTextChild(header.createChild('h1'), i18nString(UIStrings.workspace));
         this.containerElement = this.element.createChild('div', 'settings-container-wrapper')
@@ -68,6 +69,10 @@ export class WorkspaceSettingsTab extends UI.Widget.VBox {
             workspaceSettingsTabInstance = new WorkspaceSettingsTab();
         }
         return workspaceSettingsTabInstance;
+    }
+    wasShown() {
+        super.wasShown();
+        this.registerCSSFiles([workspaceSettingsTabStyles]);
     }
     createFolderExcludePatternInput() {
         const p = document.createElement('p');
@@ -136,7 +141,7 @@ export class WorkspaceSettingsTab extends UI.Widget.VBox {
         IsolatedFileSystemManager.instance().removeFileSystem(fileSystem);
     }
     addFileSystemClicked() {
-        IsolatedFileSystemManager.instance().addFileSystem();
+        void IsolatedFileSystemManager.instance().addFileSystem();
     }
     fileSystemAdded(fileSystem) {
         this.addItem(fileSystem);
@@ -152,10 +157,6 @@ export class WorkspaceSettingsTab extends UI.Widget.VBox {
             this.elementByPath.delete(fileSystem.path());
             element.remove();
         }
-    }
-    wasShown() {
-        super.wasShown();
-        this.registerCSSFiles([workspaceSettingsTabStyles]);
     }
 }
 //# sourceMappingURL=WorkspaceSettingsTab.js.map

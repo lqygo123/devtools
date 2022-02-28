@@ -7,29 +7,13 @@ import { RuntimeModel } from './RuntimeModel.js';
 import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export declare class DOMNode {
-    private domModelInternal;
-    private agent;
+    #private;
     ownerDocument: DOMDocument | null;
-    private isInShadowTreeInternal;
     id: Protocol.DOM.NodeId;
     index: number | undefined;
-    private backendNodeIdInternal;
-    private nodeTypeInternal;
-    private nodeNameInternal;
-    private localNameInternal;
     nodeValueInternal: string;
-    private pseudoTypeInternal;
-    private shadowRootTypeInternal;
-    private frameOwnerFrameIdInternal;
-    private xmlVersion;
-    private isSVGNodeInternal;
-    private creationStackTraceInternal;
     pseudoElementsInternal: Map<string, DOMNode>;
-    private distributedNodesInternal;
     readonly shadowRootsInternal: DOMNode[];
-    private attributesInternal;
-    private markers;
-    private subtreeMarkerCount;
     childNodeCountInternal: number;
     childrenInternal: DOMNode[] | null;
     nextSibling: DOMNode | null;
@@ -39,8 +23,7 @@ export declare class DOMNode {
     parentNode: DOMNode | null;
     templateContentInternal?: DOMNode;
     contentDocumentInternal?: DOMDocument;
-    private childDocumentPromiseForTesting?;
-    private importedDocumentInternal?;
+    childDocumentPromiseForTesting?: Promise<DOMDocument | null>;
     publicId?: string;
     systemId?: string;
     internalSubset?: string;
@@ -49,10 +32,11 @@ export declare class DOMNode {
     constructor(domModel: DOMModel);
     static create(domModel: DOMModel, doc: DOMDocument | null, isInShadowTree: boolean, payload: Protocol.DOM.Node): DOMNode;
     init(doc: DOMDocument | null, isInShadowTree: boolean, payload: Protocol.DOM.Node): void;
-    private createChildDocumentPromiseForTesting;
+    private requestChildDocument;
     isAdFrameNode(): boolean;
     isSVGNode(): boolean;
     creationStackTrace(): Promise<Protocol.Runtime.StackTrace | null>;
+    get subtreeMarkerCount(): number;
     domModel(): DOMModel;
     backendNodeId(): Protocol.DOM.BackendNodeId;
     children(): DOMNode[] | null;
@@ -85,22 +69,22 @@ export declare class DOMNode {
     isShadowRoot(): boolean;
     shadowRootType(): string | null;
     nodeNameInCorrectCase(): string;
-    setNodeName(name: string, callback?: ((arg0: string | null, arg1: DOMNode | null) => any)): void;
+    setNodeName(name: string, callback?: ((arg0: string | null, arg1: DOMNode | null) => void)): void;
     localName(): string;
     nodeValue(): string;
     setNodeValueInternal(nodeValue: string): void;
-    setNodeValue(value: string, callback?: ((arg0: string | null) => any)): void;
+    setNodeValue(value: string, callback?: ((arg0: string | null) => void)): void;
     getAttribute(name: string): string | undefined;
-    setAttribute(name: string, text: string, callback?: ((arg0: string | null) => any)): void;
-    setAttributeValue(name: string, value: string, callback?: ((arg0: string | null) => any)): void;
+    setAttribute(name: string, text: string, callback?: ((arg0: string | null) => void)): void;
+    setAttributeValue(name: string, value: string, callback?: ((arg0: string | null) => void)): void;
     setAttributeValuePromise(name: string, value: string): Promise<string | null>;
     attributes(): Attribute[];
     removeAttribute(name: string): Promise<void>;
     getChildNodes(callback: (arg0: Array<DOMNode> | null) => void): void;
     getSubtree(depth: number, pierce: boolean): Promise<DOMNode[] | null>;
     getOuterHTML(): Promise<string | null>;
-    setOuterHTML(html: string, callback?: ((arg0: string | null) => any)): void;
-    removeNode(callback?: ((arg0: string | null, arg1?: Protocol.DOM.NodeId | undefined) => any)): Promise<void>;
+    setOuterHTML(html: string, callback?: ((arg0: string | null) => void)): void;
+    removeNode(callback?: ((arg0: string | null, arg1?: Protocol.DOM.NodeId | undefined) => void)): Promise<void>;
     copyNode(): Promise<string | null>;
     path(): string;
     isAncestor(node: DOMNode): boolean;
@@ -117,11 +101,12 @@ export declare class DOMNode {
     private addAttribute;
     setAttributeInternal(name: string, value: string): void;
     removeAttributeInternal(name: string): void;
-    copyTo(targetNode: DOMNode, anchorNode: DOMNode | null, callback?: ((arg0: string | null, arg1: DOMNode | null) => any)): void;
-    moveTo(targetNode: DOMNode, anchorNode: DOMNode | null, callback?: ((arg0: string | null, arg1: DOMNode | null) => any)): void;
+    copyTo(targetNode: DOMNode, anchorNode: DOMNode | null, callback?: ((arg0: string | null, arg1: DOMNode | null) => void)): void;
+    moveTo(targetNode: DOMNode, anchorNode: DOMNode | null, callback?: ((arg0: string | null, arg1: DOMNode | null) => void)): void;
     isXMLNode(): boolean;
     setMarker(name: string, value: any): void;
     marker<T>(name: string): T | null;
+    getMarkerKeysForTest(): string[];
     traverseMarkers(visitor: (arg0: DOMNode, arg1: string) => void): void;
     resolveURL(url: string): string | null;
     highlight(mode?: string): void;
@@ -147,8 +132,7 @@ export declare namespace DOMNode {
     }
 }
 export declare class DeferredDOMNode {
-    private readonly domModelInternal;
-    private readonly backendNodeIdInternal;
+    #private;
     constructor(target: Target, backendNodeId: Protocol.DOM.BackendNodeId);
     resolve(callback: (arg0: DOMNode | null) => void): void;
     resolvePromise(): Promise<DOMNode | null>;
@@ -170,16 +154,10 @@ export declare class DOMDocument extends DOMNode {
     constructor(domModel: DOMModel, payload: Protocol.DOM.Node);
 }
 export declare class DOMModel extends SDKModel<EventTypes> {
+    #private;
     agent: ProtocolProxyApi.DOMApi;
     idToDOMNode: Map<Protocol.DOM.NodeId, DOMNode>;
-    private document;
-    private readonly attributeLoadNodeIds;
     readonly runtimeModelInternal: RuntimeModel;
-    private lastMutationId;
-    private pendingDocumentRequestPromise;
-    private frameOwnerNode?;
-    private loadNodeAttributesTimeout?;
-    private searchId?;
     constructor(target: Target);
     runtimeModel(): RuntimeModel;
     cssModel(): CSSModel;
@@ -267,9 +245,7 @@ export declare type EventTypes = {
     [Events.MarkersChanged]: DOMNode;
 };
 export declare class DOMModelUndoStack {
-    private stack;
-    private index;
-    private lastModelWithMinorChange;
+    #private;
     constructor();
     static instance(opts?: {
         forceNew: boolean | null;

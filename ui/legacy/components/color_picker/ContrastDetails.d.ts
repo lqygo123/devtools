@@ -27,7 +27,7 @@ export declare class ContrastDetails extends Common.ObjectWrapper.ObjectWrapper<
     private bgColorPickerButton;
     private readonly bgColorPickedBound;
     private readonly bgColorSwatch;
-    constructor(contrastInfo: ContrastInfo, contentElement: Element, toggleMainColorPickerCallback: (arg0?: boolean | undefined, arg1?: Common.EventTarget.EventTargetEvent | undefined) => void, expandedChangedCallback: () => void, colorSelectedCallback: (arg0: Common.Color.Color) => void);
+    constructor(contrastInfo: ContrastInfo, contentElement: Element, toggleMainColorPickerCallback: (arg0?: boolean | undefined, arg1?: Common.EventTarget.EventTargetEvent<unknown> | undefined) => void, expandedChangedCallback: () => void, colorSelectedCallback: (arg0: Common.Color.Color) => void);
     private showNoContrastInfoAvailableMessage;
     private hideNoContrastInfoAvailableMessage;
     private computeSuggestedColor;

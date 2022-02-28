@@ -104,7 +104,7 @@ export class ServiceWorkerCacheView extends UI.View.SimpleView {
         editorToolbar.appendToolbarItem(this.refreshButton);
         this.deleteSelectedButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.deleteSelected), 'largeicon-delete');
         this.deleteSelectedButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, _event => {
-            this.deleteButtonClicked(null);
+            void this.deleteButtonClicked(null);
         });
         editorToolbar.appendToolbarItem(this.deleteSelectedButton);
         const entryPathFilterBox = new UI.Toolbar.ToolbarInput(i18nString(UIStrings.filterByPath), '', 1);
@@ -112,7 +112,7 @@ export class ServiceWorkerCacheView extends UI.View.SimpleView {
         const entryPathFilterThrottler = new Common.Throttler.Throttler(300);
         this.entryPathFilter = '';
         entryPathFilterBox.addEventListener(UI.Toolbar.ToolbarInput.Event.TextChanged, () => {
-            entryPathFilterThrottler.schedule(() => {
+            void entryPathFilterThrottler.schedule(() => {
                 this.entryPathFilter = entryPathFilterBox.value();
                 return this.updateData(true);
             });
@@ -134,7 +134,7 @@ export class ServiceWorkerCacheView extends UI.View.SimpleView {
     wasShown() {
         this.model.addEventListener(SDK.ServiceWorkerCacheModel.Events.CacheStorageContentUpdated, this.cacheContentUpdated, this);
         this.registerCSSFiles([serviceWorkerCacheViewsStyles]);
-        this.updateData(true);
+        void this.updateData(true);
     }
     willHide() {
         this.model.removeEventListener(SDK.ServiceWorkerCacheModel.Events.CacheStorageContentUpdated, this.cacheContentUpdated, this);
@@ -190,7 +190,7 @@ export class ServiceWorkerCacheView extends UI.View.SimpleView {
         });
         dataGrid.addEventListener(DataGrid.DataGrid.Events.SortingChanged, this.sortingChanged, this);
         dataGrid.addEventListener(DataGrid.DataGrid.Events.SelectedNode, event => {
-            this.previewCachedResponse(event.data.data);
+            void this.previewCachedResponse(event.data.data);
         }, this);
         dataGrid.setStriped(true);
         return dataGrid;
@@ -242,7 +242,7 @@ export class ServiceWorkerCacheView extends UI.View.SimpleView {
     update(cache) {
         this.cache = cache;
         this.resetDataGrid();
-        this.updateData(true);
+        void this.updateData(true);
     }
     updateSummaryBar() {
         if (!this.summaryBarElement) {
@@ -314,15 +314,15 @@ export class ServiceWorkerCacheView extends UI.View.SimpleView {
         this.loadingPromise = null;
         return;
     }
-    refreshButtonClicked(_event) {
-        this.updateData(true);
+    refreshButtonClicked() {
+        void this.updateData(true);
     }
     cacheContentUpdated(event) {
         const { cacheName, origin } = event.data;
         if (this.cache.securityOrigin !== origin || this.cache.cacheName !== cacheName) {
             return;
         }
-        this.refreshThrottler.schedule(() => Promise.resolve(this.updateData(true)), true);
+        void this.refreshThrottler.schedule(() => Promise.resolve(this.updateData(true)), true);
     }
     async previewCachedResponse(request) {
         let preview = networkRequestToPreview.get(request);

@@ -2,12 +2,8 @@ import * as Protocol from '../../generated/protocol.js';
 import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 import type { ObjectSnapshot } from './TracingModel.js';
-export declare class TracingManager extends SDKModel {
-    private readonly tracingAgent;
-    private activeClient;
-    private eventBufferSize;
-    private eventsRetrieved;
-    private finishing?;
+export declare class TracingManager extends SDKModel<void> {
+    #private;
     constructor(target: Target);
     bufferUsage(usage?: number, eventCount?: number, percentFull?: number): void;
     eventsCollected(events: EventPayload[]): void;
@@ -15,9 +11,6 @@ export declare class TracingManager extends SDKModel {
     start(client: TracingManagerClient, categoryFilter: string, options: string): Promise<Protocol.ProtocolResponseWithError>;
     stop(): void;
 }
-/**
- * @interface
- */
 export interface TracingManagerClient {
     traceEventsCollected(events: EventPayload[]): void;
     tracingComplete(): void;

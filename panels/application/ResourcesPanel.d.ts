@@ -38,13 +38,6 @@ export declare class ResourceRevealer implements Common.Revealer.Revealer {
     }): ResourceRevealer;
     reveal(resource: Object): Promise<void>;
 }
-export declare class CookieReferenceRevealer implements Common.Revealer.Revealer {
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): CookieReferenceRevealer;
-    reveal(cookie: Object): Promise<void>;
-    private revealByDomain;
-}
 export declare class FrameDetailsRevealer implements Common.Revealer.Revealer {
     static instance(opts?: {
         forceNew: boolean | null;

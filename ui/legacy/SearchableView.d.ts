@@ -77,10 +77,14 @@ export interface Replaceable {
     replaceSelectionWith(searchConfig: SearchConfig, replacement: string): void;
     replaceAllWith(searchConfig: SearchConfig, replacement: string): void;
 }
+export interface SearchRegexResult {
+    regex: RegExp;
+    fromQuery: boolean;
+}
 export declare class SearchConfig {
     query: string;
     caseSensitive: boolean;
     isRegex: boolean;
     constructor(query: string, caseSensitive: boolean, isRegex: boolean);
-    toSearchRegex(global?: boolean): RegExp;
+    toSearchRegex(global?: boolean): SearchRegexResult;
 }

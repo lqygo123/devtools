@@ -10,11 +10,9 @@ import type { Database as IndexedDBModelDatabase, DatabaseId, Index, ObjectStore
 import { IndexedDBModel } from './IndexedDBModel.js';
 import type { ResourcesPanel } from './ResourcesPanel.js';
 import { TrustTokensTreeElement } from './TrustTokensTreeElement.js';
+import { ReportingApiTreeElement } from './ReportingApiTreeElement.js';
 export declare class ApplicationPanelSidebar extends UI.Widget.VBox implements SDK.TargetManager.Observer {
     panel: ResourcesPanel;
-    private readonly applicationCacheViews;
-    private readonly applicationCacheFrameElements;
-    private readonly applicationCacheManifestElements;
     private readonly sidebarTree;
     private readonly applicationTreeElement;
     serviceWorkersTreeElement: ServiceWorkersTreeElement;
@@ -25,7 +23,6 @@ export declare class ApplicationPanelSidebar extends UI.Widget.VBox implements S
     cookieListTreeElement: ExpandableApplicationPanelTreeElement;
     trustTokensTreeElement: TrustTokensTreeElement;
     cacheStorageListTreeElement: ServiceWorkerCacheTreeElement;
-    applicationCacheListTreeElement: ExpandableApplicationPanelTreeElement;
     private backForwardCacheListTreeElement?;
     backgroundFetchTreeElement: BackgroundServiceTreeElement | undefined;
     backgroundSyncTreeElement: BackgroundServiceTreeElement | undefined;
@@ -33,6 +30,7 @@ export declare class ApplicationPanelSidebar extends UI.Widget.VBox implements S
     paymentHandlerTreeElement: BackgroundServiceTreeElement | undefined;
     periodicBackgroundSyncTreeElement: BackgroundServiceTreeElement | undefined;
     pushMessagingTreeElement: BackgroundServiceTreeElement | undefined;
+    reportingApiTreeElement: ReportingApiTreeElement | undefined;
     private readonly resourcesSection;
     private readonly databaseTableViews;
     private databaseQueryViews;
@@ -41,7 +39,6 @@ export declare class ApplicationPanelSidebar extends UI.Widget.VBox implements S
     private domains;
     private target?;
     private databaseModel?;
-    private applicationCacheModel?;
     private previousHoveredElement?;
     constructor(panel: ResourcesPanel);
     private addSidebarSection;
@@ -53,7 +50,6 @@ export declare class ApplicationPanelSidebar extends UI.Widget.VBox implements S
     private domStorageModelRemoved;
     private resetWithFrames;
     private resetWebSQL;
-    private resetAppCache;
     private treeElementAdded;
     private reset;
     private frameNavigated;
@@ -67,15 +63,9 @@ export declare class ApplicationPanelSidebar extends UI.Widget.VBox implements S
     showResource(resource: SDK.Resource.Resource, line?: number, column?: number): Promise<void>;
     showFrame(frame: SDK.ResourceTreeModel.ResourceTreeFrame): void;
     showDatabase(database: DatabaseModelDatabase, tableName?: string): void;
-    showApplicationCache(frameId: Protocol.Page.FrameId): void;
     showFileSystem(view: UI.Widget.Widget): void;
     private innerShowView;
     private updateDatabaseTables;
-    private populateApplicationCacheTree;
-    private applicationCacheFrameManifestAdded;
-    private applicationCacheFrameManifestRemoved;
-    private applicationCacheFrameManifestStatusChanged;
-    private applicationCacheNetworkStateChanged;
     private onmousemove;
     private onmouseleave;
     wasShown(): void;
@@ -283,5 +273,5 @@ export declare class FrameResourceTreeElement extends ApplicationPanelTreeElemen
     onattach(): void;
     private ondragstart;
     private handleContextMenuEvent;
-    revealResource(line?: number, column?: number): Promise<void>;
+    revealResource(lineNumber?: number, columnNumber?: number): Promise<void>;
 }

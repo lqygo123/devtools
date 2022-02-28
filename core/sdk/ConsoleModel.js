@@ -64,23 +64,22 @@ const str_ = i18n.i18n.registerUIStrings('core/sdk/ConsoleModel.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 let settingsInstance;
 export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper {
-    messagesInternal;
-    messageByExceptionId;
-    warningsInternal;
-    errorsInternal;
-    violationsInternal;
-    pageLoadSequenceNumber;
-    targetListeners;
-    consoleGroupMessageStack = [];
+    #messagesInternal;
+    #messageByExceptionId;
+    #warningsInternal;
+    #errorsInternal;
+    #violationsInternal;
+    #pageLoadSequenceNumber;
+    #targetListeners;
     constructor() {
         super();
-        this.messagesInternal = [];
-        this.messageByExceptionId = new Map();
-        this.warningsInternal = 0;
-        this.errorsInternal = 0;
-        this.violationsInternal = 0;
-        this.pageLoadSequenceNumber = 0;
-        this.targetListeners = new WeakMap();
+        this.#messagesInternal = [];
+        this.#messageByExceptionId = new Map();
+        this.#warningsInternal = 0;
+        this.#errorsInternal = 0;
+        this.#violationsInternal = 0;
+        this.#pageLoadSequenceNumber = 0;
+        this.#targetListeners = new WeakMap();
         TargetManager.instance().observeTargets(this);
     }
     static instance(opts = { forceNew: null }) {
@@ -122,14 +121,14 @@ export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper {
             }
             eventListeners.push(runtimeModel.addEventListener(RuntimeModelEvents.QueryObjectRequested, this.queryObjectRequested.bind(this, runtimeModel)));
         }
-        this.targetListeners.set(target, eventListeners);
+        this.#targetListeners.set(target, eventListeners);
     }
     targetRemoved(target) {
         const runtimeModel = target.model(RuntimeModel);
         if (runtimeModel) {
-            this.messageByExceptionId.delete(runtimeModel);
+            this.#messageByExceptionId.delete(runtimeModel);
         }
-        Common.EventTarget.removeEventListeners(this.targetListeners.get(target) || []);
+        Common.EventTarget.removeEventListeners(this.#targetListeners.get(target) || []);
     }
     async evaluateCommandInConsole(executionContext, originatingMessage, expression, useCommandLineAPI) {
         const result = await executionContext.evaluate({
@@ -159,19 +158,19 @@ export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper {
         return commandMessage;
     }
     addMessage(msg) {
-        msg.setPageLoadSequenceNumber(this.pageLoadSequenceNumber);
+        msg.setPageLoadSequenceNumber(this.#pageLoadSequenceNumber);
         if (msg.source === FrontendMessageSource.ConsoleAPI &&
             msg.type === "clear" /* Clear */) {
             this.clearIfNecessary();
         }
-        this.messagesInternal.push(msg);
+        this.#messagesInternal.push(msg);
         const runtimeModel = msg.runtimeModel();
         const exceptionId = msg.getExceptionId();
         if (exceptionId && runtimeModel) {
-            let modelMap = this.messageByExceptionId.get(runtimeModel);
+            let modelMap = this.#messageByExceptionId.get(runtimeModel);
             if (!modelMap) {
                 modelMap = new Map();
-                this.messageByExceptionId.set(runtimeModel, modelMap);
+                this.#messageByExceptionId.set(runtimeModel, modelMap);
             }
             modelMap.set(exceptionId, msg);
         }
@@ -187,12 +186,12 @@ export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper {
     }
     exceptionRevoked(runtimeModel, event) {
         const exceptionId = event.data;
-        const modelMap = this.messageByExceptionId.get(runtimeModel);
+        const modelMap = this.#messageByExceptionId.get(runtimeModel);
         const exceptionMessage = modelMap ? modelMap.get(exceptionId) : null;
         if (!exceptionMessage) {
             return;
         }
-        this.errorsInternal--;
+        this.#errorsInternal--;
         exceptionMessage.level = "verbose" /* Verbose */;
         this.dispatchEventToListeners(Events.MessageUpdated, exceptionMessage);
     }
@@ -224,7 +223,6 @@ export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper {
             message = call.args[0].description;
         }
         const callFrame = call.stackTrace && call.stackTrace.callFrames.length ? call.stackTrace.callFrames[0] : null;
-        const groupParent = this.consoleGroupMessageStack[this.consoleGroupMessageStack.length - 1];
         const details = {
             type: call.type,
             url: callFrame?.url,
@@ -235,19 +233,8 @@ export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper {
             timestamp: call.timestamp,
             executionContextId: call.executionContextId,
             context: call.context,
-            groupParent,
-            groupChildren: [],
         };
         const consoleMessage = new ConsoleMessage(runtimeModel, FrontendMessageSource.ConsoleAPI, level, message, details);
-        if (call.type === "startGroup" /* StartGroup */) {
-            this.consoleGroupMessageStack.push(consoleMessage);
-        }
-        if (call.type === "endGroup" /* EndGroup */) {
-            this.consoleGroupMessageStack.pop();
-        }
-        if (groupParent && call.type !== "endGroup" /* EndGroup */) {
-            groupParent.groupChildren?.push(consoleMessage);
-        }
         this.addMessage(consoleMessage);
     }
     queryObjectRequested(runtimeModel, event) {
@@ -264,7 +251,7 @@ export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper {
         if (!Common.Settings.Settings.instance().moduleSetting('preserveConsoleLog').get()) {
             this.clear();
         }
-        ++this.pageLoadSequenceNumber;
+        ++this.#pageLoadSequenceNumber;
     }
     mainFrameNavigated(event) {
         if (Common.Settings.Settings.instance().moduleSetting('preserveConsoleLog').get()) {
@@ -292,20 +279,20 @@ export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper {
     }
     incrementErrorWarningCount(msg) {
         if (msg.source === "violation" /* Violation */) {
-            this.violationsInternal++;
+            this.#violationsInternal++;
             return;
         }
         switch (msg.level) {
             case "warning" /* Warning */:
-                this.warningsInternal++;
+                this.#warningsInternal++;
                 break;
             case "error" /* Error */:
-                this.errorsInternal++;
+                this.#errorsInternal++;
                 break;
         }
     }
     messages() {
-        return this.messagesInternal;
+        return this.#messagesInternal;
     }
     requestClearMessages() {
         for (const logModel of TargetManager.instance().models(LogModel)) {
@@ -317,22 +304,21 @@ export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper {
         this.clear();
     }
     clear() {
-        this.messagesInternal = [];
-        this.consoleGroupMessageStack = [];
-        this.messageByExceptionId.clear();
-        this.errorsInternal = 0;
-        this.warningsInternal = 0;
-        this.violationsInternal = 0;
+        this.#messagesInternal = [];
+        this.#messageByExceptionId.clear();
+        this.#errorsInternal = 0;
+        this.#warningsInternal = 0;
+        this.#violationsInternal = 0;
         this.dispatchEventToListeners(Events.ConsoleCleared);
     }
     errors() {
-        return this.errorsInternal;
+        return this.#errorsInternal;
     }
     warnings() {
-        return this.warningsInternal;
+        return this.#warningsInternal;
     }
     violations() {
-        return this.violationsInternal;
+        return this.#violationsInternal;
     }
     async saveToTempVariable(currentExecutionContext, remoteObject) {
         if (!remoteObject || !currentExecutionContext) {
@@ -357,7 +343,7 @@ export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper {
         else {
             const text = callFunctionResult.object.value;
             const message = this.addCommandMessage(executionContext, text);
-            this.evaluateCommandInConsole(executionContext, message, text, /* useCommandLineAPI */ false);
+            void this.evaluateCommandInConsole(executionContext, message, text, /* useCommandLineAPI */ false);
         }
         if (callFunctionResult.object) {
             callFunctionResult.object.release();
@@ -399,11 +385,33 @@ function extractExceptionMetaData(metaData) {
     return { requestId: metaData.requestId || undefined, issueId: metaData.issueId || undefined };
 }
 function areAffectedResourcesEquivalent(a, b) {
-    // Not considering issueId, as that would prevent de-duplication of console messages.
+    // Not considering issueId, as that would prevent de-duplication of console #messages.
     return a?.requestId === b?.requestId;
 }
+function areStackTracesEquivalent(stackTrace1, stackTrace2) {
+    if (!stackTrace1 !== !stackTrace2) {
+        return false;
+    }
+    if (!stackTrace1 || !stackTrace2) {
+        return true;
+    }
+    const callFrames1 = stackTrace1.callFrames;
+    const callFrames2 = stackTrace2.callFrames;
+    if (callFrames1.length !== callFrames2.length) {
+        return false;
+    }
+    for (let i = 0, n = callFrames1.length; i < n; ++i) {
+        if (callFrames1[i].scriptId !== callFrames2[i].scriptId ||
+            callFrames1[i].functionName !== callFrames2[i].functionName ||
+            callFrames1[i].lineNumber !== callFrames2[i].lineNumber ||
+            callFrames1[i].columnNumber !== callFrames2[i].columnNumber) {
+            return false;
+        }
+    }
+    return areStackTracesEquivalent(stackTrace1.parent, stackTrace2.parent);
+}
 export class ConsoleMessage {
-    runtimeModelInternal;
+    #runtimeModelInternal;
     source;
     level;
     messageText;
@@ -414,18 +422,17 @@ export class ConsoleMessage {
     parameters;
     stackTrace;
     timestamp;
-    executionContextId;
+    #executionContextId;
     scriptId;
     workerId;
     context;
-    originatingConsoleMessage = null;
-    pageLoadSequenceNumber = undefined;
-    exceptionId = undefined;
-    affectedResources;
-    groupParent;
-    groupChildren;
+    #originatingConsoleMessage = null;
+    #pageLoadSequenceNumber = undefined;
+    #exceptionId = undefined;
+    #affectedResources;
+    category;
     constructor(runtimeModel, source, level, messageText, details) {
-        this.runtimeModelInternal = runtimeModel;
+        this.#runtimeModelInternal = runtimeModel;
         this.source = source;
         this.level = level;
         this.messageText = messageText;
@@ -436,18 +443,17 @@ export class ConsoleMessage {
         this.parameters = details?.parameters;
         this.stackTrace = details?.stackTrace;
         this.timestamp = details?.timestamp || Date.now();
-        this.executionContextId = details?.executionContextId || 0;
+        this.#executionContextId = details?.executionContextId || 0;
         this.scriptId = details?.scriptId;
         this.workerId = details?.workerId;
-        this.affectedResources = details?.affectedResources;
-        this.groupParent = details?.groupParent;
-        this.groupChildren = details?.groupChildren;
-        if (!this.executionContextId && this.runtimeModelInternal) {
+        this.#affectedResources = details?.affectedResources;
+        this.category = details?.category;
+        if (!this.#executionContextId && this.#runtimeModelInternal) {
             if (this.scriptId) {
-                this.executionContextId = this.runtimeModelInternal.executionContextIdForScriptId(this.scriptId);
+                this.#executionContextId = this.#runtimeModelInternal.executionContextIdForScriptId(this.scriptId);
             }
             else if (this.stackTrace) {
-                this.executionContextId = this.runtimeModelInternal.executionContextForStackTrace(this.stackTrace);
+                this.#executionContextId = this.#runtimeModelInternal.executionContextForStackTrace(this.stackTrace);
             }
         }
         if (details?.context) {
@@ -456,10 +462,10 @@ export class ConsoleMessage {
         }
     }
     getAffectedResources() {
-        return this.affectedResources;
+        return this.#affectedResources;
     }
     setPageLoadSequenceNumber(pageLoadSequenceNumber) {
-        this.pageLoadSequenceNumber = pageLoadSequenceNumber;
+        this.#pageLoadSequenceNumber = pageLoadSequenceNumber;
     }
     static fromException(runtimeModel, exceptionDetails, messageType, timestamp, forceUrl, affectedResources) {
         const details = {
@@ -479,29 +485,29 @@ export class ConsoleMessage {
         return new ConsoleMessage(runtimeModel, "javascript" /* Javascript */, "error" /* Error */, RuntimeModel.simpleTextFromException(exceptionDetails), details);
     }
     runtimeModel() {
-        return this.runtimeModelInternal;
+        return this.#runtimeModelInternal;
     }
     target() {
-        return this.runtimeModelInternal ? this.runtimeModelInternal.target() : null;
+        return this.#runtimeModelInternal ? this.#runtimeModelInternal.target() : null;
     }
     setOriginatingMessage(originatingMessage) {
-        this.originatingConsoleMessage = originatingMessage;
-        this.executionContextId = originatingMessage.executionContextId;
+        this.#originatingConsoleMessage = originatingMessage;
+        this.#executionContextId = originatingMessage.#executionContextId;
     }
     originatingMessage() {
-        return this.originatingConsoleMessage;
+        return this.#originatingConsoleMessage;
     }
     setExecutionContextId(executionContextId) {
-        this.executionContextId = executionContextId;
+        this.#executionContextId = executionContextId;
     }
     getExecutionContextId() {
-        return this.executionContextId;
+        return this.#executionContextId;
     }
     getExceptionId() {
-        return this.exceptionId;
+        return this.#exceptionId;
     }
     setExceptionId(exceptionId) {
-        this.exceptionId = exceptionId;
+        this.#exceptionId = exceptionId;
     }
     isGroupMessage() {
         return this.type === "startGroup" /* StartGroup */ ||
@@ -522,13 +528,10 @@ export class ConsoleMessage {
             this.type !== FrontendMessageType.Result && this.type !== FrontendMessageType.System && !isUngroupableError);
     }
     groupCategoryKey() {
-        return [this.source, this.level, this.type, this.pageLoadSequenceNumber].join(':');
+        return [this.source, this.level, this.type, this.#pageLoadSequenceNumber].join(':');
     }
     isEqual(msg) {
         if (!msg) {
-            return false;
-        }
-        if (!this.isEqualStackTraces(this.stackTrace, msg.stackTrace)) {
             return false;
         }
         if (this.parameters) {
@@ -553,34 +556,12 @@ export class ConsoleMessage {
                 }
             }
         }
-        const watchExpressionRegex = /^watch-expression-\d+.devtools$/;
-        const bothAreWatchExpressions = watchExpressionRegex.test(this.url || '') && watchExpressionRegex.test(msg.url || '');
         return (this.runtimeModel() === msg.runtimeModel()) && (this.source === msg.source) && (this.type === msg.type) &&
             (this.level === msg.level) && (this.line === msg.line) && (this.url === msg.url) &&
-            (bothAreWatchExpressions || this.scriptId === msg.scriptId) && (this.messageText === msg.messageText) &&
-            (this.executionContextId === msg.executionContextId) &&
-            areAffectedResourcesEquivalent(this.affectedResources, msg.affectedResources);
-    }
-    isEqualStackTraces(stackTrace1, stackTrace2) {
-        if (!stackTrace1 !== !stackTrace2) {
-            return false;
-        }
-        if (!stackTrace1 || !stackTrace2) {
-            return true;
-        }
-        const callFrames1 = stackTrace1.callFrames;
-        const callFrames2 = stackTrace2.callFrames;
-        if (callFrames1.length !== callFrames2.length) {
-            return false;
-        }
-        for (let i = 0, n = callFrames1.length; i < n; ++i) {
-            if (callFrames1[i].url !== callFrames2[i].url || callFrames1[i].functionName !== callFrames2[i].functionName ||
-                callFrames1[i].lineNumber !== callFrames2[i].lineNumber ||
-                callFrames1[i].columnNumber !== callFrames2[i].columnNumber) {
-                return false;
-            }
-        }
-        return this.isEqualStackTraces(stackTrace1.parent, stackTrace2.parent);
+            (this.scriptId === msg.scriptId) && (this.messageText === msg.messageText) &&
+            (this.#executionContextId === msg.#executionContextId) &&
+            areAffectedResourcesEquivalent(this.#affectedResources, msg.#affectedResources) &&
+            areStackTracesEquivalent(this.stackTrace, msg.stackTrace);
     }
 }
 export const MessageSourceDisplayName = new Map(([

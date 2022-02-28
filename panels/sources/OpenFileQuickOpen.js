@@ -26,10 +26,10 @@ export class OpenFileQuickOpen extends FilteredUISourceCodeListProvider {
             return;
         }
         if (typeof lineNumber === 'number') {
-            Common.Revealer.reveal(uiSourceCode.uiLocation(lineNumber, columnNumber));
+            void Common.Revealer.reveal(uiSourceCode.uiLocation(lineNumber, columnNumber));
         }
         else {
-            Common.Revealer.reveal(uiSourceCode);
+            void Common.Revealer.reveal(uiSourceCode);
         }
     }
     filterProject(project) {

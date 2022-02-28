@@ -10,9 +10,8 @@ import { SDKModel } from './SDKModel.js';
 import type { SDKModelObserver } from './TargetManager.js';
 import type { Serializer } from '../common/Settings.js';
 export declare class NetworkManager extends SDKModel<EventTypes> {
+    #private;
     readonly dispatcher: NetworkDispatcher;
-    private readonly networkAgent;
-    private readonly bypassServiceWorkerSetting;
     constructor(target: Target);
     static forRequest(request: NetworkRequest): NetworkManager | null;
     static canReplayRequest(request: NetworkRequest): boolean;
@@ -27,6 +26,7 @@ export declare class NetworkManager extends SDKModel<EventTypes> {
     dispose(): void;
     private bypassServiceWorkerChanged;
     getSecurityIsolationStatus(frameId: Protocol.Page.FrameId | null): Promise<Protocol.Network.SecurityIsolationStatus | null>;
+    enableReportingApi(enable?: boolean): Promise<Promise<Protocol.ProtocolResponseWithError>>;
     loadNetworkResource(frameId: Protocol.Page.FrameId | null, url: string, options: Protocol.Network.LoadNetworkResourceOptions): Promise<Protocol.Network.LoadNetworkResourcePageResult>;
     clearRequests(): void;
 }
@@ -38,7 +38,10 @@ export declare enum Events {
     ResponseReceived = "ResponseReceived",
     MessageGenerated = "MessageGenerated",
     RequestRedirected = "RequestRedirected",
-    LoadingFinished = "LoadingFinished"
+    LoadingFinished = "LoadingFinished",
+    ReportingApiReportAdded = "ReportingApiReportAdded",
+    ReportingApiReportUpdated = "ReportingApiReportUpdated",
+    ReportingApiEndpointsChangedForOrigin = "ReportingApiEndpointsChangedForOrigin"
 }
 export interface RequestStartedEvent {
     request: NetworkRequest;
@@ -62,17 +65,16 @@ export declare type EventTypes = {
     [Events.MessageGenerated]: MessageGeneratedEvent;
     [Events.RequestRedirected]: NetworkRequest;
     [Events.LoadingFinished]: NetworkRequest;
+    [Events.ReportingApiReportAdded]: Protocol.Network.ReportingApiReport;
+    [Events.ReportingApiReportUpdated]: Protocol.Network.ReportingApiReport;
+    [Events.ReportingApiEndpointsChangedForOrigin]: Protocol.Network.ReportingApiEndpointsChangedForOriginEvent;
 };
 export declare const NoThrottlingConditions: Conditions;
 export declare const OfflineConditions: Conditions;
 export declare const Slow3GConditions: Conditions;
 export declare const Fast3GConditions: Conditions;
 export declare class NetworkDispatcher implements ProtocolProxyApi.NetworkDispatcher {
-    private readonly manager;
-    private requestsById;
-    private requestsByURL;
-    private requestIdToExtraInfoBuilder;
-    private readonly requestIdToTrustTokenEvent;
+    #private;
     constructor(manager: NetworkManager);
     private headersMapToHeadersArray;
     private updateNetworkRequestWithRequest;
@@ -113,8 +115,9 @@ export declare class NetworkDispatcher implements ProtocolProxyApi.NetworkDispat
     subresourceWebBundleMetadataError({ requestId, errorMessage }: Protocol.Network.SubresourceWebBundleMetadataErrorEvent): void;
     subresourceWebBundleInnerResponseParsed({ innerRequestId, bundleRequestId }: Protocol.Network.SubresourceWebBundleInnerResponseParsedEvent): void;
     subresourceWebBundleInnerResponseError({ innerRequestId, errorMessage }: Protocol.Network.SubresourceWebBundleInnerResponseErrorEvent): void;
-    reportingApiReportAdded(_params: Protocol.Network.ReportingApiReportAddedEvent): void;
-    reportingApiReportUpdated(_params: Protocol.Network.ReportingApiReportAddedEvent): void;
+    reportingApiReportAdded(data: Protocol.Network.ReportingApiReportAddedEvent): void;
+    reportingApiReportUpdated(data: Protocol.Network.ReportingApiReportUpdatedEvent): void;
+    reportingApiEndpointsChangedForOrigin(data: Protocol.Network.ReportingApiEndpointsChangedForOriginEvent): void;
     /**
      * @deprecated
      * This method is only kept for usage in a web test.
@@ -122,19 +125,8 @@ export declare class NetworkDispatcher implements ProtocolProxyApi.NetworkDispat
     private createNetworkRequest;
 }
 export declare class MultitargetNetworkManager extends Common.ObjectWrapper.ObjectWrapper<MultitargetNetworkManager.EventTypes> implements SDKModelObserver<NetworkManager> {
-    private userAgentOverrideInternal;
-    private userAgentMetadataOverride;
-    private customAcceptedEncodings;
-    private readonly agents;
+    #private;
     readonly inflightMainResourceRequests: Map<string, NetworkRequest>;
-    private networkConditionsInternal;
-    private updatingInterceptionPatternsPromise;
-    private readonly blockingEnabledSetting;
-    private readonly blockedPatternsSetting;
-    private effectiveBlockedURLs;
-    private readonly urlsForRequestInterceptor;
-    private extraHeaders?;
-    private customUserAgent?;
     constructor();
     static instance(opts?: {
         forceNew: boolean | null;
@@ -196,9 +188,7 @@ export declare namespace MultitargetNetworkManager {
     };
 }
 export declare class InterceptedRequest {
-    private readonly networkAgent;
-    private readonly interceptionId;
-    private hasRespondedInternal;
+    #private;
     request: Protocol.Network.Request;
     frameId: Protocol.Page.FrameId;
     resourceType: Protocol.Network.ResourceType;

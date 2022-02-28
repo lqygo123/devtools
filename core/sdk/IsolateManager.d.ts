@@ -3,10 +3,7 @@ import type { HeapProfilerModel } from './HeapProfilerModel.js';
 import { RuntimeModel } from './RuntimeModel.js';
 import type { SDKModelObserver } from './TargetManager.js';
 export declare class IsolateManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements SDKModelObserver<RuntimeModel> {
-    private readonly isolatesInternal;
-    private isolateIdByModel;
-    private observers;
-    private pollId;
+    #private;
     constructor();
     static instance({ forceNew }?: {
         forceNew: boolean;
@@ -33,10 +30,8 @@ export declare type EventTypes = {
 };
 export declare const MemoryTrendWindowMs = 120000;
 export declare class Isolate {
-    private readonly idInternal;
+    #private;
     readonly modelsInternal: Set<RuntimeModel>;
-    private usedHeapSizeInternal;
-    private readonly memoryTrend;
     constructor(id: string);
     id(): string;
     models(): Set<RuntimeModel>;
@@ -52,15 +47,7 @@ export declare class Isolate {
     isMainThread(): boolean;
 }
 export declare class MemoryTrend {
-    private maxCount;
-    private base;
-    private index;
-    private x;
-    private y;
-    private sx;
-    private sy;
-    private sxx;
-    private sxy;
+    #private;
     constructor(maxCount: number);
     reset(): void;
     count(): number;

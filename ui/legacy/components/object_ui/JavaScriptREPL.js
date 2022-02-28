@@ -27,7 +27,7 @@ export class JavaScriptREPL {
     static preprocessExpression(text) {
         return JavaScriptREPL.wrapObjectLiteral(text);
     }
-    static async evaluateAndBuildPreview(text, throwOnSideEffect, replMode, timeout, allowErrors, objectGroup) {
+    static async evaluateAndBuildPreview(text, throwOnSideEffect, replMode, timeout, allowErrors, objectGroup, awaitPromise = false) {
         const executionContext = UI.Context.Context.instance().flavor(SDK.RuntimeModel.ExecutionContext);
         const isTextLong = text.length > maxLengthForEvaluation;
         if (!text || !executionContext || (throwOnSideEffect && isTextLong)) {
@@ -47,7 +47,7 @@ export class JavaScriptREPL {
             returnByValue: undefined,
             allowUnsafeEvalBlockedByCSP: undefined,
         };
-        const result = await executionContext.evaluate(options, false /* userGesture */, false /* awaitPromise */);
+        const result = await executionContext.evaluate(options, false /* userGesture */, awaitPromise);
         const preview = JavaScriptREPL.buildEvaluationPreview(result, allowErrors);
         return { preview, result };
     }

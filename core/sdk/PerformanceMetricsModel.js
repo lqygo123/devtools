@@ -5,13 +5,13 @@ import * as Platform from '../platform/platform.js';
 import { Capability } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export class PerformanceMetricsModel extends SDKModel {
-    agent;
-    metricModes;
-    metricData;
+    #agent;
+    #metricModes;
+    #metricData;
     constructor(target) {
         super(target);
-        this.agent = target.performanceAgent();
-        this.metricModes = new Map([
+        this.#agent = target.performanceAgent();
+        this.#metricModes = new Map([
             ['TaskDuration', "CumulativeTime" /* CumulativeTime */],
             ['ScriptDuration', "CumulativeTime" /* CumulativeTime */],
             ['LayoutDuration', "CumulativeTime" /* CumulativeTime */],
@@ -19,26 +19,26 @@ export class PerformanceMetricsModel extends SDKModel {
             ['LayoutCount', "CumulativeCount" /* CumulativeCount */],
             ['RecalcStyleCount', "CumulativeCount" /* CumulativeCount */],
         ]);
-        this.metricData = new Map();
+        this.#metricData = new Map();
     }
     enable() {
-        return this.agent.invoke_enable({});
+        return this.#agent.invoke_enable({});
     }
     disable() {
-        return this.agent.invoke_disable();
+        return this.#agent.invoke_disable();
     }
     async requestMetrics() {
-        const rawMetrics = await this.agent.invoke_getMetrics() || [];
+        const rawMetrics = await this.#agent.invoke_getMetrics() || [];
         const metrics = new Map();
         const timestamp = performance.now();
         for (const metric of rawMetrics.metrics) {
-            let data = this.metricData.get(metric.name);
+            let data = this.#metricData.get(metric.name);
             if (!data) {
                 data = { lastValue: undefined, lastTimestamp: undefined };
-                this.metricData.set(metric.name, data);
+                this.#metricData.set(metric.name, data);
             }
             let value;
-            switch (this.metricModes.get(metric.name)) {
+            switch (this.#metricModes.get(metric.name)) {
                 case "CumulativeTime" /* CumulativeTime */:
                     value = (data.lastTimestamp && data.lastValue) ?
                         Platform.NumberUtilities.clamp((metric.value - data.lastValue) * 1000 / (timestamp - data.lastTimestamp), 0, 1) :

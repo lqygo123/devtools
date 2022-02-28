@@ -6,37 +6,37 @@ import { cssMetadata, CustomVariableRegex, VariableRegex } from './CSSMetadata.j
 import { CSSKeyframesRule, CSSStyleRule } from './CSSRule.js';
 import { CSSStyleDeclaration, Type } from './CSSStyleDeclaration.js';
 export class CSSMatchedStyles {
-    cssModelInternal;
-    nodeInternal;
-    addedStyles;
-    matchingSelectors;
-    keyframesInternal;
-    nodeForStyleInternal;
-    inheritedStyles;
-    mainDOMCascade;
-    pseudoDOMCascades;
-    styleToDOMCascade;
+    #cssModelInternal;
+    #nodeInternal;
+    #addedStyles;
+    #matchingSelectors;
+    #keyframesInternal;
+    #nodeForStyleInternal;
+    #inheritedStyles;
+    #mainDOMCascade;
+    #pseudoDOMCascades;
+    #styleToDOMCascade;
     constructor(cssModel, node, inlinePayload, attributesPayload, matchedPayload, pseudoPayload, inheritedPayload, animationsPayload) {
-        this.cssModelInternal = cssModel;
-        this.nodeInternal = node;
-        this.addedStyles = new Map();
-        this.matchingSelectors = new Map();
-        this.keyframesInternal = [];
+        this.#cssModelInternal = cssModel;
+        this.#nodeInternal = node;
+        this.#addedStyles = new Map();
+        this.#matchingSelectors = new Map();
+        this.#keyframesInternal = [];
         if (animationsPayload) {
-            this.keyframesInternal = animationsPayload.map(rule => new CSSKeyframesRule(cssModel, rule));
+            this.#keyframesInternal = animationsPayload.map(rule => new CSSKeyframesRule(cssModel, rule));
         }
-        this.nodeForStyleInternal = new Map();
-        this.inheritedStyles = new Set();
+        this.#nodeForStyleInternal = new Map();
+        this.#inheritedStyles = new Set();
         matchedPayload = cleanUserAgentPayload(matchedPayload);
         for (const inheritedResult of inheritedPayload) {
             inheritedResult.matchedCSSRules = cleanUserAgentPayload(inheritedResult.matchedCSSRules);
         }
-        this.mainDOMCascade = this.buildMainCascade(inlinePayload, attributesPayload, matchedPayload, inheritedPayload);
-        this.pseudoDOMCascades = this.buildPseudoCascades(pseudoPayload);
-        this.styleToDOMCascade = new Map();
-        for (const domCascade of Array.from(this.pseudoDOMCascades.values()).concat(this.mainDOMCascade)) {
+        this.#mainDOMCascade = this.buildMainCascade(inlinePayload, attributesPayload, matchedPayload, inheritedPayload);
+        this.#pseudoDOMCascades = this.buildPseudoCascades(pseudoPayload);
+        this.#styleToDOMCascade = new Map();
+        for (const domCascade of Array.from(this.#pseudoDOMCascades.values()).concat(this.#mainDOMCascade)) {
             for (const style of domCascade.styles()) {
-                this.styleToDOMCascade.set(style, domCascade);
+                this.#styleToDOMCascade.set(style, domCascade);
             }
         }
         function cleanUserAgentPayload(payload) {
@@ -98,63 +98,63 @@ export class CSSMatchedStyles {
             if (!attributesPayload) {
                 return;
             }
-            const style = new CSSStyleDeclaration(this.cssModelInternal, null, attributesPayload, Type.Attributes);
-            this.nodeForStyleInternal.set(style, this.nodeInternal);
+            const style = new CSSStyleDeclaration(this.#cssModelInternal, null, attributesPayload, Type.Attributes);
+            this.#nodeForStyleInternal.set(style, this.#nodeInternal);
             nodeStyles.push(style);
         }
         // Inline style has the greatest specificity.
-        if (inlinePayload && this.nodeInternal.nodeType() === Node.ELEMENT_NODE) {
-            const style = new CSSStyleDeclaration(this.cssModelInternal, null, inlinePayload, Type.Inline);
-            this.nodeForStyleInternal.set(style, this.nodeInternal);
+        if (inlinePayload && this.#nodeInternal.nodeType() === Node.ELEMENT_NODE) {
+            const style = new CSSStyleDeclaration(this.#cssModelInternal, null, inlinePayload, Type.Inline);
+            this.#nodeForStyleInternal.set(style, this.#nodeInternal);
             nodeStyles.push(style);
         }
         // Add rules in reverse order to match the cascade order.
         let addedAttributesStyle;
         for (let i = matchedPayload.length - 1; i >= 0; --i) {
-            const rule = new CSSStyleRule(this.cssModelInternal, matchedPayload[i].rule);
+            const rule = new CSSStyleRule(this.#cssModelInternal, matchedPayload[i].rule);
             if ((rule.isInjected() || rule.isUserAgent()) && !addedAttributesStyle) {
                 // Show element's Style Attributes after all author rules.
                 addedAttributesStyle = true;
                 addAttributesStyle.call(this);
             }
-            this.nodeForStyleInternal.set(rule.style, this.nodeInternal);
+            this.#nodeForStyleInternal.set(rule.style, this.#nodeInternal);
             nodeStyles.push(rule.style);
-            this.addMatchingSelectors(this.nodeInternal, rule, matchedPayload[i].matchingSelectors);
+            this.addMatchingSelectors(this.#nodeInternal, rule, matchedPayload[i].matchingSelectors);
         }
         if (!addedAttributesStyle) {
             addAttributesStyle.call(this);
         }
-        nodeCascades.push(new NodeCascade(this, nodeStyles, false /* isInherited */));
+        nodeCascades.push(new NodeCascade(this, nodeStyles, false /* #isInherited */));
         // Walk the node structure and identify styles with inherited properties.
-        let parentNode = this.nodeInternal.parentNode;
+        let parentNode = this.#nodeInternal.parentNode;
         for (let i = 0; parentNode && inheritedPayload && i < inheritedPayload.length; ++i) {
             const inheritedStyles = [];
             const entryPayload = inheritedPayload[i];
             const inheritedInlineStyle = entryPayload.inlineStyle ?
-                new CSSStyleDeclaration(this.cssModelInternal, null, entryPayload.inlineStyle, Type.Inline) :
+                new CSSStyleDeclaration(this.#cssModelInternal, null, entryPayload.inlineStyle, Type.Inline) :
                 null;
             if (inheritedInlineStyle && this.containsInherited(inheritedInlineStyle)) {
-                this.nodeForStyleInternal.set(inheritedInlineStyle, parentNode);
+                this.#nodeForStyleInternal.set(inheritedInlineStyle, parentNode);
                 inheritedStyles.push(inheritedInlineStyle);
-                this.inheritedStyles.add(inheritedInlineStyle);
+                this.#inheritedStyles.add(inheritedInlineStyle);
             }
             const inheritedMatchedCSSRules = entryPayload.matchedCSSRules || [];
             for (let j = inheritedMatchedCSSRules.length - 1; j >= 0; --j) {
-                const inheritedRule = new CSSStyleRule(this.cssModelInternal, inheritedMatchedCSSRules[j].rule);
+                const inheritedRule = new CSSStyleRule(this.#cssModelInternal, inheritedMatchedCSSRules[j].rule);
                 this.addMatchingSelectors(parentNode, inheritedRule, inheritedMatchedCSSRules[j].matchingSelectors);
                 if (!this.containsInherited(inheritedRule.style)) {
                     continue;
                 }
                 if (containsStyle(nodeStyles, inheritedRule.style) ||
-                    containsStyle(this.inheritedStyles, inheritedRule.style)) {
+                    containsStyle(this.#inheritedStyles, inheritedRule.style)) {
                     continue;
                 }
-                this.nodeForStyleInternal.set(inheritedRule.style, parentNode);
+                this.#nodeForStyleInternal.set(inheritedRule.style, parentNode);
                 inheritedStyles.push(inheritedRule.style);
-                this.inheritedStyles.add(inheritedRule.style);
+                this.#inheritedStyles.add(inheritedRule.style);
             }
             parentNode = parentNode.parentNode;
-            nodeCascades.push(new NodeCascade(this, inheritedStyles, true /* isInherited */));
+            nodeCascades.push(new NodeCascade(this, inheritedStyles, true /* #isInherited */));
         }
         return new DOMInheritanceCascade(nodeCascades);
         function containsStyle(styles, query) {
@@ -177,18 +177,18 @@ export class CSSMatchedStyles {
         for (let i = 0; i < pseudoPayload.length; ++i) {
             const entryPayload = pseudoPayload[i];
             // PseudoElement nodes are not created unless "content" css property is set.
-            const pseudoElement = this.nodeInternal.pseudoElements().get(entryPayload.pseudoType) || null;
+            const pseudoElement = this.#nodeInternal.pseudoElements().get(entryPayload.pseudoType) || null;
             const pseudoStyles = [];
             const rules = entryPayload.matches || [];
             for (let j = rules.length - 1; j >= 0; --j) {
-                const pseudoRule = new CSSStyleRule(this.cssModelInternal, rules[j].rule);
+                const pseudoRule = new CSSStyleRule(this.#cssModelInternal, rules[j].rule);
                 pseudoStyles.push(pseudoRule.style);
-                this.nodeForStyleInternal.set(pseudoRule.style, pseudoElement);
+                this.#nodeForStyleInternal.set(pseudoRule.style, pseudoElement);
                 if (pseudoElement) {
                     this.addMatchingSelectors(pseudoElement, pseudoRule, rules[j].matchingSelectors);
                 }
             }
-            const nodeCascade = new NodeCascade(this, pseudoStyles, false /* isInherited */);
+            const nodeCascade = new NodeCascade(this, pseudoStyles, false /* #isInherited */);
             pseudoCascades.set(entryPayload.pseudoType, new DOMInheritanceCascade([nodeCascade]));
         }
         return pseudoCascades;
@@ -200,10 +200,10 @@ export class CSSMatchedStyles {
         }
     }
     node() {
-        return this.nodeInternal;
+        return this.#nodeInternal;
     }
     cssModel() {
-        return this.cssModelInternal;
+        return this.#cssModelInternal;
     }
     hasMatchingSelectors(rule) {
         const matchingSelectors = this.getMatchingSelectors(rule);
@@ -214,7 +214,7 @@ export class CSSMatchedStyles {
         if (!node || typeof node.id !== 'number') {
             return [];
         }
-        const map = this.matchingSelectors.get(node.id);
+        const map = this.#matchingSelectors.get(node.id);
         if (!map) {
             return [];
         }
@@ -244,7 +244,7 @@ export class CSSMatchedStyles {
             // We assume that "matching" property does not ever change during the
             // MatchedStyleResult's lifetime.
             if (typeof node.id === 'number') {
-                const map = this.matchingSelectors.get(node.id);
+                const map = this.#matchingSelectors.get(node.id);
                 if (map && map.has(selectorText)) {
                     return;
                 }
@@ -252,7 +252,7 @@ export class CSSMatchedStyles {
             if (typeof ownerDocument.id !== 'number') {
                 return;
             }
-            const matchingNodeIds = await this.nodeInternal.domModel().querySelectorAll(ownerDocument.id, selectorText);
+            const matchingNodeIds = await this.#nodeInternal.domModel().querySelectorAll(ownerDocument.id, selectorText);
             if (matchingNodeIds) {
                 if (typeof node.id === 'number') {
                     this.setSelectorMatches(node, selectorText, matchingNodeIds.indexOf(node.id) !== -1);
@@ -264,17 +264,17 @@ export class CSSMatchedStyles {
         }
     }
     addNewRule(rule, node) {
-        this.addedStyles.set(rule.style, node);
+        this.#addedStyles.set(rule.style, node);
         return this.recomputeMatchingSelectors(rule);
     }
     setSelectorMatches(node, selectorText, value) {
         if (typeof node.id !== 'number') {
             return;
         }
-        let map = this.matchingSelectors.get(node.id);
+        let map = this.#matchingSelectors.get(node.id);
         if (!map) {
             map = new Map();
-            this.matchingSelectors.set(node.id, map);
+            this.#matchingSelectors.set(node.id, map);
         }
         map.set(selectorText, value);
     }
@@ -291,17 +291,17 @@ export class CSSMatchedStyles {
         return true;
     }
     nodeStyles() {
-        return this.mainDOMCascade.styles();
+        return this.#mainDOMCascade.styles();
     }
     keyframes() {
-        return this.keyframesInternal;
+        return this.#keyframesInternal;
     }
     pseudoStyles(pseudoType) {
-        const domCascade = this.pseudoDOMCascades.get(pseudoType);
+        const domCascade = this.#pseudoDOMCascades.get(pseudoType);
         return domCascade ? domCascade.styles() : [];
     }
     pseudoTypes() {
-        return new Set(this.pseudoDOMCascades.keys());
+        return new Set(this.#pseudoDOMCascades.keys());
     }
     containsInherited(style) {
         const properties = style.allProperties();
@@ -315,52 +315,52 @@ export class CSSMatchedStyles {
         return false;
     }
     nodeForStyle(style) {
-        return this.addedStyles.get(style) || this.nodeForStyleInternal.get(style) || null;
+        return this.#addedStyles.get(style) || this.#nodeForStyleInternal.get(style) || null;
     }
     availableCSSVariables(style) {
-        const domCascade = this.styleToDOMCascade.get(style) || null;
+        const domCascade = this.#styleToDOMCascade.get(style) || null;
         return domCascade ? domCascade.findAvailableCSSVariables(style) : [];
     }
     computeCSSVariable(style, variableName) {
-        const domCascade = this.styleToDOMCascade.get(style) || null;
+        const domCascade = this.#styleToDOMCascade.get(style) || null;
         return domCascade ? domCascade.computeCSSVariable(style, variableName) : null;
     }
     computeValue(style, value) {
-        const domCascade = this.styleToDOMCascade.get(style) || null;
+        const domCascade = this.#styleToDOMCascade.get(style) || null;
         return domCascade ? domCascade.computeValue(style, value) : null;
     }
     /**
-     * Same as computeValue, but to be used for `var(--name [,...])` values only
+     * Same as computeValue, but to be used for `var(--#name [,...])` values only
      */
     computeSingleVariableValue(style, cssVariableValue) {
-        const domCascade = this.styleToDOMCascade.get(style) || null;
+        const domCascade = this.#styleToDOMCascade.get(style) || null;
         const cssVariableValueNoSpaces = cssVariableValue.replace(/\s/g, '');
         return domCascade ? domCascade.computeSingleVariableValue(style, cssVariableValueNoSpaces) : null;
     }
     isInherited(style) {
-        return this.inheritedStyles.has(style);
+        return this.#inheritedStyles.has(style);
     }
     propertyState(property) {
-        const domCascade = this.styleToDOMCascade.get(property.ownerStyle);
+        const domCascade = this.#styleToDOMCascade.get(property.ownerStyle);
         return domCascade ? domCascade.propertyState(property) : null;
     }
     resetActiveProperties() {
-        this.mainDOMCascade.reset();
-        for (const domCascade of this.pseudoDOMCascades.values()) {
+        this.#mainDOMCascade.reset();
+        for (const domCascade of this.#pseudoDOMCascades.values()) {
             domCascade.reset();
         }
     }
 }
 class NodeCascade {
-    matchedStyles;
+    #matchedStyles;
     styles;
-    isInherited;
+    #isInherited;
     propertiesState;
     activeProperties;
     constructor(matchedStyles, styles, isInherited) {
-        this.matchedStyles = matchedStyles;
+        this.#matchedStyles = matchedStyles;
         this.styles = styles;
-        this.isInherited = isInherited;
+        this.#isInherited = isInherited;
         this.propertiesState = new Map();
         this.activeProperties = new Map();
     }
@@ -373,13 +373,13 @@ class NodeCascade {
             if (rule && !(rule instanceof CSSStyleRule)) {
                 continue;
             }
-            if (rule && !this.matchedStyles.hasMatchingSelectors(rule)) {
+            if (rule && !this.#matchedStyles.hasMatchingSelectors(rule)) {
                 continue;
             }
             for (const property of style.allProperties()) {
                 // Do not pick non-inherited properties from inherited styles.
                 const metadata = cssMetadata();
-                if (this.isInherited && !metadata.isPropertyInherited(property.name)) {
+                if (this.#isInherited && !metadata.isPropertyInherited(property.name)) {
                     continue;
                 }
                 if (!property.activeInStyle()) {
@@ -418,71 +418,71 @@ class NodeCascade {
     }
 }
 class DOMInheritanceCascade {
-    nodeCascades;
-    propertiesState;
-    availableCSSVariables;
-    computedCSSVariables;
-    initialized;
-    styleToNodeCascade;
+    #nodeCascades;
+    #propertiesState;
+    #availableCSSVariables;
+    #computedCSSVariables;
+    #initialized;
+    #styleToNodeCascade;
     constructor(nodeCascades) {
-        this.nodeCascades = nodeCascades;
-        this.propertiesState = new Map();
-        this.availableCSSVariables = new Map();
-        this.computedCSSVariables = new Map();
-        this.initialized = false;
-        this.styleToNodeCascade = new Map();
+        this.#nodeCascades = nodeCascades;
+        this.#propertiesState = new Map();
+        this.#availableCSSVariables = new Map();
+        this.#computedCSSVariables = new Map();
+        this.#initialized = false;
+        this.#styleToNodeCascade = new Map();
         for (const nodeCascade of nodeCascades) {
             for (const style of nodeCascade.styles) {
-                this.styleToNodeCascade.set(style, nodeCascade);
+                this.#styleToNodeCascade.set(style, nodeCascade);
             }
         }
     }
     findAvailableCSSVariables(style) {
-        const nodeCascade = this.styleToNodeCascade.get(style);
+        const nodeCascade = this.#styleToNodeCascade.get(style);
         if (!nodeCascade) {
             return [];
         }
         this.ensureInitialized();
-        const availableCSSVariables = this.availableCSSVariables.get(nodeCascade);
+        const availableCSSVariables = this.#availableCSSVariables.get(nodeCascade);
         if (!availableCSSVariables) {
             return [];
         }
         return Array.from(availableCSSVariables.keys());
     }
     computeCSSVariable(style, variableName) {
-        const nodeCascade = this.styleToNodeCascade.get(style);
+        const nodeCascade = this.#styleToNodeCascade.get(style);
         if (!nodeCascade) {
             return null;
         }
         this.ensureInitialized();
-        const availableCSSVariables = this.availableCSSVariables.get(nodeCascade);
-        const computedCSSVariables = this.computedCSSVariables.get(nodeCascade);
+        const availableCSSVariables = this.#availableCSSVariables.get(nodeCascade);
+        const computedCSSVariables = this.#computedCSSVariables.get(nodeCascade);
         if (!availableCSSVariables || !computedCSSVariables) {
             return null;
         }
         return this.innerComputeCSSVariable(availableCSSVariables, computedCSSVariables, variableName);
     }
     computeValue(style, value) {
-        const nodeCascade = this.styleToNodeCascade.get(style);
+        const nodeCascade = this.#styleToNodeCascade.get(style);
         if (!nodeCascade) {
             return null;
         }
         this.ensureInitialized();
-        const availableCSSVariables = this.availableCSSVariables.get(nodeCascade);
-        const computedCSSVariables = this.computedCSSVariables.get(nodeCascade);
+        const availableCSSVariables = this.#availableCSSVariables.get(nodeCascade);
+        const computedCSSVariables = this.#computedCSSVariables.get(nodeCascade);
         if (!availableCSSVariables || !computedCSSVariables) {
             return null;
         }
         return this.innerComputeValue(availableCSSVariables, computedCSSVariables, value);
     }
     computeSingleVariableValue(style, cssVariableValue) {
-        const nodeCascade = this.styleToNodeCascade.get(style);
+        const nodeCascade = this.#styleToNodeCascade.get(style);
         if (!nodeCascade) {
             return null;
         }
         this.ensureInitialized();
-        const availableCSSVariables = this.availableCSSVariables.get(nodeCascade);
-        const computedCSSVariables = this.computedCSSVariables.get(nodeCascade);
+        const availableCSSVariables = this.#availableCSSVariables.get(nodeCascade);
+        const computedCSSVariables = this.#computedCSSVariables.get(nodeCascade);
         if (!availableCSSVariables || !computedCSSVariables) {
             return null;
         }
@@ -538,40 +538,40 @@ class DOMInheritanceCascade {
         return tokens.map(token => token ? token.trim() : '').join(' ');
     }
     styles() {
-        return Array.from(this.styleToNodeCascade.keys());
+        return Array.from(this.#styleToNodeCascade.keys());
     }
     propertyState(property) {
         this.ensureInitialized();
-        return this.propertiesState.get(property) || null;
+        return this.#propertiesState.get(property) || null;
     }
     reset() {
-        this.initialized = false;
-        this.propertiesState.clear();
-        this.availableCSSVariables.clear();
-        this.computedCSSVariables.clear();
+        this.#initialized = false;
+        this.#propertiesState.clear();
+        this.#availableCSSVariables.clear();
+        this.#computedCSSVariables.clear();
     }
     ensureInitialized() {
-        if (this.initialized) {
+        if (this.#initialized) {
             return;
         }
-        this.initialized = true;
+        this.#initialized = true;
         const activeProperties = new Map();
-        for (const nodeCascade of this.nodeCascades) {
+        for (const nodeCascade of this.#nodeCascades) {
             nodeCascade.computeActiveProperties();
             for (const entry of nodeCascade.propertiesState.entries()) {
                 const property = entry[0];
                 const state = entry[1];
                 if (state === PropertyState.Overloaded) {
-                    this.propertiesState.set(property, PropertyState.Overloaded);
+                    this.#propertiesState.set(property, PropertyState.Overloaded);
                     continue;
                 }
                 const canonicalName = cssMetadata().canonicalPropertyName(property.name);
                 if (activeProperties.has(canonicalName)) {
-                    this.propertiesState.set(property, PropertyState.Overloaded);
+                    this.#propertiesState.set(property, PropertyState.Overloaded);
                     continue;
                 }
                 activeProperties.set(canonicalName, property);
-                this.propertiesState.set(property, PropertyState.Active);
+                this.#propertiesState.set(property, PropertyState.Active);
             }
         }
         // If every longhand of the shorthand is not active, then the shorthand is not active too.
@@ -599,12 +599,12 @@ class DOMInheritanceCascade {
                 continue;
             }
             activeProperties.delete(canonicalName);
-            this.propertiesState.set(shorthandProperty, PropertyState.Overloaded);
+            this.#propertiesState.set(shorthandProperty, PropertyState.Overloaded);
         }
         // Work inheritance chain backwards to compute visible CSS Variables.
         const accumulatedCSSVariables = new Map();
-        for (let i = this.nodeCascades.length - 1; i >= 0; --i) {
-            const nodeCascade = this.nodeCascades[i];
+        for (let i = this.#nodeCascades.length - 1; i >= 0; --i) {
+            const nodeCascade = this.#nodeCascades[i];
             const variableNames = [];
             for (const entry of nodeCascade.activeProperties.entries()) {
                 const propertyName = entry[0];
@@ -616,8 +616,8 @@ class DOMInheritanceCascade {
             }
             const availableCSSVariablesMap = new Map(accumulatedCSSVariables);
             const computedVariablesMap = new Map();
-            this.availableCSSVariables.set(nodeCascade, availableCSSVariablesMap);
-            this.computedCSSVariables.set(nodeCascade, computedVariablesMap);
+            this.#availableCSSVariables.set(nodeCascade, availableCSSVariablesMap);
+            this.#computedCSSVariables.set(nodeCascade, computedVariablesMap);
             for (const variableName of variableNames) {
                 accumulatedCSSVariables.delete(variableName);
                 accumulatedCSSVariables.set(variableName, this.innerComputeCSSVariable(availableCSSVariablesMap, computedVariablesMap, variableName));

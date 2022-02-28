@@ -151,8 +151,9 @@ export class RequestCookiesView extends UI.Widget.Widget {
             });
             for (const blockedCookie of this.request.blockedResponseCookies()) {
                 const parsedCookies = SDK.CookieParser.CookieParser.parseSetCookie(blockedCookie.cookieLine);
-                if (parsedCookies && !parsedCookies.length ||
-                    blockedCookie.blockedReasons.includes("SyntaxError" /* SyntaxError */)) {
+                if ((parsedCookies && !parsedCookies.length) ||
+                    blockedCookie.blockedReasons.includes("SyntaxError" /* SyntaxError */) ||
+                    blockedCookie.blockedReasons.includes("NameValuePairExceedsMaxSize" /* NameValuePairExceedsMaxSize */)) {
                     malformedResponseCookies.push(blockedCookie);
                     continue;
                 }
@@ -220,8 +221,13 @@ export class RequestCookiesView extends UI.Widget.Widget {
                 const icon = UI.Icon.Icon.create('smallicon-error', 'cookie-warning-icon');
                 listItem.appendChild(icon);
                 UI.UIUtils.createTextChild(listItem, malformedCookie.cookieLine);
-                listItem.title =
-                    SDK.NetworkRequest.setCookieBlockedReasonToUiString("SyntaxError" /* SyntaxError */);
+                if (malformedCookie.blockedReasons.includes("NameValuePairExceedsMaxSize" /* NameValuePairExceedsMaxSize */)) {
+                    listItem.title = SDK.NetworkRequest.setCookieBlockedReasonToUiString("NameValuePairExceedsMaxSize" /* NameValuePairExceedsMaxSize */);
+                }
+                else {
+                    listItem.title =
+                        SDK.NetworkRequest.setCookieBlockedReasonToUiString("SyntaxError" /* SyntaxError */);
+                }
             }
         }
         else {

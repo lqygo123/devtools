@@ -172,7 +172,7 @@ export declare class StatusPane extends UI.Widget.VBox {
         buttonDisabled?: boolean;
     }, buttonCallback: () => (Promise<void> | void));
     finish(): void;
-    hide(): void;
+    remove(): void;
     showPane(parent: Element): void;
     enableAndFocusButton(): void;
     updateStatus(text: string): void;

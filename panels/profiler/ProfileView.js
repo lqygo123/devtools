@@ -350,7 +350,7 @@ export class ProfileView extends UI.View.SimpleView {
         this.dataProvider = this.createFlameChartDataProvider();
         this.flameChart = new CPUProfileFlameChart(this.searchableViewInternal, this.dataProvider);
         this.flameChart.addEventListener(PerfUI.FlameChart.Events.EntryInvoked, event => {
-            this.onEntryInvoked(event);
+            void this.onEntryInvoked(event);
         });
     }
     async onEntryInvoked(event) {
@@ -369,7 +369,7 @@ export class ProfileView extends UI.View.SimpleView {
         }
         const location = debuggerModel.createRawLocation(script, node.lineNumber, node.columnNumber);
         const uiLocation = await Bindings.DebuggerWorkspaceBinding.DebuggerWorkspaceBinding.instance().rawLocationToUILocation(location);
-        Common.Revealer.reveal(uiLocation);
+        void Common.Revealer.reveal(uiLocation);
     }
     changeView() {
         if (!this.profileInternal) {
@@ -411,7 +411,7 @@ export class ProfileView extends UI.View.SimpleView {
         this.focusButton.setEnabled(selected);
         this.excludeButton.setEnabled(selected);
     }
-    focusClicked(_event) {
+    focusClicked() {
         if (!this.dataGrid.selectedNode) {
             return;
         }
@@ -424,7 +424,7 @@ export class ProfileView extends UI.View.SimpleView {
         this.refreshVisibleData();
         Host.userMetrics.actionTaken(Host.UserMetrics.Action.CpuProfileNodeFocused);
     }
-    excludeClicked(_event) {
+    excludeClicked() {
         const selectedNode = this.dataGrid.selectedNode;
         if (!selectedNode) {
             return;
@@ -439,7 +439,7 @@ export class ProfileView extends UI.View.SimpleView {
         this.refreshVisibleData();
         Host.userMetrics.actionTaken(Host.UserMetrics.Action.CpuProfileNodeExcluded);
     }
-    resetClicked(_event) {
+    resetClicked() {
         this.viewSelectComboBox.selectElement().focus();
         this.resetButton.setEnabled(false);
         if (this.profileDataGridTree) {
@@ -512,7 +512,7 @@ export class WritableProfileHeader extends ProfileHeader {
         if (data) {
             await fileOutputStream.write(data);
         }
-        fileOutputStream.close();
+        void fileOutputStream.close();
     }
     async loadFromFile(file) {
         this.updateStatus(i18nString(UIStrings.loading), true);

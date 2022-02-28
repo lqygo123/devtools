@@ -4,7 +4,7 @@ import * as UI from '../../ui/legacy/legacy.js';
 import type { LevelsMask } from './ConsoleFilter.js';
 import { ConsoleFilter } from './ConsoleFilter.js';
 import { ConsolePinPane } from './ConsolePinPane.js';
-import { ConsoleGroupViewMessage, ConsoleViewMessage } from './ConsoleViewMessage.js';
+import { ConsoleViewMessage } from './ConsoleViewMessage.js';
 import type { ConsoleViewportElement, ConsoleViewportProvider } from './ConsoleViewport.js';
 export declare class ConsoleView extends UI.Widget.VBox implements UI.SearchableView.Searchable, ConsoleViewportProvider {
     private readonly searchableViewInternal;
@@ -30,6 +30,7 @@ export declare class ConsoleView extends UI.Widget.VBox implements UI.Searchable
     private readonly showSettingsPaneButton;
     private readonly progressToolbarItem;
     private readonly groupSimilarSetting;
+    private readonly showCorsErrorsSetting;
     private readonly preserveLogCheckbox;
     private readonly hideNetworkMessagesCheckbox;
     private readonly timestampsSetting;
@@ -41,12 +42,10 @@ export declare class ConsoleView extends UI.Widget.VBox implements UI.Searchable
     private viewportThrottler;
     private pendingBatchResize;
     private readonly onMessageResizedBound;
-    private topGroup;
-    private currentGroup;
     private readonly promptElement;
     private readonly linkifier;
     private consoleMessages;
-    private readonly viewMessageSymbol;
+    private consoleGroupStarts;
     private readonly consoleHistorySetting;
     private prompt;
     private immediatelyFilterMessagesForTest?;
@@ -164,16 +163,6 @@ export declare class ConsoleViewFilter {
     shouldBeVisible(viewMessage: ConsoleViewMessage): boolean;
     clear(): void;
     reset(): void;
-}
-export declare class ConsoleGroup {
-    private readonly parentGroupInternal;
-    private readonly nestingLevelInternal;
-    private readonly messagesHiddenInternal;
-    constructor(parentGroup: ConsoleGroup | null, groupMessage: ConsoleGroupViewMessage | null);
-    static createTopGroup(): ConsoleGroup;
-    messagesHidden(): boolean;
-    nestingLevel(): number;
-    parentGroup(): ConsoleGroup | null;
 }
 export declare class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
     handleAction(_context: UI.Context.Context, actionId: string): boolean;

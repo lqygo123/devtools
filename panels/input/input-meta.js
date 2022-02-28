@@ -39,8 +39,6 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 let loadedInputModule;
 async function loadInputModule() {
     if (!loadedInputModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/input');
         loadedInputModule = await import('./input.js');
     }
     return loadedInputModule;

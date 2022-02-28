@@ -67,12 +67,8 @@ export declare class UISourceCode extends Common.ObjectWrapper.ObjectWrapper<Eve
     addMessage(message: Message): void;
     removeMessage(message: Message): void;
     private removeAllMessages;
-    addLineDecoration(lineNumber: number, type: string, data: any): void;
-    addDecoration(range: TextUtils.TextRange.TextRange, type: string, data: any): void;
-    removeDecorationsForType(type: string): void;
-    allDecorations(): LineMarker[];
-    removeAllDecorations(): void;
-    decorationsForType(type: string): Set<LineMarker> | null;
+    setDecorationData(type: string, data: any): void;
+    getDecorationData(type: string): any;
     disableEdit(): void;
     editDisabled(): boolean;
 }
@@ -82,8 +78,7 @@ export declare enum Events {
     TitleChanged = "TitleChanged",
     MessageAdded = "MessageAdded",
     MessageRemoved = "MessageRemoved",
-    LineDecorationAdded = "LineDecorationAdded",
-    LineDecorationRemoved = "LineDecorationRemoved"
+    DecorationChanged = "DecorationChanged"
 }
 export interface WorkingCopyCommitedEvent {
     uiSourceCode: UISourceCode;
@@ -96,15 +91,14 @@ export declare type EventTypes = {
     [Events.TitleChanged]: UISourceCode;
     [Events.MessageAdded]: Message;
     [Events.MessageRemoved]: Message;
-    [Events.LineDecorationAdded]: LineMarker;
-    [Events.LineDecorationRemoved]: LineMarker;
+    [Events.DecorationChanged]: string;
 };
 export declare class UILocation {
     uiSourceCode: UISourceCode;
     lineNumber: number;
     columnNumber: number | undefined;
     constructor(uiSourceCode: UISourceCode, lineNumber: number, columnNumber?: number);
-    linkText(skipTrim?: boolean): string;
+    linkText(skipTrim?: boolean, showColumnNumber?: boolean): string;
     id(): string;
     lineId(): string;
     toUIString(): string;

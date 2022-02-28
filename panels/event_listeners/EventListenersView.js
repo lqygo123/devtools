@@ -200,6 +200,7 @@ export class EventListenersView extends UI.Widget.VBox {
         if (firstVisibleChild) {
             firstVisibleChild.select(true /* omitFocus */);
         }
+        this.treeOutline.setFocusable(Boolean(firstVisibleChild));
     }
     reset() {
         const eventTypes = this.treeOutline.rootElement().children();
@@ -263,9 +264,6 @@ export class ObjectEventListenerBar extends UI.TreeOutline.TreeElement {
     }
     setTitle(object, linkifier) {
         const title = this.listItemElement.createChild('span', 'event-listener-details');
-        const subtitle = this.listItemElement.createChild('span', 'event-listener-tree-subtitle');
-        const linkElement = linkifier.linkifyRawLocation(this.eventListenerInternal.location(), this.eventListenerInternal.sourceURL());
-        subtitle.appendChild(linkElement);
         const propertyValue = ObjectUI.ObjectPropertiesSection.ObjectPropertiesSection.createPropertyValue(object, /* wasThrown */ false, /* showPreview */ false);
         this.valueTitle = propertyValue.element;
         title.appendChild(this.valueTitle);
@@ -289,6 +287,9 @@ export class ObjectEventListenerBar extends UI.TreeOutline.TreeElement {
             }, false);
             title.appendChild(passiveButton);
         }
+        const subtitle = title.createChild('span', 'event-listener-tree-subtitle');
+        const linkElement = linkifier.linkifyRawLocation(this.eventListenerInternal.location(), this.eventListenerInternal.sourceURL());
+        subtitle.appendChild(linkElement);
         this.listItemElement.addEventListener('contextmenu', event => {
             const menu = new UI.ContextMenu.ContextMenu(event);
             if (event.target !== linkElement) {
@@ -299,15 +300,15 @@ export class ObjectEventListenerBar extends UI.TreeOutline.TreeElement {
             }
             menu.defaultSection().appendItem(i18nString(UIStrings.deleteEventListener), this.removeListener.bind(this), !this.eventListenerInternal.canRemove());
             menu.defaultSection().appendCheckboxItem(i18nString(UIStrings.passive), this.togglePassiveListener.bind(this), this.eventListenerInternal.passive(), !this.eventListenerInternal.canTogglePassive());
-            menu.show();
+            void menu.show();
         });
     }
     removeListener() {
         this.removeListenerBar();
-        this.eventListenerInternal.remove();
+        void this.eventListenerInternal.remove();
     }
     togglePassiveListener() {
-        this.eventListenerInternal.togglePassive().then(() => this.changeCallback());
+        void this.eventListenerInternal.togglePassive().then(() => this.changeCallback());
     }
     removeListenerBar() {
         const parent = this.parent;
@@ -332,6 +333,13 @@ export class ObjectEventListenerBar extends UI.TreeOutline.TreeElement {
     onenter() {
         if (this.valueTitle) {
             this.valueTitle.click();
+            return true;
+        }
+        return false;
+    }
+    ondelete() {
+        if (this.eventListenerInternal.canRemove()) {
+            this.removeListener();
             return true;
         }
         return false;

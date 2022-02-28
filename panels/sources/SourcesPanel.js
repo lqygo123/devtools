@@ -240,7 +240,7 @@ export class SourcesPanel extends UI.Panel.Panel {
             .moduleSetting('sidebarPosition')
             .addChangeListener(this.updateSidebarPosition.bind(this));
         this.updateSidebarPosition();
-        this.updateDebuggerButtonsAndStatus();
+        void this.updateDebuggerButtonsAndStatus();
         this.pauseOnExceptionEnabledChanged();
         Common.Settings.Settings.instance()
             .moduleSetting('pauseOnExceptionEnabled')
@@ -258,7 +258,7 @@ export class SourcesPanel extends UI.Panel.Panel {
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DebuggerModel.DebuggerModel, SDK.DebuggerModel.Events.GlobalObjectCleared, event => this.debuggerResumed(event.data));
         Extensions.ExtensionServer.ExtensionServer.instance().addEventListener(Extensions.ExtensionServer.Events.SidebarPaneAdded, this.extensionSidebarPaneAdded, this);
         SDK.TargetManager.TargetManager.instance().observeTargets(this);
-        this.lastModificationTime = window.performance.now();
+        this.lastModificationTime = -Infinity;
     }
     static instance(opts = { forceNew: null }) {
         const { forceNew } = opts;
@@ -297,7 +297,7 @@ export class SourcesPanel extends UI.Panel.Panel {
         if (ThreadsSidebarPane.shouldBeShown() && !this.threadsSidebarPane) {
             this.threadsSidebarPane = UI.ViewManager.ViewManager.instance().view('sources.threads');
             if (this.sidebarPaneStack && this.threadsSidebarPane) {
-                this.sidebarPaneStack.showView(this.threadsSidebarPane, this.splitWidget.isVertical() ? this.watchSidebarPane : this.callstackPane);
+                void this.sidebarPaneStack.showView(this.threadsSidebarPane, this.splitWidget.isVertical() ? this.watchSidebarPane : this.callstackPane);
             }
         }
     }
@@ -318,8 +318,7 @@ export class SourcesPanel extends UI.Panel.Panel {
             this.toggleDebuggerSidebarButton.setEnabled(true);
         }
     }
-    onCurrentTargetChanged(event) {
-        const target = event.data;
+    onCurrentTargetChanged({ data: target }) {
         this.setTarget(target);
     }
     paused() {
@@ -359,7 +358,7 @@ export class SourcesPanel extends UI.Panel.Panel {
         if (!UI.InspectorView.InspectorView.instance().canSelectPanel('sources')) {
             return false;
         }
-        UI.ViewManager.ViewManager.instance().showView('sources');
+        void UI.ViewManager.ViewManager.instance().showView('sources');
         return true;
     }
     onResize() {
@@ -373,8 +372,9 @@ export class SourcesPanel extends UI.Panel.Panel {
     debuggerPaused(event) {
         const debuggerModel = event.data;
         const details = debuggerModel.debuggerPausedDetails();
-        if (!this.pausedInternal) {
-            this.setAsCurrentPanel();
+        if (!this.pausedInternal &&
+            Common.Settings.Settings.instance().moduleSetting('autoFocusOnDebuggerPausedEnabled').get()) {
+            void this.setAsCurrentPanel();
         }
         if (UI.Context.Context.instance().flavor(SDK.Target.Target) === debuggerModel.target()) {
             this.showDebuggerPausedDetails(details);
@@ -385,7 +385,7 @@ export class SourcesPanel extends UI.Panel.Panel {
     }
     showDebuggerPausedDetails(details) {
         this.pausedInternal = true;
-        this.updateDebuggerButtonsAndStatus();
+        void this.updateDebuggerButtonsAndStatus();
         UI.Context.Context.instance().setFlavor(SDK.DebuggerModel.DebuggerPausedDetails, details);
         this.toggleDebuggerSidebarButton.setEnabled(false);
         this.revealDebuggerSidebar();
@@ -407,7 +407,7 @@ export class SourcesPanel extends UI.Panel.Panel {
         if (UI.Context.Context.instance().flavor(SDK.Target.Target) !== debuggerModel.target()) {
             return;
         }
-        this.updateDebuggerButtonsAndStatus();
+        void this.updateDebuggerButtonsAndStatus();
     }
     get visibleView() {
         return this.sourcesViewInternal.visibleView();
@@ -422,13 +422,13 @@ export class SourcesPanel extends UI.Panel.Panel {
         else {
             this.showEditor();
         }
-        this.sourcesViewInternal.showSourceLocation(uiSourceCode, lineNumber, columnNumber, omitFocus);
+        this.sourcesViewInternal.showSourceLocation(uiSourceCode, lineNumber === undefined ? undefined : { lineNumber, columnNumber }, omitFocus);
     }
     showEditor() {
         if (WrapperView.isShowing()) {
             return;
         }
-        this.setAsCurrentPanel();
+        void this.setAsCurrentPanel();
     }
     showUILocation(uiLocation, omitFocus) {
         this.showUISourceCode(uiLocation.uiSourceCode, uiLocation.lineNumber, uiLocation.columnNumber, omitFocus);
@@ -443,7 +443,7 @@ export class SourcesPanel extends UI.Panel.Panel {
                     this.navigatorTabbedLocation.tabbedPane().selectTab(viewId);
                 }
                 else {
-                    UI.ViewManager.ViewManager.instance().showView(viewId);
+                    void UI.ViewManager.ViewManager.instance().showView(viewId);
                 }
             }
         }
@@ -461,13 +461,16 @@ export class SourcesPanel extends UI.Panel.Panel {
     }
     async executionLineChanged(liveLocation) {
         const uiLocation = await liveLocation.uiLocation();
+        if (liveLocation.isDisposed()) {
+            return;
+        }
         if (!uiLocation) {
             return;
         }
         if (window.performance.now() - this.lastModificationTime < lastModificationTimeout) {
             return;
         }
-        this.sourcesViewInternal.showSourceLocation(uiLocation.uiSourceCode, uiLocation.lineNumber, uiLocation.columnNumber, undefined, true);
+        this.sourcesViewInternal.showSourceLocation(uiLocation.uiSourceCode, uiLocation, undefined, true);
     }
     lastModificationTimeoutPassedForTest() {
         lastModificationTimeout = Number.MIN_VALUE;
@@ -490,7 +493,7 @@ export class SourcesPanel extends UI.Panel.Panel {
         const enabled = Common.Settings.Settings.instance().moduleSetting('pauseOnExceptionEnabled').get();
         const button = this.pauseOnExceptionButton;
         button.setToggled(enabled);
-        button.setTitle(enabled ? i18nString(UIStrings.pauseOnExceptions) : i18nString(UIStrings.dontPauseOnExceptions));
+        button.setTitle(enabled ? i18nString(UIStrings.dontPauseOnExceptions) : i18nString(UIStrings.pauseOnExceptions));
         this.debugToolbarDrawer.classList.toggle('expanded', enabled);
     }
     async updateDebuggerButtonsAndStatus() {
@@ -528,7 +531,7 @@ export class SourcesPanel extends UI.Panel.Panel {
     updateDebuggerButtonsAndStatusForTest() {
     }
     clearInterface() {
-        this.updateDebuggerButtonsAndStatus();
+        void this.updateDebuggerButtonsAndStatus();
         UI.Context.Context.instance().setFlavor(SDK.DebuggerModel.DebuggerPausedDetails, null);
         if (this.switchToPausedTargetTimeout) {
             clearTimeout(this.switchToPausedTargetTimeout);
@@ -557,7 +560,7 @@ export class SourcesPanel extends UI.Panel.Panel {
     runSnippet() {
         const uiSourceCode = this.sourcesViewInternal.currentUISourceCode();
         if (uiSourceCode) {
-            Snippets.ScriptSnippetFileSystem.evaluateScriptSnippet(uiSourceCode);
+            void Snippets.ScriptSnippetFileSystem.evaluateScriptSnippet(uiSourceCode);
         }
     }
     editorSelected(event) {
@@ -596,31 +599,31 @@ export class SourcesPanel extends UI.Panel.Panel {
         const target = UI.Context.Context.instance().flavor(SDK.Target.Target);
         return target ? target.model(SDK.DebuggerModel.DebuggerModel) : null;
     }
-    longResume(_event) {
+    longResume() {
         const debuggerModel = this.prepareToResume();
         if (debuggerModel) {
             debuggerModel.skipAllPausesUntilReloadOrTimeout(500);
             debuggerModel.resume();
         }
     }
-    terminateExecution(_event) {
+    terminateExecution() {
         const debuggerModel = this.prepareToResume();
         if (debuggerModel) {
-            debuggerModel.runtimeModel().terminateExecution();
+            void debuggerModel.runtimeModel().terminateExecution();
             debuggerModel.resume();
         }
     }
     stepOver() {
         const debuggerModel = this.prepareToResume();
         if (debuggerModel) {
-            debuggerModel.stepOver();
+            void debuggerModel.stepOver();
         }
         return true;
     }
     stepInto() {
         const debuggerModel = this.prepareToResume();
         if (debuggerModel) {
-            debuggerModel.stepInto();
+            void debuggerModel.stepInto();
         }
         return true;
     }
@@ -634,7 +637,7 @@ export class SourcesPanel extends UI.Panel.Panel {
     stepOut() {
         const debuggerModel = this.prepareToResume();
         if (debuggerModel) {
-            debuggerModel.stepOut();
+            void debuggerModel.stepOut();
         }
         return true;
     }
@@ -708,7 +711,7 @@ export class SourcesPanel extends UI.Panel.Panel {
         if (!(target instanceof UISourceCodeFrame)) {
             return;
         }
-        if (target.uiSourceCode().contentType().isFromSourceMap() || target.textEditor.selection().isEmpty()) {
+        if (target.uiSourceCode().contentType().isFromSourceMap() || target.textEditor.state.selection.main.empty) {
             return;
         }
         contextMenu.debugSection().appendAction('debugger.evaluate-selection');
@@ -821,13 +824,11 @@ export class SourcesPanel extends UI.Panel.Panel {
             return;
         }
         const openText = i18nString(UIStrings.openInSourcesPanel);
-        // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const callback = this.showUILocation.bind(this, uiSourceCode.uiLocation(0, 0));
         contextMenu.revealSection().appendItem(openText, callback);
     }
     showFunctionDefinition(remoteObject) {
-        remoteObject.debuggerModel().functionDetailsPromise(remoteObject).then(this.didGetFunctionDetails.bind(this));
+        void remoteObject.debuggerModel().functionDetailsPromise(remoteObject).then(this.didGetFunctionDetails.bind(this));
     }
     async didGetFunctionDetails(response) {
         if (!response || !response.location) {
@@ -839,11 +840,14 @@ export class SourcesPanel extends UI.Panel.Panel {
         }
     }
     revealNavigatorSidebar() {
-        this.setAsCurrentPanel();
+        void this.setAsCurrentPanel();
         this.editorView.showBoth(true);
     }
     revealDebuggerSidebar() {
-        this.setAsCurrentPanel();
+        if (!Common.Settings.Settings.instance().moduleSetting('autoFocusOnDebuggerPausedEnabled').get()) {
+            return;
+        }
+        void this.setAsCurrentPanel();
         this.splitWidget.showBoth(true);
     }
     updateSidebarPosition() {
@@ -882,7 +886,7 @@ export class SourcesPanel extends UI.Panel.Panel {
         this.sidebarPaneStack.widget().element.appendChild(this.debuggerPausedMessage.element());
         this.sidebarPaneStack.appendApplicableItems('sources.sidebar-top');
         if (this.threadsSidebarPane) {
-            this.sidebarPaneStack.showView(this.threadsSidebarPane);
+            void this.sidebarPaneStack.showView(this.threadsSidebarPane);
         }
         const jsBreakpoints = UI.ViewManager.ViewManager.instance().view('sources.jsBreakpoints');
         const scopeChainView = UI.ViewManager.ViewManager.instance().view('sources.scopeChain');
@@ -893,9 +897,9 @@ export class SourcesPanel extends UI.Panel.Panel {
         if (!vertically) {
             // Populate the rest of the stack.
             this.sidebarPaneStack.appendView(this.watchSidebarPane);
-            this.sidebarPaneStack.showView(jsBreakpoints);
-            this.sidebarPaneStack.showView(scopeChainView);
-            this.sidebarPaneStack.showView(this.callstackPane);
+            void this.sidebarPaneStack.showView(jsBreakpoints);
+            void this.sidebarPaneStack.showView(scopeChainView);
+            void this.sidebarPaneStack.showView(this.callstackPane);
             this.extensionSidebarPanesContainer = this.sidebarPaneStack;
             this.sidebarPaneView = vbox;
             this.splitWidget.uninstallResizer(this.debugToolbar.gripElementForResize());
@@ -904,8 +908,8 @@ export class SourcesPanel extends UI.Panel.Panel {
             const splitWidget = new UI.SplitWidget.SplitWidget(true, true, 'sourcesPanelDebuggerSidebarSplitViewState', 0.5);
             splitWidget.setMainWidget(vbox);
             // Populate the left stack.
-            this.sidebarPaneStack.showView(jsBreakpoints);
-            this.sidebarPaneStack.showView(this.callstackPane);
+            void this.sidebarPaneStack.showView(jsBreakpoints);
+            void this.sidebarPaneStack.showView(this.callstackPane);
             const tabbedLocation = UI.ViewManager.ViewManager.instance().createTabbedLocation(this.revealDebuggerSidebar.bind(this));
             splitWidget.setSidebarWidget(tabbedLocation.tabbedPane());
             this.tabbedLocationHeader = tabbedLocation.tabbedPane().headerElement();
@@ -925,10 +929,7 @@ export class SourcesPanel extends UI.Panel.Panel {
         this.splitWidget.setSidebarWidget(this.sidebarPaneView);
     }
     setAsCurrentPanel() {
-        if (Common.Settings.Settings.instance().moduleSetting('autoFocusOnDebuggerPausedEnabled').get()) {
-            return UI.ViewManager.ViewManager.instance().showView('sources');
-        }
-        return Promise.resolve();
+        return UI.ViewManager.ViewManager.instance().showView('sources');
     }
     extensionSidebarPaneAdded(event) {
         this.addExtensionSidebarPane(event.data);
@@ -1017,6 +1018,9 @@ export class DebuggerPausedDetailsRevealer {
         return debuggerPausedDetailsRevealerInstance;
     }
     reveal(_object) {
+        if (!Common.Settings.Settings.instance().moduleSetting('autoFocusOnDebuggerPausedEnabled').get()) {
+            return Promise.resolve();
+        }
         return SourcesPanel.instance().setAsCurrentPanel();
     }
 }
@@ -1035,9 +1039,35 @@ export class RevealingActionDelegate {
             return false;
         }
         switch (actionId) {
-            case 'debugger.toggle-pause':
+            case 'debugger.toggle-pause': {
+                // This action can be triggered both on the DevTools front-end itself,
+                // or on the inspected target. If triggered on the DevTools front-end,
+                // it will take care of resuming.
+                //
+                // If triggered on the target, NOT in hosted mode:
+                //   * ..and the paused overlay is enabled:
+                //       => do not take any action here, as the paused overlay will resume
+                //   * ..and the paused overlay is disabled:
+                //       => take care of the resume here
+                // If triggered on the target in hosted mode:
+                //   * ..and the paused overlay is enabled:
+                //       => execution will not reach here, as shortcuts are not forwarded
+                //          and the paused overlay will resume
+                //   * ..and the paused overlay is disabled:
+                //       => overlay will not take care of resume, and neither will
+                //          DevTools as no shortcuts are forwarded from the target
+                // Do not trigger a resume action, if: the shortcut was forwarded and the
+                // paused overlay is enabled.
+                const actionHandledInPausedOverlay = context.flavor(UI.ShortcutRegistry.ForwardedShortcut) &&
+                    !Common.Settings.Settings.instance().moduleSetting('disablePausedStateOverlay').get();
+                if (actionHandledInPausedOverlay) {
+                    // Taken care of by inspector overlay: handled set to true to
+                    // register user metric.
+                    return true;
+                }
                 panel.togglePause();
                 return true;
+            }
         }
         return false;
     }
@@ -1081,12 +1111,13 @@ export class DebuggingActionDelegate {
             case 'debugger.evaluate-selection': {
                 const frame = UI.Context.Context.instance().flavor(UISourceCodeFrame);
                 if (frame) {
-                    let text = frame.textEditor.text(frame.textEditor.selection());
+                    const { state: editorState } = frame.textEditor;
+                    let text = editorState.sliceDoc(editorState.selection.main.from, editorState.selection.main.to);
                     const executionContext = UI.Context.Context.instance().flavor(SDK.RuntimeModel.ExecutionContext);
                     if (executionContext) {
                         const message = SDK.ConsoleModel.ConsoleModel.instance().addCommandMessage(executionContext, text);
                         text = ObjectUI.JavaScriptREPL.JavaScriptREPL.wrapObjectLiteral(text);
-                        SDK.ConsoleModel.ConsoleModel.instance().evaluateCommandInConsole(executionContext, message, text, /* useCommandLineAPI */ true);
+                        void SDK.ConsoleModel.ConsoleModel.instance().evaluateCommandInConsole(executionContext, message, text, /* useCommandLineAPI */ true);
                     }
                 }
                 return true;

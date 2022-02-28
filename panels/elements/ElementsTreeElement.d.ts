@@ -1,6 +1,6 @@
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Adorners from '../../ui/components/adorners/adorners.js';
-import * as TextEditor from '../../ui/legacy/components/text_editor/text_editor.js';
+import * as TextEditor from '../../ui/components/text_editor/text_editor.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import type { ElementsTreeOutline, UpdateRecord } from './ElementsTreeOutline.js';
 export declare class ElementsTreeElement extends UI.TreeOutline.TreeElement {
@@ -26,6 +26,7 @@ export declare class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     private searchHighlightsVisible?;
     selectionElement?: HTMLDivElement;
     private hintElement?;
+    private contentElement;
     constructor(node: SDK.DOMModel.DOMNode, isClosingTag?: boolean);
     static animateOnDOMUpdate(treeElement: ElementsTreeElement): void;
     static visibleShadowRoots(node: SDK.DOMModel.DOMNode): SDK.DOMModel.DOMNode[];
@@ -88,7 +89,7 @@ export declare class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     private convertWhitespaceToEntities;
     private nodeTitleInfo;
     remove(): void;
-    toggleEditAsHTML(callback?: ((arg0: boolean) => any), startEditing?: boolean): void;
+    toggleEditAsHTML(callback?: ((arg0: boolean) => void), startEditing?: boolean): void;
     private copyCSSPath;
     private copyJSPath;
     private copyXPath;
@@ -116,6 +117,6 @@ export declare function adornerComparator(adornerA: Adorners.Adorner.Adorner, ad
 export interface EditorHandles {
     commit: () => void;
     cancel: () => void;
-    editor?: UI.TextEditor.TextEditor | TextEditor.CodeMirrorTextEditor.CodeMirrorTextEditor;
-    resize: () => any;
+    editor?: TextEditor.TextEditor.TextEditor;
+    resize: () => void;
 }

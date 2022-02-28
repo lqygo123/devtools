@@ -19,85 +19,68 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('core/sdk/OverlayModel.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class OverlayModel extends SDKModel {
-    domModel;
+    #domModel;
     overlayAgent;
-    debuggerModel;
-    inspectModeEnabledInternal;
-    hideHighlightTimeout;
-    defaultHighlighter;
-    highlighter;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    showPaintRectsSetting;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    showLayoutShiftRegionsSetting;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    showAdHighlightsSetting;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    showDebugBordersSetting;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    showFPSCounterSetting;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    showScrollBottleneckRectsSetting;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    showHitTestBordersSetting;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    showWebVitalsSetting;
-    registeredListeners;
-    showViewportSizeOnResize;
-    persistentHighlighter;
-    sourceOrderHighlighter;
-    sourceOrderModeActiveInternal;
+    #debuggerModel;
+    #inspectModeEnabledInternal;
+    #hideHighlightTimeout;
+    #defaultHighlighter;
+    #highlighter;
+    #showPaintRectsSetting;
+    #showLayoutShiftRegionsSetting;
+    #showAdHighlightsSetting;
+    #showDebugBordersSetting;
+    #showFPSCounterSetting;
+    #showScrollBottleneckRectsSetting;
+    #showWebVitalsSetting;
+    #registeredListeners;
+    #showViewportSizeOnResize;
+    #persistentHighlighter;
+    #sourceOrderHighlighter;
+    #sourceOrderModeActiveInternal;
     constructor(target) {
         super(target);
-        this.domModel = target.model(DOMModel);
+        this.#domModel = target.model(DOMModel);
         target.registerOverlayDispatcher(this);
         this.overlayAgent = target.overlayAgent();
-        this.debuggerModel = target.model(DebuggerModel);
-        if (this.debuggerModel) {
+        this.#debuggerModel = target.model(DebuggerModel);
+        if (this.#debuggerModel) {
             Common.Settings.Settings.instance()
                 .moduleSetting('disablePausedStateOverlay')
                 .addChangeListener(this.updatePausedInDebuggerMessage, this);
-            this.debuggerModel.addEventListener(DebuggerModelEvents.DebuggerPaused, this.updatePausedInDebuggerMessage, this);
-            this.debuggerModel.addEventListener(DebuggerModelEvents.DebuggerResumed, this.updatePausedInDebuggerMessage, this);
+            this.#debuggerModel.addEventListener(DebuggerModelEvents.DebuggerPaused, this.updatePausedInDebuggerMessage, this);
+            this.#debuggerModel.addEventListener(DebuggerModelEvents.DebuggerResumed, this.updatePausedInDebuggerMessage, this);
             // TODO(dgozman): we should get DebuggerResumed on navigations instead of listening to GlobalObjectCleared.
-            this.debuggerModel.addEventListener(DebuggerModelEvents.GlobalObjectCleared, this.updatePausedInDebuggerMessage, this);
+            this.#debuggerModel.addEventListener(DebuggerModelEvents.GlobalObjectCleared, this.updatePausedInDebuggerMessage, this);
         }
-        this.inspectModeEnabledInternal = false;
-        this.hideHighlightTimeout = null;
-        this.defaultHighlighter = new DefaultHighlighter(this);
-        this.highlighter = this.defaultHighlighter;
-        this.showPaintRectsSetting = Common.Settings.Settings.instance().moduleSetting('showPaintRects');
-        this.showLayoutShiftRegionsSetting = Common.Settings.Settings.instance().moduleSetting('showLayoutShiftRegions');
-        this.showAdHighlightsSetting = Common.Settings.Settings.instance().moduleSetting('showAdHighlights');
-        this.showDebugBordersSetting = Common.Settings.Settings.instance().moduleSetting('showDebugBorders');
-        this.showFPSCounterSetting = Common.Settings.Settings.instance().moduleSetting('showFPSCounter');
-        this.showScrollBottleneckRectsSetting =
+        this.#inspectModeEnabledInternal = false;
+        this.#hideHighlightTimeout = null;
+        this.#defaultHighlighter = new DefaultHighlighter(this);
+        this.#highlighter = this.#defaultHighlighter;
+        this.#showPaintRectsSetting = Common.Settings.Settings.instance().moduleSetting('showPaintRects');
+        this.#showLayoutShiftRegionsSetting =
+            Common.Settings.Settings.instance().moduleSetting('showLayoutShiftRegions');
+        this.#showAdHighlightsSetting = Common.Settings.Settings.instance().moduleSetting('showAdHighlights');
+        this.#showDebugBordersSetting = Common.Settings.Settings.instance().moduleSetting('showDebugBorders');
+        this.#showFPSCounterSetting = Common.Settings.Settings.instance().moduleSetting('showFPSCounter');
+        this.#showScrollBottleneckRectsSetting =
             Common.Settings.Settings.instance().moduleSetting('showScrollBottleneckRects');
-        this.showHitTestBordersSetting = Common.Settings.Settings.instance().moduleSetting('showHitTestBorders');
-        this.showWebVitalsSetting = Common.Settings.Settings.instance().moduleSetting('showWebVitals');
-        this.registeredListeners = [];
-        this.showViewportSizeOnResize = true;
+        this.#showWebVitalsSetting = Common.Settings.Settings.instance().moduleSetting('showWebVitals');
+        this.#registeredListeners = [];
+        this.#showViewportSizeOnResize = true;
         if (!target.suspended()) {
-            this.overlayAgent.invoke_enable();
-            this.wireAgentToSettings();
+            void this.overlayAgent.invoke_enable();
+            void this.wireAgentToSettings();
         }
-        this.persistentHighlighter = new OverlayPersistentHighlighter(this);
-        this.domModel.addEventListener(DOMModelEvents.NodeRemoved, () => {
-            this.persistentHighlighter && this.persistentHighlighter.refreshHighlights();
+        this.#persistentHighlighter = new OverlayPersistentHighlighter(this);
+        this.#domModel.addEventListener(DOMModelEvents.NodeRemoved, () => {
+            this.#persistentHighlighter && this.#persistentHighlighter.refreshHighlights();
         });
-        this.domModel.addEventListener(DOMModelEvents.DocumentUpdated, () => {
-            this.persistentHighlighter && this.persistentHighlighter.hideAllInOverlay();
+        this.#domModel.addEventListener(DOMModelEvents.DocumentUpdated, () => {
+            this.#persistentHighlighter && this.#persistentHighlighter.hideAllInOverlay();
         });
-        this.sourceOrderHighlighter = new SourceOrderHighlighter(this);
-        this.sourceOrderModeActiveInternal = false;
+        this.#sourceOrderHighlighter = new SourceOrderHighlighter(this);
+        this.#sourceOrderModeActiveInternal = false;
     }
     static highlightObjectAsDOMNode(object) {
         const domModel = object.runtimeModel().target().model(DOMModel);
@@ -118,206 +101,198 @@ export class OverlayModel extends SDKModel {
     }
     static highlightRect(rect) {
         for (const overlayModel of TargetManager.instance().models(OverlayModel)) {
-            overlayModel.highlightRect(rect);
+            void overlayModel.highlightRect(rect);
         }
     }
     static clearHighlight() {
         for (const overlayModel of TargetManager.instance().models(OverlayModel)) {
-            overlayModel.clearHighlight();
+            void overlayModel.clearHighlight();
         }
     }
     getDOMModel() {
-        return this.domModel;
+        return this.#domModel;
     }
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     highlightRect({ x, y, width, height, color, outlineColor }) {
         const highlightColor = color || { r: 255, g: 0, b: 255, a: 0.3 };
         const highlightOutlineColor = outlineColor || { r: 255, g: 0, b: 255, a: 0.5 };
         return this.overlayAgent.invoke_highlightRect({ x, y, width, height, color: highlightColor, outlineColor: highlightOutlineColor });
     }
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     clearHighlight() {
         return this.overlayAgent.invoke_hideHighlight();
     }
     async wireAgentToSettings() {
-        this.registeredListeners = [
-            this.showPaintRectsSetting.addChangeListener(() => this.overlayAgent.invoke_setShowPaintRects({ result: this.showPaintRectsSetting.get() })),
-            this.showLayoutShiftRegionsSetting.addChangeListener(() => this.overlayAgent.invoke_setShowLayoutShiftRegions({ result: this.showLayoutShiftRegionsSetting.get() })),
-            this.showAdHighlightsSetting.addChangeListener(() => this.overlayAgent.invoke_setShowAdHighlights({ show: this.showAdHighlightsSetting.get() })),
-            this.showDebugBordersSetting.addChangeListener(() => this.overlayAgent.invoke_setShowDebugBorders({ show: this.showDebugBordersSetting.get() })),
-            this.showFPSCounterSetting.addChangeListener(() => this.overlayAgent.invoke_setShowFPSCounter({ show: this.showFPSCounterSetting.get() })),
-            this.showScrollBottleneckRectsSetting.addChangeListener(() => this.overlayAgent.invoke_setShowScrollBottleneckRects({ show: this.showScrollBottleneckRectsSetting.get() })),
-            this.showHitTestBordersSetting.addChangeListener(() => this.overlayAgent.invoke_setShowHitTestBorders({ show: this.showHitTestBordersSetting.get() })),
-            this.showWebVitalsSetting.addChangeListener(() => this.overlayAgent.invoke_setShowWebVitals({ show: this.showWebVitalsSetting.get() })),
+        this.#registeredListeners = [
+            this.#showPaintRectsSetting.addChangeListener(() => this.overlayAgent.invoke_setShowPaintRects({ result: this.#showPaintRectsSetting.get() })),
+            this.#showLayoutShiftRegionsSetting.addChangeListener(() => this.overlayAgent.invoke_setShowLayoutShiftRegions({ result: this.#showLayoutShiftRegionsSetting.get() })),
+            this.#showAdHighlightsSetting.addChangeListener(() => this.overlayAgent.invoke_setShowAdHighlights({ show: this.#showAdHighlightsSetting.get() })),
+            this.#showDebugBordersSetting.addChangeListener(() => this.overlayAgent.invoke_setShowDebugBorders({ show: this.#showDebugBordersSetting.get() })),
+            this.#showFPSCounterSetting.addChangeListener(() => this.overlayAgent.invoke_setShowFPSCounter({ show: this.#showFPSCounterSetting.get() })),
+            this.#showScrollBottleneckRectsSetting.addChangeListener(() => this.overlayAgent.invoke_setShowScrollBottleneckRects({ show: this.#showScrollBottleneckRectsSetting.get() })),
+            this.#showWebVitalsSetting.addChangeListener(() => this.overlayAgent.invoke_setShowWebVitals({ show: this.#showWebVitalsSetting.get() })),
         ];
-        if (this.showPaintRectsSetting.get()) {
-            this.overlayAgent.invoke_setShowPaintRects({ result: true });
+        if (this.#showPaintRectsSetting.get()) {
+            void this.overlayAgent.invoke_setShowPaintRects({ result: true });
         }
-        if (this.showLayoutShiftRegionsSetting.get()) {
-            this.overlayAgent.invoke_setShowLayoutShiftRegions({ result: true });
+        if (this.#showLayoutShiftRegionsSetting.get()) {
+            void this.overlayAgent.invoke_setShowLayoutShiftRegions({ result: true });
         }
-        if (this.showAdHighlightsSetting.get()) {
-            this.overlayAgent.invoke_setShowAdHighlights({ show: true });
+        if (this.#showAdHighlightsSetting.get()) {
+            void this.overlayAgent.invoke_setShowAdHighlights({ show: true });
         }
-        if (this.showDebugBordersSetting.get()) {
-            this.overlayAgent.invoke_setShowDebugBorders({ show: true });
+        if (this.#showDebugBordersSetting.get()) {
+            void this.overlayAgent.invoke_setShowDebugBorders({ show: true });
         }
-        if (this.showFPSCounterSetting.get()) {
-            this.overlayAgent.invoke_setShowFPSCounter({ show: true });
+        if (this.#showFPSCounterSetting.get()) {
+            void this.overlayAgent.invoke_setShowFPSCounter({ show: true });
         }
-        if (this.showScrollBottleneckRectsSetting.get()) {
-            this.overlayAgent.invoke_setShowScrollBottleneckRects({ show: true });
+        if (this.#showScrollBottleneckRectsSetting.get()) {
+            void this.overlayAgent.invoke_setShowScrollBottleneckRects({ show: true });
         }
-        if (this.showHitTestBordersSetting.get()) {
-            this.overlayAgent.invoke_setShowHitTestBorders({ show: true });
+        if (this.#showWebVitalsSetting.get()) {
+            void this.overlayAgent.invoke_setShowWebVitals({ show: true });
         }
-        if (this.showWebVitalsSetting.get()) {
-            this.overlayAgent.invoke_setShowWebVitals({ show: true });
-        }
-        if (this.debuggerModel && this.debuggerModel.isPaused()) {
+        if (this.#debuggerModel && this.#debuggerModel.isPaused()) {
             this.updatePausedInDebuggerMessage();
         }
-        await this.overlayAgent.invoke_setShowViewportSizeOnResize({ show: this.showViewportSizeOnResize });
+        await this.overlayAgent.invoke_setShowViewportSizeOnResize({ show: this.#showViewportSizeOnResize });
     }
     async suspendModel() {
-        Common.EventTarget.removeEventListeners(this.registeredListeners);
+        Common.EventTarget.removeEventListeners(this.#registeredListeners);
         await this.overlayAgent.invoke_disable();
     }
     async resumeModel() {
         await Promise.all([this.overlayAgent.invoke_enable(), this.wireAgentToSettings()]);
     }
     setShowViewportSizeOnResize(show) {
-        if (this.showViewportSizeOnResize === show) {
+        if (this.#showViewportSizeOnResize === show) {
             return;
         }
-        this.showViewportSizeOnResize = show;
+        this.#showViewportSizeOnResize = show;
         if (this.target().suspended()) {
             return;
         }
-        this.overlayAgent.invoke_setShowViewportSizeOnResize({ show });
+        void this.overlayAgent.invoke_setShowViewportSizeOnResize({ show });
     }
     updatePausedInDebuggerMessage() {
         if (this.target().suspended()) {
             return;
         }
-        const message = this.debuggerModel && this.debuggerModel.isPaused() &&
+        const message = this.#debuggerModel && this.#debuggerModel.isPaused() &&
             !Common.Settings.Settings.instance().moduleSetting('disablePausedStateOverlay').get() ?
             i18nString(UIStrings.pausedInDebugger) :
             undefined;
-        this.overlayAgent.invoke_setPausedInDebuggerMessage({ message });
+        void this.overlayAgent.invoke_setPausedInDebuggerMessage({ message });
     }
     setHighlighter(highlighter) {
-        this.highlighter = highlighter || this.defaultHighlighter;
+        this.#highlighter = highlighter || this.#defaultHighlighter;
     }
     async setInspectMode(mode, showDetailedTooltip = true) {
-        await this.domModel.requestDocument();
-        this.inspectModeEnabledInternal = mode !== "none" /* None */;
+        await this.#domModel.requestDocument();
+        this.#inspectModeEnabledInternal = mode !== "none" /* None */;
         this.dispatchEventToListeners(Events.InspectModeWillBeToggled, this);
-        this.highlighter.setInspectMode(mode, this.buildHighlightConfig('all', showDetailedTooltip));
+        void this.#highlighter.setInspectMode(mode, this.buildHighlightConfig('all', showDetailedTooltip));
     }
     inspectModeEnabled() {
-        return this.inspectModeEnabledInternal;
+        return this.#inspectModeEnabledInternal;
     }
     highlightInOverlay(data, mode, showInfo) {
-        if (this.sourceOrderModeActiveInternal) {
+        if (this.#sourceOrderModeActiveInternal) {
             // Return early if the source order is currently being shown the in the
             // overlay, so that it is not cleared by the highlight
             return;
         }
-        if (this.hideHighlightTimeout) {
-            clearTimeout(this.hideHighlightTimeout);
-            this.hideHighlightTimeout = null;
+        if (this.#hideHighlightTimeout) {
+            clearTimeout(this.#hideHighlightTimeout);
+            this.#hideHighlightTimeout = null;
         }
         const highlightConfig = this.buildHighlightConfig(mode);
         if (typeof showInfo !== 'undefined') {
             highlightConfig.showInfo = showInfo;
         }
-        this.highlighter.highlightInOverlay(data, highlightConfig);
+        this.#highlighter.highlightInOverlay(data, highlightConfig);
     }
     highlightInOverlayForTwoSeconds(data) {
         this.highlightInOverlay(data);
         this.delayedHideHighlight(2000);
     }
     highlightGridInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return;
         }
-        this.persistentHighlighter.highlightGridInOverlay(nodeId);
+        this.#persistentHighlighter.highlightGridInOverlay(nodeId);
         this.dispatchEventToListeners(Events.PersistentGridOverlayStateChanged, { nodeId, enabled: true });
     }
     isHighlightedGridInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return false;
         }
-        return this.persistentHighlighter.isGridHighlighted(nodeId);
+        return this.#persistentHighlighter.isGridHighlighted(nodeId);
     }
     hideGridInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return;
         }
-        this.persistentHighlighter.hideGridInOverlay(nodeId);
+        this.#persistentHighlighter.hideGridInOverlay(nodeId);
         this.dispatchEventToListeners(Events.PersistentGridOverlayStateChanged, { nodeId, enabled: false });
     }
     highlightScrollSnapInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return;
         }
-        this.persistentHighlighter.highlightScrollSnapInOverlay(nodeId);
+        this.#persistentHighlighter.highlightScrollSnapInOverlay(nodeId);
         this.dispatchEventToListeners(Events.PersistentScrollSnapOverlayStateChanged, { nodeId, enabled: true });
     }
     isHighlightedScrollSnapInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return false;
         }
-        return this.persistentHighlighter.isScrollSnapHighlighted(nodeId);
+        return this.#persistentHighlighter.isScrollSnapHighlighted(nodeId);
     }
     hideScrollSnapInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return;
         }
-        this.persistentHighlighter.hideScrollSnapInOverlay(nodeId);
+        this.#persistentHighlighter.hideScrollSnapInOverlay(nodeId);
         this.dispatchEventToListeners(Events.PersistentScrollSnapOverlayStateChanged, { nodeId, enabled: false });
     }
     highlightFlexContainerInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return;
         }
-        this.persistentHighlighter.highlightFlexInOverlay(nodeId);
+        this.#persistentHighlighter.highlightFlexInOverlay(nodeId);
         this.dispatchEventToListeners(Events.PersistentFlexContainerOverlayStateChanged, { nodeId, enabled: true });
     }
     isHighlightedFlexContainerInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return false;
         }
-        return this.persistentHighlighter.isFlexHighlighted(nodeId);
+        return this.#persistentHighlighter.isFlexHighlighted(nodeId);
     }
     hideFlexContainerInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return;
         }
-        this.persistentHighlighter.hideFlexInOverlay(nodeId);
+        this.#persistentHighlighter.hideFlexInOverlay(nodeId);
         this.dispatchEventToListeners(Events.PersistentFlexContainerOverlayStateChanged, { nodeId, enabled: false });
     }
     highlightContainerQueryInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return;
         }
-        this.persistentHighlighter.highlightContainerQueryInOverlay(nodeId);
+        this.#persistentHighlighter.highlightContainerQueryInOverlay(nodeId);
         this.dispatchEventToListeners(Events.PersistentContainerQueryOverlayStateChanged, { nodeId, enabled: true });
     }
     isHighlightedContainerQueryInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return false;
         }
-        return this.persistentHighlighter.isContainerQueryHighlighted(nodeId);
+        return this.#persistentHighlighter.isContainerQueryHighlighted(nodeId);
     }
     hideContainerQueryInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return;
         }
-        this.persistentHighlighter.hideContainerQueryInOverlay(nodeId);
+        this.#persistentHighlighter.hideContainerQueryInOverlay(nodeId);
         this.dispatchEventToListeners(Events.PersistentContainerQueryOverlayStateChanged, { nodeId, enabled: false });
     }
     highlightSourceOrderInOverlay(node) {
@@ -325,72 +300,90 @@ export class OverlayModel extends SDKModel {
             parentOutlineColor: Common.Color.SourceOrderHighlight.ParentOutline.toProtocolRGBA(),
             childOutlineColor: Common.Color.SourceOrderHighlight.ChildOutline.toProtocolRGBA(),
         };
-        this.sourceOrderHighlighter.highlightSourceOrderInOverlay(node, sourceOrderConfig);
+        this.#sourceOrderHighlighter.highlightSourceOrderInOverlay(node, sourceOrderConfig);
     }
     colorOfGridInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return null;
         }
-        return this.persistentHighlighter.colorOfGrid(nodeId).asString(Common.Color.Format.HEX);
+        return this.#persistentHighlighter.colorOfGrid(nodeId).asString(Common.Color.Format.HEX);
     }
     setColorOfGridInPersistentOverlay(nodeId, colorStr) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return;
         }
         const color = Common.Color.Color.parse(colorStr);
         if (!color) {
             return;
         }
-        this.persistentHighlighter.setColorOfGrid(nodeId, color);
-        this.persistentHighlighter.resetOverlay();
+        this.#persistentHighlighter.setColorOfGrid(nodeId, color);
+        this.#persistentHighlighter.resetOverlay();
     }
     colorOfFlexInPersistentOverlay(nodeId) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return null;
         }
-        return this.persistentHighlighter.colorOfFlex(nodeId).asString(Common.Color.Format.HEX);
+        return this.#persistentHighlighter.colorOfFlex(nodeId).asString(Common.Color.Format.HEX);
     }
     setColorOfFlexInPersistentOverlay(nodeId, colorStr) {
-        if (!this.persistentHighlighter) {
+        if (!this.#persistentHighlighter) {
             return;
         }
         const color = Common.Color.Color.parse(colorStr);
         if (!color) {
             return;
         }
-        this.persistentHighlighter.setColorOfFlex(nodeId, color);
-        this.persistentHighlighter.resetOverlay();
+        this.#persistentHighlighter.setColorOfFlex(nodeId, color);
+        this.#persistentHighlighter.resetOverlay();
     }
     hideSourceOrderInOverlay() {
-        this.sourceOrderHighlighter.hideSourceOrderHighlight();
+        this.#sourceOrderHighlighter.hideSourceOrderHighlight();
     }
     setSourceOrderActive(isActive) {
-        this.sourceOrderModeActiveInternal = isActive;
+        this.#sourceOrderModeActiveInternal = isActive;
     }
     sourceOrderModeActive() {
-        return this.sourceOrderModeActiveInternal;
+        return this.#sourceOrderModeActiveInternal;
+    }
+    highlightIsolatedElementInPersistentOverlay(nodeId) {
+        if (!this.#persistentHighlighter) {
+            return;
+        }
+        this.#persistentHighlighter.highlightIsolatedElementInOverlay(nodeId);
+    }
+    hideIsolatedElementInPersistentOverlay(nodeId) {
+        if (!this.#persistentHighlighter) {
+            return;
+        }
+        this.#persistentHighlighter.hideIsolatedElementInOverlay(nodeId);
+    }
+    isHighlightedIsolatedElementInPersistentOverlay(nodeId) {
+        if (!this.#persistentHighlighter) {
+            return false;
+        }
+        return this.#persistentHighlighter.isIsolatedElementHighlighted(nodeId);
     }
     delayedHideHighlight(delay) {
-        if (this.hideHighlightTimeout === null) {
-            this.hideHighlightTimeout = window.setTimeout(() => this.highlightInOverlay({ clear: true }), delay);
+        if (this.#hideHighlightTimeout === null) {
+            this.#hideHighlightTimeout = window.setTimeout(() => this.highlightInOverlay({ clear: true }), delay);
         }
     }
     highlightFrame(frameId) {
-        if (this.hideHighlightTimeout) {
-            clearTimeout(this.hideHighlightTimeout);
-            this.hideHighlightTimeout = null;
+        if (this.#hideHighlightTimeout) {
+            clearTimeout(this.#hideHighlightTimeout);
+            this.#hideHighlightTimeout = null;
         }
-        this.highlighter.highlightFrame(frameId);
+        this.#highlighter.highlightFrame(frameId);
     }
     showHingeForDualScreen(hinge) {
         if (hinge) {
             const { x, y, width, height, contentColor, outlineColor } = hinge;
-            this.overlayAgent.invoke_setShowHinge({
+            void this.overlayAgent.invoke_setShowHinge({
                 hingeConfig: { rect: { x: x, y: y, width: width, height: height }, contentColor: contentColor, outlineColor: outlineColor },
             });
         }
         else {
-            this.overlayAgent.invoke_setShowHinge({});
+            void this.overlayAgent.invoke_setShowHinge({});
         }
     }
     buildHighlightConfig(mode = 'all', showDetailedToolip = false) {
@@ -603,7 +596,7 @@ export class OverlayModel extends SDKModel {
         return highlightConfig;
     }
     nodeHighlightRequested({ nodeId }) {
-        const node = this.domModel.nodeForId(nodeId);
+        const node = this.#domModel.nodeForId(nodeId);
         if (node) {
             this.dispatchEventToListeners(Events.HighlightNodeRequested, node);
         }
@@ -614,14 +607,14 @@ export class OverlayModel extends SDKModel {
     inspectNodeRequested({ backendNodeId }) {
         const deferredNode = new DeferredDOMNode(this.target(), backendNodeId);
         if (OverlayModel.inspectNodeHandler) {
-            deferredNode.resolvePromise().then(node => {
+            void deferredNode.resolvePromise().then(node => {
                 if (node && OverlayModel.inspectNodeHandler) {
                     OverlayModel.inspectNodeHandler(node);
                 }
             });
         }
         else {
-            Common.Revealer.reveal(deferredNode);
+            void Common.Revealer.reveal(deferredNode);
         }
         this.dispatchEventToListeners(Events.ExitedInspectMode);
     }
@@ -651,9 +644,9 @@ export var Events;
     Events["PersistentContainerQueryOverlayStateChanged"] = "PersistentContainerQueryOverlayStateChanged";
 })(Events || (Events = {}));
 class DefaultHighlighter {
-    model;
+    #model;
     constructor(model) {
-        this.model = model;
+        this.#model = model;
     }
     highlightInOverlay(data, highlightConfig) {
         const { node, deferredNode, object, selectorList } = { node: undefined, deferredNode: undefined, object: undefined, selectorList: undefined, ...data };
@@ -661,17 +654,17 @@ class DefaultHighlighter {
         const backendNodeId = deferredNode ? deferredNode.backendNodeId() : undefined;
         const objectId = object ? object.objectId : undefined;
         if (nodeId || backendNodeId || objectId) {
-            this.model.target().overlayAgent().invoke_highlightNode({ highlightConfig, nodeId, backendNodeId, objectId, selector: selectorList });
+            void this.#model.target().overlayAgent().invoke_highlightNode({ highlightConfig, nodeId, backendNodeId, objectId, selector: selectorList });
         }
         else {
-            this.model.target().overlayAgent().invoke_hideHighlight();
+            void this.#model.target().overlayAgent().invoke_hideHighlight();
         }
     }
     async setInspectMode(mode, highlightConfig) {
-        await this.model.target().overlayAgent().invoke_setInspectMode({ mode, highlightConfig });
+        await this.#model.target().overlayAgent().invoke_setInspectMode({ mode, highlightConfig });
     }
     highlightFrame(frameId) {
-        this.model.target().overlayAgent().invoke_highlightFrame({
+        void this.#model.target().overlayAgent().invoke_highlightFrame({
             frameId,
             contentColor: Common.Color.PageHighlight.Content.toProtocolRGBA(),
             contentOutlineColor: Common.Color.PageHighlight.ContentOutline.toProtocolRGBA(),
@@ -679,19 +672,19 @@ class DefaultHighlighter {
     }
 }
 export class SourceOrderHighlighter {
-    model;
+    #model;
     constructor(model) {
-        this.model = model;
+        this.#model = model;
     }
     highlightSourceOrderInOverlay(node, sourceOrderConfig) {
-        this.model.setSourceOrderActive(true);
-        this.model.setShowViewportSizeOnResize(false);
-        this.model.getOverlayAgent().invoke_highlightSourceOrder({ sourceOrderConfig, nodeId: node.id });
+        this.#model.setSourceOrderActive(true);
+        this.#model.setShowViewportSizeOnResize(false);
+        void this.#model.getOverlayAgent().invoke_highlightSourceOrder({ sourceOrderConfig, nodeId: node.id });
     }
     hideSourceOrderHighlight() {
-        this.model.setSourceOrderActive(false);
-        this.model.setShowViewportSizeOnResize(true);
-        this.model.clearHighlight();
+        this.#model.setSourceOrderActive(false);
+        this.#model.setShowViewportSizeOnResize(true);
+        void this.#model.clearHighlight();
     }
 }
 SDKModel.register(OverlayModel, { capabilities: Capability.DOM, autostart: true });

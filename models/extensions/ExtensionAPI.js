@@ -178,6 +178,24 @@ self.injectedExtensionAPI = function (extensionInfo, inspectedTabId, themeName, 
                 extensionServer.sendRequest({ command: "setOpenResourceHandler" /* SetOpenResourceHandler */, 'handlerPresent': Boolean(callback) });
             }
         },
+        setThemeChangeHandler: function (callback) {
+            const hadHandler = extensionServer.hasHandler("host-theme-change" /* ThemeChange */);
+            function callbackWrapper(message) {
+                const { themeName } = message;
+                chrome.devtools.panels.themeName = themeName;
+                callback.call(null, themeName);
+            }
+            if (!callback) {
+                extensionServer.unregisterHandler("host-theme-change" /* ThemeChange */);
+            }
+            else {
+                extensionServer.registerHandler("host-theme-change" /* ThemeChange */, callbackWrapper);
+            }
+            // Only send command if we either removed an existing handler or added handler and had none before.
+            if (hadHandler === !callback) {
+                extensionServer.sendRequest({ command: "setThemeChangeHandler" /* SetThemeChangeHandler */, 'handlerPresent': Boolean(callback) });
+            }
+        },
         openResource: function (url, lineNumber, columnNumber, _callback) {
             const callbackArg = extractCallbackArgument(arguments);
             // Handle older API:
@@ -225,7 +243,6 @@ self.injectedExtensionAPI = function (extensionInfo, inspectedTabId, themeName, 
         __proto__: ExtensionViewImpl.prototype,
     };
     function LanguageServicesAPIImpl() {
-        /** @type {!Map<*, !MessagePort>} */
         this._plugins = new Map();
     }
     LanguageServicesAPIImpl.prototype = {
@@ -572,7 +589,7 @@ self.injectedExtensionAPI = function (extensionInfo, inspectedTabId, themeName, 
         };
         keyboardEventRequestQueue.push(requestPayload);
         if (!forwardTimer) {
-            forwardTimer = setTimeout(forwardEventQueue, 0);
+            forwardTimer = window.setTimeout(forwardEventQueue, 0);
         }
     }
     function forwardEventQueue() {

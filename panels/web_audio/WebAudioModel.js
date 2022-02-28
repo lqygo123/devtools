@@ -37,7 +37,7 @@ export class WebAudioModel extends SDK.SDKModel.SDKModel {
         if (this.enabled) {
             return;
         }
-        this.agent.invoke_enable();
+        void this.agent.invoke_enable();
         this.enabled = true;
     }
     contextCreated({ context }) {

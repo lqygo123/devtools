@@ -1,15 +1,9 @@
-/**
- * @interface
- */
 export interface HistoryEntry {
     valid(): boolean;
     reveal(): void;
 }
 export declare class SimpleHistoryManager {
-    private entries;
-    private activeEntryIndex;
-    private coalescingReadonly;
-    private readonly historyDepth;
+    #private;
     constructor(historyDepth: number);
     private readOnlyLock;
     private releaseReadOnlyLock;

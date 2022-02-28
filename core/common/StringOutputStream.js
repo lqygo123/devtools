@@ -2,17 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 export class StringOutputStream {
-    dataInternal;
+    #dataInternal;
     constructor() {
-        this.dataInternal = '';
+        this.#dataInternal = '';
     }
     async write(chunk) {
-        this.dataInternal += chunk;
+        this.#dataInternal += chunk;
     }
     async close() {
     }
     data() {
-        return this.dataInternal;
+        return this.#dataInternal;
     }
 }
 //# sourceMappingURL=StringOutputStream.js.map

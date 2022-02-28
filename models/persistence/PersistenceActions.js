@@ -48,7 +48,7 @@ export class ContextMenuProvider {
                 content = window.atob(content);
             }
             const url = contentProvider.contentURL();
-            Workspace.FileManager.FileManager.instance().save(url, content, true);
+            void Workspace.FileManager.FileManager.instance().save(url, content, true);
             Workspace.FileManager.FileManager.instance().close(url);
         }
         async function saveImage() {
@@ -70,14 +70,15 @@ export class ContextMenuProvider {
         if (uiSourceCode && NetworkPersistenceManager.instance().canSaveUISourceCodeForOverrides(uiSourceCode)) {
             contextMenu.saveSection().appendItem(i18nString(UIStrings.saveForOverrides), () => {
                 uiSourceCode.commitWorkingCopy();
-                NetworkPersistenceManager.instance().saveUISourceCodeForOverrides(uiSourceCode);
-                Common.Revealer.reveal(uiSourceCode);
+                void NetworkPersistenceManager.instance().saveUISourceCodeForOverrides(uiSourceCode);
+                void Common.Revealer.reveal(uiSourceCode);
             });
         }
         const binding = uiSourceCode && PersistenceImpl.instance().binding(uiSourceCode);
         const fileURL = binding ? binding.fileSystem.contentURL() : contentProvider.contentURL();
         if (fileURL.startsWith('file://')) {
-            const path = Common.ParsedURL.ParsedURL.urlToPlatformPath(fileURL, Host.Platform.isWin());
+            // TODO(crbug.com/1253323): Cast to UrlString will be removed when migration to branded types is complete.
+            const path = Common.ParsedURL.ParsedURL.capFilePrefix(fileURL, Host.Platform.isWin());
             contextMenu.revealSection().appendItem(i18nString(UIStrings.openInContainingFolder), () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.showItemInFolder(path));
         }
     }

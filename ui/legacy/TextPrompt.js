@@ -34,10 +34,11 @@ import * as DOMExtension from '../../core/dom_extension/dom_extension.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as ARIAUtils from './ARIAUtils.js';
-import * as Utils from './utils/utils.js';
+import * as ThemeSupport from './theme_support/theme_support.js';
 import { SuggestBox } from './SuggestBox.js';
 import { Tooltip } from './Tooltip.js';
 import { ElementFocusRestorer } from './UIUtils.js';
+import textPromptStyles from './textPrompt.css.legacy.js';
 export class TextPrompt extends Common.ObjectWrapper.ObjectWrapper {
     proxyElement;
     proxyElementDisplay;
@@ -119,7 +120,7 @@ export class TextPrompt extends Common.ObjectWrapper.ObjectWrapper {
         this.boundOnMouseWheel = this.onMouseWheel.bind(this);
         this.boundClearAutocomplete = this.clearAutocomplete.bind(this);
         this.proxyElement = element.ownerDocument.createElement('span');
-        Utils.appendStyle(this.proxyElement, 'ui/legacy/textPrompt.css');
+        ThemeSupport.ThemeSupport.instance().appendStyle(this.proxyElement, textPromptStyles);
         this.contentElement = this.proxyElement.createChild('div', 'text-prompt-root');
         this.proxyElement.style.display = this.proxyElementDisplay;
         if (element.parentElement) {
@@ -146,7 +147,7 @@ export class TextPrompt extends Common.ObjectWrapper.ObjectWrapper {
         if (!this.elementInternal) {
             throw new Error('Expected an already attached element!');
         }
-        return /** @type {!HTMLElement} */ this.elementInternal;
+        return this.elementInternal;
     }
     detach() {
         this.removeFromElement();
@@ -434,7 +435,8 @@ export class TextPrompt extends Common.ObjectWrapper.ObjectWrapper {
     autoCompleteSoon(force) {
         const immediately = this.isSuggestBoxVisible() || force;
         if (!this.completeTimeout) {
-            this.completeTimeout = setTimeout(this.complete.bind(this, force), immediately ? 0 : this.autocompletionTimeout);
+            this.completeTimeout =
+                window.setTimeout(this.complete.bind(this, force), immediately ? 0 : this.autocompletionTimeout);
         }
     }
     async complete(force) {

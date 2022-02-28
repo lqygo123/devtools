@@ -5,16 +5,11 @@ import { CSSProperty } from './CSSProperty.js';
 import type { CSSRule } from './CSSRule.js';
 import type { Target } from './Target.js';
 export declare class CSSStyleDeclaration {
-    private readonly cssModelInternal;
+    #private;
     parentRule: CSSRule | null;
-    private allPropertiesInternal;
     styleSheetId: Protocol.CSS.StyleSheetId | undefined;
     range: TextUtils.TextRange.TextRange | null;
     cssText: string | undefined;
-    private shorthandValues;
-    private shorthandIsImportant;
-    private activePropertyMap;
-    private leadingPropertiesInternal;
     type: Type;
     constructor(cssModel: CSSModel, parentRule: CSSRule | null, payload: Protocol.CSS.CSSStyle, type: Type);
     rebase(edit: Edit): void;
@@ -26,6 +21,7 @@ export declare class CSSStyleDeclaration {
     cssModel(): CSSModel;
     private computeInactiveProperties;
     allProperties(): CSSProperty[];
+    hasActiveProperty(name: string): boolean;
     getPropertyValue(name: string): string;
     isPropertyImplicit(name: string): boolean;
     longhandProperties(name: string): CSSProperty[];

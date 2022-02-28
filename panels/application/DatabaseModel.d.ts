@@ -18,7 +18,7 @@ export declare class Database {
     tableNames(): Promise<string[]>;
     executeSql(query: string, onSuccess: (arg0: Array<string>, arg1: Array<any>) => void, onError: (arg0: string) => void): Promise<void>;
 }
-export declare class DatabaseModel extends SDK.SDKModel.SDKModel {
+export declare class DatabaseModel extends SDK.SDKModel.SDKModel<EventTypes> {
     private databasesInternal;
     readonly agent: ProtocolProxyApi.DatabaseApi;
     private enabled?;
@@ -32,6 +32,10 @@ export declare enum Events {
     DatabaseAdded = "DatabaseAdded",
     DatabasesRemoved = "DatabasesRemoved"
 }
+export declare type EventTypes = {
+    [Events.DatabaseAdded]: Database;
+    [Events.DatabasesRemoved]: void;
+};
 export declare class DatabaseDispatcher implements ProtocolProxyApi.DatabaseDispatcher {
     private readonly model;
     constructor(model: DatabaseModel);

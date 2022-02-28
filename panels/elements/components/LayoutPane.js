@@ -3,13 +3,19 @@
 // found in the LICENSE file.
 import * as Common from '../../../core/common/common.js';
 import * as ComponentHelpers from '../../../ui/components/helpers/helpers.js';
+import * as UI from '../../../ui/legacy/legacy.js';
 import * as LitHtml from '../../../ui/lit-html/lit-html.js';
 import { NodeText } from './NodeText.js';
 import layoutPaneStyles from '../layoutPane.css.js';
+import * as Input from '../../../ui/components/input/input.js';
 // eslint-disable-next-line rulesdir/es_modules_import
 import inspectorCommonStyles from '../../../ui/legacy/inspectorCommon.css.js';
 import * as i18n from '../../../core/i18n/i18n.js';
 const UIStrings = {
+    /**
+    *@description Title of the input to select the overlay color for an element using the color picker
+    */
+    chooseElementOverlayColor: 'Choose the overlay color for this element',
     /**
     *@description Title of the show element button in the Layout pane of the Elements panel
     */
@@ -42,6 +48,10 @@ const UIStrings = {
     *@description Text in the Layout panel, when no flexbox elements are found
     */
     noFlexboxLayoutsFoundOnThisPage: 'No flexbox layouts found on this page',
+    /**
+    *@description Screen reader announcement when opening color picker tool.
+    */
+    colorPickerOpened: 'Color picker opened.',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/elements/components/LayoutPane.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -62,24 +72,25 @@ function isBooleanSetting(setting) {
 }
 export class LayoutPane extends HTMLElement {
     static litTagName = LitHtml.literal `devtools-layout-pane`;
-    shadow = this.attachShadow({ mode: 'open' });
-    settings = [];
-    gridElements = [];
-    flexContainerElements = [];
+    #shadow = this.attachShadow({ mode: 'open' });
+    #settings = [];
+    #gridElements = [];
+    #flexContainerElements = [];
     constructor() {
         super();
-        this.shadow.adoptedStyleSheets = [
+        this.#shadow.adoptedStyleSheets = [
+            Input.checkboxStyles,
             layoutPaneStyles,
             inspectorCommonStyles,
         ];
     }
     set data(data) {
-        this.settings = data.settings;
-        this.gridElements = data.gridElements;
-        this.flexContainerElements = data.flexContainerElements;
-        this.render();
+        this.#settings = data.settings;
+        this.#gridElements = data.gridElements;
+        this.#flexContainerElements = data.flexContainerElements;
+        this.#render();
     }
-    onSummaryKeyDown(event) {
+    #onSummaryKeyDown(event) {
         if (!event.target) {
             return;
         }
@@ -97,99 +108,99 @@ export class LayoutPane extends HTMLElement {
                 break;
         }
     }
-    render() {
+    #render() {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
         render(html `
       <details open>
-        <summary class="header" @keydown=${this.onSummaryKeyDown}>
+        <summary class="header" @keydown=${this.#onSummaryKeyDown}>
           ${i18nString(UIStrings.grid)}
         </summary>
         <div class="content-section">
           <h3 class="content-section-title">${i18nString(UIStrings.overlayDisplaySettings)}</h3>
           <div class="select-settings">
-            ${this.getEnumSettings().map(setting => this.renderEnumSetting(setting))}
+            ${this.#getEnumSettings().map(setting => this.#renderEnumSetting(setting))}
           </div>
           <div class="checkbox-settings">
-            ${this.getBooleanSettings().map(setting => this.renderBooleanSetting(setting))}
+            ${this.#getBooleanSettings().map(setting => this.#renderBooleanSetting(setting))}
           </div>
         </div>
-        ${this.gridElements ?
+        ${this.#gridElements ?
             html `<div class="content-section">
             <h3 class="content-section-title">
-              ${this.gridElements.length ? i18nString(UIStrings.gridOverlays) : i18nString(UIStrings.noGridLayoutsFoundOnThisPage)}
+              ${this.#gridElements.length ? i18nString(UIStrings.gridOverlays) : i18nString(UIStrings.noGridLayoutsFoundOnThisPage)}
             </h3>
-            ${this.gridElements.length ?
+            ${this.#gridElements.length ?
                 html `<div class="elements">
-                ${this.gridElements.map(element => this.renderElement(element))}
+                ${this.#gridElements.map(element => this.#renderElement(element))}
               </div>` : ''}
           </div>` : ''}
       </details>
-      ${this.flexContainerElements !== undefined ?
+      ${this.#flexContainerElements !== undefined ?
             html `
         <details open>
-          <summary class="header" @keydown=${this.onSummaryKeyDown}>
+          <summary class="header" @keydown=${this.#onSummaryKeyDown}>
             ${i18nString(UIStrings.flexbox)}
           </summary>
-          ${this.flexContainerElements ?
+          ${this.#flexContainerElements ?
                 html `<div class="content-section">
               <h3 class="content-section-title">
-                ${this.flexContainerElements.length ? i18nString(UIStrings.flexboxOverlays) : i18nString(UIStrings.noFlexboxLayoutsFoundOnThisPage)}
+                ${this.#flexContainerElements.length ? i18nString(UIStrings.flexboxOverlays) : i18nString(UIStrings.noFlexboxLayoutsFoundOnThisPage)}
               </h3>
-              ${this.flexContainerElements.length ?
+              ${this.#flexContainerElements.length ?
                     html `<div class="elements">
-                  ${this.flexContainerElements.map(element => this.renderElement(element))}
+                  ${this.#flexContainerElements.map(element => this.#renderElement(element))}
                 </div>` : ''}
             </div>` : ''}
         </details>
         `
             : ''}
-    `, this.shadow, {
+    `, this.#shadow, {
             host: this,
         });
         // clang-format on
     }
-    getEnumSettings() {
-        return this.settings.filter(isEnumSetting);
+    #getEnumSettings() {
+        return this.#settings.filter(isEnumSetting);
     }
-    getBooleanSettings() {
-        return this.settings.filter(isBooleanSetting);
+    #getBooleanSettings() {
+        return this.#settings.filter(isBooleanSetting);
     }
-    onBooleanSettingChange(setting, event) {
+    #onBooleanSettingChange(setting, event) {
         event.preventDefault();
         this.dispatchEvent(new SettingChangedEvent(setting.name, event.target.checked));
     }
-    onEnumSettingChange(setting, event) {
+    #onEnumSettingChange(setting, event) {
         event.preventDefault();
         this.dispatchEvent(new SettingChangedEvent(setting.name, event.target.value));
     }
-    onElementToggle(element, event) {
+    #onElementToggle(element, event) {
         event.preventDefault();
         element.toggle(event.target.checked);
     }
-    onElementClick(element, event) {
+    #onElementClick(element, event) {
         event.preventDefault();
         element.reveal();
     }
-    onColorChange(element, event) {
+    #onColorChange(element, event) {
         event.preventDefault();
         element.setColor(event.target.value);
-        this.render();
+        this.#render();
     }
-    onElementMouseEnter(element, event) {
+    #onElementMouseEnter(element, event) {
         event.preventDefault();
         element.highlight();
     }
-    onElementMouseLeave(element, event) {
+    #onElementMouseLeave(element, event) {
         event.preventDefault();
         element.hideHighlight();
     }
-    renderElement(element) {
-        const onElementToggle = this.onElementToggle.bind(this, element);
-        const onElementClick = this.onElementClick.bind(this, element);
-        const onColorChange = this.onColorChange.bind(this, element);
-        const onMouseEnter = this.onElementMouseEnter.bind(this, element);
-        const onMouseLeave = this.onElementMouseLeave.bind(this, element);
+    #renderElement(element) {
+        const onElementToggle = this.#onElementToggle.bind(this, element);
+        const onElementClick = this.#onElementClick.bind(this, element);
+        const onColorChange = this.#onColorChange.bind(this, element);
+        const onMouseEnter = this.#onElementMouseEnter.bind(this, element);
+        const onMouseLeave = this.#onElementMouseLeave.bind(this, element);
         const onColorLabelKeyUp = (event) => {
             // Handle Enter and Space events to make the color picker accessible.
             if (event.key !== 'Enter' && event.key !== ' ') {
@@ -198,6 +209,7 @@ export class LayoutPane extends HTMLElement {
             const target = event.target;
             const input = target.querySelector('input');
             input.click();
+            UI.ARIAUtils.alert(i18nString(UIStrings.colorPickerOpened));
             event.preventDefault();
         };
         const onColorLabelKeyDown = (event) => {
@@ -209,7 +221,7 @@ export class LayoutPane extends HTMLElement {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
         return html `<div class="element">
-      <label data-element="true" class="checkbox-label" title=${element.name}>
+      <label data-element="true" class="checkbox-label">
         <input data-input="true" type="checkbox" .checked=${element.enabled} @change=${onElementToggle} />
         <span class="node-text-container" data-label="true" @mouseenter=${onMouseEnter} @mouseleave=${onMouseLeave}>
           <${NodeText.litTagName} .data=${{
@@ -219,22 +231,22 @@ export class LayoutPane extends HTMLElement {
         }}></${NodeText.litTagName}>
         </span>
       </label>
-      <label @keyup=${onColorLabelKeyUp} @keydown=${onColorLabelKeyDown} tabindex="0" class="color-picker-label" style="background: ${element.color};">
+      <label @keyup=${onColorLabelKeyUp} @keydown=${onColorLabelKeyDown} tabindex="0" title=${i18nString(UIStrings.chooseElementOverlayColor)} class="color-picker-label" style="background: ${element.color};">
         <input @change=${onColorChange} @input=${onColorChange} class="color-picker" type="color" value=${element.color} />
       </label>
       <button tabindex="0" @click=${onElementClick} title=${i18nString(UIStrings.showElementInTheElementsPanel)} class="show-element"></button>
     </div>`;
         // clang-format on
     }
-    renderBooleanSetting(setting) {
-        const onBooleanSettingChange = this.onBooleanSettingChange.bind(this, setting);
+    #renderBooleanSetting(setting) {
+        const onBooleanSettingChange = this.#onBooleanSettingChange.bind(this, setting);
         return html `<label data-boolean-setting="true" class="checkbox-label" title=${setting.title}>
       <input data-input="true" type="checkbox" .checked=${setting.value} @change=${onBooleanSettingChange} />
       <span data-label="true">${setting.title}</span>
     </label>`;
     }
-    renderEnumSetting(setting) {
-        const onEnumSettingChange = this.onEnumSettingChange.bind(this, setting);
+    #renderEnumSetting(setting) {
+        const onEnumSettingChange = this.#onEnumSettingChange.bind(this, setting);
         return html `<label data-enum-setting="true" class="select-label" title=${setting.title}>
       <select class="chrome-select" data-input="true" @change=${onEnumSettingChange}>
         ${setting.options.map(opt => html `<option value=${opt.value} .selected=${setting.value === opt.value}>${opt.title}</option>`)}

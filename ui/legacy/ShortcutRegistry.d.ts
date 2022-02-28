@@ -30,6 +30,9 @@ export declare class ShortcutRegistry {
         [x: string]: () => Promise<boolean>;
     }): void;
     actionHasDefaultShortcut(actionId: string): boolean;
+    getShortcutListener(handlers: {
+        [x: string]: () => Promise<boolean>;
+    }): (event: KeyboardEvent) => void;
     addShortcutListener(element: Element, handlers: {
         [x: string]: () => Promise<boolean>;
     }): (arg0: Event) => void;

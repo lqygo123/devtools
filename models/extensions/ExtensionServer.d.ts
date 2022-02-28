@@ -30,6 +30,7 @@ export declare class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<
     private extensionsEnabled;
     private inspectedTabId?;
     private readonly extensionAPITestHook?;
+    private themeChangeHandlers;
     private constructor();
     static instance(opts?: {
         forceNew: boolean | null;
@@ -63,6 +64,7 @@ export declare class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<
     private onSetSidebarPage;
     private onOpenResource;
     private onSetOpenResourceHandler;
+    private onSetThemeChangeHandler;
     private handleOpenURL;
     private onReload;
     private onEvaluateOnInspectedPage;
@@ -96,7 +98,6 @@ export declare class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<
     private registerAutosubscriptionTargetManagerHandler;
     private registerResourceContentCommittedHandler;
     private expandResourcePath;
-    private normalizePath;
     evaluate(expression: string, exposeCommandLineAPI: boolean, returnByValue: boolean, options: PrivateAPI.EvaluateOptions | undefined, securityOrigin: string, callback: (arg0: string | null, arg1: SDK.RemoteObject.RemoteObject | null, arg2: boolean) => unknown): Record | undefined;
     private canInspectURL;
     private disableExtensions;

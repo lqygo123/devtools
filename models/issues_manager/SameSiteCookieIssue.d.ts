@@ -3,9 +3,8 @@ import * as Protocol from '../../generated/protocol.js';
 import { Issue, IssueCategory, IssueKind } from './Issue.js';
 import type { MarkdownIssueDescription } from './MarkdownIssueDescription.js';
 export declare class SameSiteCookieIssue extends Issue {
-    private issueDetails;
+    #private;
     constructor(code: string, issueDetails: Protocol.Audits.SameSiteCookieIssueDetails, issuesModel: SDK.IssuesModel.IssuesModel);
-    private cookieId;
     primaryKey(): string;
     /**
      * Returns an array of issues from a given SameSiteCookieIssueDetails.

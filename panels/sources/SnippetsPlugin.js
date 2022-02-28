@@ -19,13 +19,6 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/sources/SnippetsPlugin.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class SnippetsPlugin extends Plugin {
-    textEditor;
-    uiSourceCode;
-    constructor(textEditor, uiSourceCode) {
-        super();
-        this.textEditor = textEditor;
-        this.uiSourceCode = uiSourceCode;
-    }
     static accepts(uiSourceCode) {
         return Snippets.ScriptSnippetFileSystem.isSnippetsUISourceCode(uiSourceCode);
     }

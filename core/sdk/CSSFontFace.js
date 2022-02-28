@@ -2,22 +2,22 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 export class CSSFontFace {
-    fontFamily;
-    fontVariationAxes;
-    fontVariationAxesByTag;
+    #fontFamily;
+    #fontVariationAxes;
+    #fontVariationAxesByTag;
     constructor(payload) {
-        this.fontFamily = payload.fontFamily;
-        this.fontVariationAxes = payload.fontVariationAxes || [];
-        this.fontVariationAxesByTag = new Map();
-        for (const axis of this.fontVariationAxes) {
-            this.fontVariationAxesByTag.set(axis.tag, axis);
+        this.#fontFamily = payload.fontFamily;
+        this.#fontVariationAxes = payload.fontVariationAxes || [];
+        this.#fontVariationAxesByTag = new Map();
+        for (const axis of this.#fontVariationAxes) {
+            this.#fontVariationAxesByTag.set(axis.tag, axis);
         }
     }
     getFontFamily() {
-        return this.fontFamily;
+        return this.#fontFamily;
     }
     getVariationAxisByTag(tag) {
-        return this.fontVariationAxesByTag.get(tag);
+        return this.#fontVariationAxesByTag.get(tag);
     }
 }
 //# sourceMappingURL=CSSFontFace.js.map

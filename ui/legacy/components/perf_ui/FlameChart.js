@@ -36,6 +36,7 @@ import * as UI from '../../legacy.js';
 import * as ThemeSupport from '../../theme_support/theme_support.js';
 import { ChartViewport } from './ChartViewport.js';
 import { TimelineGrid } from './TimelineGrid.js';
+import flameChartStyles from './flameChart.css.legacy.js';
 const UIStrings = {
     /**
     *@description Aria accessible name in Flame Chart of the Performance panel
@@ -108,8 +109,6 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
     lastMouseOffsetX;
     selectedGroup;
     keyboardFocusedGroup;
-    selectedGroupBackroundColor;
-    selectedGroupBorderColor;
     offsetWidth;
     offsetHeight;
     dragStartX;
@@ -137,7 +136,7 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
     totalTime;
     constructor(dataProvider, flameChartDelegate, groupExpansionSetting) {
         super(true);
-        this.registerRequiredCSS('ui/legacy/components/perf_ui/flameChart.css');
+        this.registerRequiredCSS(flameChartStyles);
         this.contentElement.classList.add('flame-chart-main-pane');
         this.groupExpansionSetting = groupExpansionSetting;
         this.groupExpansionState = groupExpansionSetting && groupExpansionSetting.get() || {};
@@ -194,8 +193,9 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
         this.selectedGroup = -1;
         // Keyboard focused group is used to navigate groups irrespective of whether they are selectable or not
         this.keyboardFocusedGroup = -1;
-        this.selectedGroupBackroundColor = ThemeSupport.ThemeSupport.instance().patchColorText(Colors.SelectedGroupBackground, ThemeSupport.ThemeSupport.ColorUsage.Background);
-        this.selectedGroupBorderColor = ThemeSupport.ThemeSupport.instance().patchColorText(Colors.SelectedGroupBorder, ThemeSupport.ThemeSupport.ColorUsage.Background);
+        ThemeSupport.ThemeSupport.instance().addEventListener(ThemeSupport.ThemeChangeEvent.eventName, () => {
+            this.scheduleUpdate();
+        });
     }
     willHide() {
         this.hideHighlight();
@@ -772,7 +772,7 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
                 continue;
             }
             if (pos.x <= x && x < pos.x + pos.width) {
-                return /** @type {number} */ index;
+                return index;
             }
         }
         // Check regular entries.
@@ -975,7 +975,8 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
             context.save();
             this.forEachGroupInViewport((offset, index, group, isFirst, groupHeight) => {
                 if (this.isGroupFocused(index)) {
-                    context.fillStyle = this.selectedGroupBackroundColor;
+                    context.fillStyle =
+                        ThemeSupport.ThemeSupport.instance().getComputedValue('--selected-group-background', this.contentElement);
                     context.fillRect(0, offset, width, groupHeight - group.style.padding);
                 }
             });
@@ -1346,13 +1347,12 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
             return;
         }
         const lastGroupOffset = groupOffsets[groupOffsets.length - 1];
-        const colorUsage = ThemeSupport.ThemeSupport.ColorUsage;
         context.save();
         context.scale(ratio, ratio);
         context.translate(0, -top);
         const defaultFont = '11px ' + Host.Platform.fontFamily();
         context.font = defaultFont;
-        context.fillStyle = ThemeSupport.ThemeSupport.instance().patchColorText('#fff', colorUsage.Background);
+        context.fillStyle = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-background');
         this.forEachGroupInViewport((offset, index, group) => {
             const paddingHeight = group.style.padding;
             if (paddingHeight < 5) {
@@ -1363,7 +1363,7 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
         if (groups.length && lastGroupOffset < top + height) {
             context.fillRect(0, lastGroupOffset + 2, width, top + height - lastGroupOffset);
         }
-        context.strokeStyle = ThemeSupport.ThemeSupport.instance().patchColorText('#eee', colorUsage.Background);
+        context.strokeStyle = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-background-elevation-1');
         context.beginPath();
         this.forEachGroupInViewport((offset, index, group, isFirst) => {
             if (isFirst || group.style.padding < 4) {
@@ -1400,7 +1400,8 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
             if (this.isGroupCollapsible(index) && !group.expanded || group.style.shareHeaderLine) {
                 const width = this.labelWidthForGroup(context, group) + 2;
                 if (this.isGroupFocused(index)) {
-                    context.fillStyle = this.selectedGroupBackroundColor;
+                    context.fillStyle =
+                        ThemeSupport.ThemeSupport.instance().getComputedValue('--selected-group-background', this.contentElement);
                 }
                 else {
                     const parsedColor = Common.Color.Color.parse(group.style.backgroundColor);
@@ -1414,7 +1415,7 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
             context.fillText(group.name, Math.floor(this.expansionArrowIndent * (group.style.nestingLevel + 1) + this.arrowSide), offset + group.style.height - this.textBaseline);
         });
         context.restore();
-        context.fillStyle = ThemeSupport.ThemeSupport.instance().patchColorText('#6e6e6e', colorUsage.Foreground);
+        context.fillStyle = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-text-secondary');
         context.beginPath();
         this.forEachGroupInViewport((offset, index, group) => {
             if (this.isGroupCollapsible(index)) {
@@ -1422,14 +1423,15 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
             }
         });
         context.fill();
-        context.strokeStyle = ThemeSupport.ThemeSupport.instance().patchColorText('#ddd', colorUsage.Background);
+        context.strokeStyle = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-details-hairline-light');
         context.beginPath();
         context.stroke();
         this.forEachGroupInViewport((offset, index, group, isFirst, groupHeight) => {
             if (this.isGroupFocused(index)) {
                 const lineWidth = 2;
                 const bracketLength = 10;
-                context.fillStyle = this.selectedGroupBorderColor;
+                context.fillStyle =
+                    ThemeSupport.ThemeSupport.instance().getComputedValue('--selected-group-border', this.contentElement);
                 context.fillRect(0, offset - lineWidth, lineWidth, groupHeight - group.style.padding + 2 * lineWidth);
                 context.fillRect(0, offset - lineWidth, bracketLength, lineWidth);
                 context.fillRect(0, offset + groupHeight - group.style.padding, bracketLength, lineWidth);
@@ -1910,7 +1912,6 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
         this.highlightedMarkerIndex = -1;
         this.highlightedEntryIndex = -1;
         this.selectedEntryIndex = -1;
-        /** @type {!Map<string,!Map<string,number>>} */
         this.textWidth = new Map();
         this.chartViewport.scheduleUpdate();
     }
@@ -1974,8 +1975,4 @@ export var Events;
     Events["EntrySelected"] = "EntrySelected";
     Events["EntryHighlighted"] = "EntryHighlighted";
 })(Events || (Events = {}));
-export const Colors = {
-    SelectedGroupBackground: 'hsl(215, 85%, 98%)',
-    SelectedGroupBorder: 'hsl(216, 68%, 54%)',
-};
 //# sourceMappingURL=FlameChart.js.map

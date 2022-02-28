@@ -5,12 +5,7 @@ import { Type as TargetType } from './Target.js';
 import { Target } from './Target.js';
 import type { SDKModel } from './SDKModel.js';
 export declare class TargetManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
-    private targetsInternal;
-    private readonly observers;
-    private modelListeners;
-    private readonly modelObservers;
-    private isSuspended;
-    private browserTargetInternal;
+    #private;
     private constructor();
     static instance({ forceNew }?: {
         forceNew: boolean;
@@ -27,8 +22,8 @@ export declare class TargetManager extends Common.ObjectWrapper.ObjectWrapper<Ev
     unobserveModels<T extends SDKModel>(modelClass: new (arg1: Target) => SDKModel, observer: SDKModelObserver<T>): void;
     modelAdded(target: Target, modelClass: new (arg1: Target) => SDKModel, model: SDKModel): void;
     private modelRemoved;
-    addModelListener(modelClass: new (arg1: Target) => SDKModel, eventType: string | symbol, listener: (arg0: Common.EventTarget.EventTargetEvent) => void, thisObject?: Object): void;
-    removeModelListener(modelClass: new (arg1: Target) => SDKModel, eventType: string | symbol, listener: (arg0: Common.EventTarget.EventTargetEvent) => void, thisObject?: Object): void;
+    addModelListener<Events, T extends keyof Events>(modelClass: new (arg1: Target) => SDKModel<Events>, eventType: T, listener: Common.EventTarget.EventListener<Events, T>, thisObject?: Object): void;
+    removeModelListener<Events, T extends keyof Events>(modelClass: new (arg1: Target) => SDKModel<Events>, eventType: T, listener: Common.EventTarget.EventListener<Events, T>, thisObject?: Object): void;
     observeTargets(targetObserver: Observer): void;
     unobserveTargets(targetObserver: Observer): void;
     createTarget(id: Protocol.Target.TargetID | 'main', name: string, type: TargetType, parentTarget: Target | null, sessionId?: string, waitForDebuggerInPage?: boolean, connection?: ProtocolClient.InspectorBackend.Connection, targetInfo?: Protocol.Target.TargetInfo): Target;
@@ -38,6 +33,7 @@ export declare class TargetManager extends Common.ObjectWrapper.ObjectWrapper<Ev
     mainTarget(): Target | null;
     browserTarget(): Target | null;
     maybeAttachInitialTarget(): Promise<boolean>;
+    clearAllTargetsForTest(): void;
 }
 export declare enum Events {
     AvailableTargetsChanged = "AvailableTargetsChanged",

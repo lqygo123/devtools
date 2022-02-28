@@ -1,10 +1,12 @@
 // Copyright (c) 2015 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+import * as Common from '../../../../core/common/common.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as UI from '../../legacy.js';
+import bezierEditorStyles from './bezierEditor.css.js';
 import { BezierUI } from './BezierUI.js';
-export class BezierEditor extends UI.Widget.VBox {
+export class BezierEditor extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
     bezierInternal;
     previewElement;
     previewOnion;
@@ -24,7 +26,6 @@ export class BezierEditor extends UI.Widget.VBox {
     constructor(bezier) {
         super(true);
         this.bezierInternal = bezier;
-        this.registerRequiredCSS('ui/legacy/components/inline_editor/bezierEditor.css');
         this.contentElement.tabIndex = 0;
         this.setDefaultFocusedElement(this.contentElement);
         // Preview UI
@@ -65,6 +66,7 @@ export class BezierEditor extends UI.Widget.VBox {
         return this.bezierInternal;
     }
     wasShown() {
+        this.registerCSSFiles([bezierEditorStyles]);
         this.unselectPresets();
         // Check if bezier matches a preset
         for (const category of this.presetCategories) {

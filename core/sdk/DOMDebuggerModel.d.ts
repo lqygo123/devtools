@@ -1,5 +1,6 @@
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
 import * as Protocol from '../../generated/protocol.js';
+import { CategorizedBreakpoint } from './CategorizedBreakpoint.js';
 import type { Location } from './DebuggerModel.js';
 import type { DOMNode } from './DOMModel.js';
 import { RemoteObject } from './RemoteObject.js';
@@ -8,11 +9,8 @@ import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 import type { SDKModelObserver } from './TargetManager.js';
 export declare class DOMDebuggerModel extends SDKModel<EventTypes> {
+    #private;
     readonly agent: ProtocolProxyApi.DOMDebuggerApi;
-    private readonly runtimeModelInternal;
-    private domModel;
-    private domBreakpointsInternal;
-    private readonly domBreakpointsSetting;
     suspended: boolean;
     constructor(target: Target);
     runtimeModel(): RuntimeModel;
@@ -64,18 +62,7 @@ export declare class DOMBreakpoint {
     constructor(domDebuggerModel: DOMDebuggerModel, node: DOMNode, type: Protocol.DOMDebugger.DOMBreakpointType, enabled: boolean);
 }
 export declare class EventListener {
-    private readonly domDebuggerModelInternal;
-    private readonly eventTarget;
-    private readonly typeInternal;
-    private readonly useCaptureInternal;
-    private readonly passiveInternal;
-    private readonly onceInternal;
-    private readonly handlerInternal;
-    private readonly originalHandlerInternal;
-    private readonly locationInternal;
-    private readonly sourceURLInternal;
-    private readonly customRemoveFunction;
-    private originInternal;
+    #private;
     constructor(domDebuggerModel: DOMDebuggerModel, eventTarget: RemoteObject, type: string, useCapture: boolean, passive: boolean, once: boolean, handler: RemoteObject | null, originalHandler: RemoteObject | null, location: Location, customRemoveFunction: RemoteObject | null, origin?: string);
     domDebuggerModel(): DOMDebuggerModel;
     type(): string;
@@ -101,23 +88,12 @@ export declare namespace EventListener {
         FrameworkUser = "FrameworkUser"
     }
 }
-export declare class CategorizedBreakpoint {
-    private readonly categoryInternal;
-    titleInternal: string;
-    enabledInternal: boolean;
-    constructor(category: string, title: string);
-    category(): string;
-    enabled(): boolean;
-    setEnabled(enabled: boolean): void;
-    title(): string;
-    setTitle(title: string): void;
-}
 export declare class CSPViolationBreakpoint extends CategorizedBreakpoint {
-    private readonly typeInternal;
+    #private;
     constructor(category: string, title: string, type: Protocol.DOMDebugger.CSPViolationType);
     type(): Protocol.DOMDebugger.CSPViolationType;
 }
-export declare class EventListenerBreakpoint extends CategorizedBreakpoint {
+export declare class DOMEventListenerBreakpoint extends CategorizedBreakpoint {
     readonly instrumentationName: string;
     readonly eventName: string;
     readonly eventTargetNames: string[];
@@ -128,10 +104,7 @@ export declare class EventListenerBreakpoint extends CategorizedBreakpoint {
     static readonly instrumentation = "instrumentation:";
 }
 export declare class DOMDebuggerManager implements SDKModelObserver<DOMDebuggerModel> {
-    private readonly xhrBreakpointsSetting;
-    private readonly xhrBreakpointsInternal;
-    private readonly cspViolationsToBreakOn;
-    private readonly eventListenerBreakpointsInternal;
+    #private;
     constructor();
     static instance(opts?: {
         forceNew: boolean | null;
@@ -140,7 +113,7 @@ export declare class DOMDebuggerManager implements SDKModelObserver<DOMDebuggerM
     private createInstrumentationBreakpoints;
     private createEventListenerBreakpoints;
     private resolveEventListenerBreakpointInternal;
-    eventListenerBreakpoints(): EventListenerBreakpoint[];
+    eventListenerBreakpoints(): DOMEventListenerBreakpoint[];
     resolveEventListenerBreakpointTitle(auxData: {
         eventName: string;
         webglErrorName: string;
@@ -150,7 +123,7 @@ export declare class DOMDebuggerManager implements SDKModelObserver<DOMDebuggerM
     resolveEventListenerBreakpoint(auxData: {
         eventName: string;
         targetName: string;
-    }): EventListenerBreakpoint | null;
+    }): DOMEventListenerBreakpoint | null;
     updateCSPViolationBreakpoints(): void;
     private updateCSPViolationBreakpointsForModel;
     xhrBreakpoints(): Map<string, boolean>;

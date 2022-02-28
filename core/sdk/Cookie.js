@@ -1,22 +1,23 @@
 // Copyright 2019 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+const OPAQUE_PARITION_KEY = '<opaque>';
 export class Cookie {
-    nameInternal;
-    valueInternal;
-    typeInternal;
-    attributes;
-    sizeInternal;
-    priorityInternal;
-    cookieLine;
+    #nameInternal;
+    #valueInternal;
+    #typeInternal;
+    #attributes;
+    #sizeInternal;
+    #priorityInternal;
+    #cookieLine;
     constructor(name, value, type, priority) {
-        this.nameInternal = name;
-        this.valueInternal = value;
-        this.typeInternal = type;
-        this.attributes = {};
-        this.sizeInternal = 0;
-        this.priorityInternal = (priority || 'Medium');
-        this.cookieLine = null;
+        this.#nameInternal = name;
+        this.#valueInternal = value;
+        this.#typeInternal = type;
+        this.#attributes = {};
+        this.#sizeInternal = 0;
+        this.#priorityInternal = (priority || 'Medium');
+        this.#cookieLine = null;
     }
     static fromProtocolCookie(protocolCookie) {
         const cookie = new Cookie(protocolCookie.name, protocolCookie.value, null, protocolCookie.priority);
@@ -43,6 +44,12 @@ export class Cookie {
         if ('sourceScheme' in protocolCookie) {
             cookie.addAttribute('sourceScheme', protocolCookie.sourceScheme);
         }
+        if ('partitionKey' in protocolCookie) {
+            cookie.addAttribute('partitionKey', protocolCookie.partitionKey);
+        }
+        if ('partitionKeyOpaque' in protocolCookie) {
+            cookie.addAttribute('partitionKey', OPAQUE_PARITION_KEY);
+        }
         cookie.setSize(protocolCookie['size']);
         return cookie;
     }
@@ -50,56 +57,62 @@ export class Cookie {
         return (this.domain() || '-') + ' ' + this.name() + ' ' + (this.path() || '-');
     }
     name() {
-        return this.nameInternal;
+        return this.#nameInternal;
     }
     value() {
-        return this.valueInternal;
+        return this.#valueInternal;
     }
     type() {
-        return this.typeInternal;
+        return this.#typeInternal;
     }
     httpOnly() {
-        return 'httponly' in this.attributes;
+        return 'httponly' in this.#attributes;
     }
     secure() {
-        return 'secure' in this.attributes;
+        return 'secure' in this.#attributes;
     }
     sameSite() {
-        // TODO(allada) This should not rely on attributes and instead store them individually.
-        // when attributes get added via addAttribute() they are lowercased, hence the lowercasing of samesite here
-        return this.attributes['samesite'];
+        // TODO(allada) This should not rely on #attributes and instead store them individually.
+        // when #attributes get added via addAttribute() they are lowercased, hence the lowercasing of samesite here
+        return this.#attributes['samesite'];
     }
     sameParty() {
-        return 'sameparty' in this.attributes;
+        return 'sameparty' in this.#attributes;
+    }
+    partitionKey() {
+        return this.#attributes['partitionkey'];
+    }
+    partitionKeyOpaque() {
+        return (this.#attributes['partitionkey'] === OPAQUE_PARITION_KEY);
     }
     priority() {
-        return this.priorityInternal;
+        return this.#priorityInternal;
     }
     session() {
         // RFC 2965 suggests using Discard attribute to mark session cookies, but this does not seem to be widely used.
         // Check for absence of explicitly max-age or expiry date instead.
-        return !('expires' in this.attributes || 'max-age' in this.attributes);
+        return !('expires' in this.#attributes || 'max-age' in this.#attributes);
     }
     path() {
-        return this.attributes['path'];
+        return this.#attributes['path'];
     }
     domain() {
-        return this.attributes['domain'];
+        return this.#attributes['domain'];
     }
     expires() {
-        return this.attributes['expires'];
+        return this.#attributes['expires'];
     }
     maxAge() {
-        return this.attributes['max-age'];
+        return this.#attributes['max-age'];
     }
     sourcePort() {
-        return this.attributes['sourceport'];
+        return this.#attributes['sourceport'];
     }
     sourceScheme() {
-        return this.attributes['sourcescheme'];
+        return this.#attributes['sourcescheme'];
     }
     size() {
-        return this.sizeInternal;
+        return this.#sizeInternal;
     }
     /**
      * @deprecated
@@ -119,7 +132,7 @@ export class Cookie {
         return (this.secure() ? 'https://' : 'http://') + this.domain() + port + this.path();
     }
     setSize(size) {
-        this.sizeInternal = size;
+        this.#sizeInternal = size;
     }
     expiresDate(requestDate) {
         // RFC 6265 indicates that the max-age attribute takes precedence over the expires attribute
@@ -135,17 +148,17 @@ export class Cookie {
         const normalizedKey = key.toLowerCase();
         switch (normalizedKey) {
             case 'priority':
-                this.priorityInternal = value;
+                this.#priorityInternal = value;
                 break;
             default:
-                this.attributes[normalizedKey] = value;
+                this.#attributes[normalizedKey] = value;
         }
     }
     setCookieLine(cookieLine) {
-        this.cookieLine = cookieLine;
+        this.#cookieLine = cookieLine;
     }
     getCookieLine() {
-        return this.cookieLine;
+        return this.#cookieLine;
     }
     matchesSecurityOrigin(securityOrigin) {
         const hostname = new URL(securityOrigin).hostname;
@@ -207,27 +220,6 @@ export var Attributes;
     Attributes["SourceScheme"] = "sourceScheme";
     Attributes["SourcePort"] = "sourcePort";
     Attributes["Priority"] = "priority";
+    Attributes["PartitionKey"] = "partitionKey";
 })(Attributes || (Attributes = {}));
-/**
- * A `CookieReference` uniquely identifies a cookie by the triple (name,domain,path). Additionally, a context may be
- * included to make it clear which site under Application>Cookies should be opened when revealing a `CookieReference`.
- */
-export class CookieReference {
-    name;
-    domainInternal;
-    path;
-    contextUrlInternal;
-    constructor(name, domain, path, contextUrl) {
-        this.name = name;
-        this.domainInternal = domain;
-        this.path = path;
-        this.contextUrlInternal = contextUrl;
-    }
-    domain() {
-        return this.domainInternal;
-    }
-    contextUrl() {
-        return this.contextUrlInternal;
-    }
-}
 //# sourceMappingURL=Cookie.js.map

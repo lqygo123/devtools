@@ -45,23 +45,20 @@ export class AudioContextSelector extends Common.ObjectWrapper.ObjectWrapper {
             this.toolbarItemInternal.setTitle(i18nString(UIStrings.audioContextS, { PH1: this.placeholderText }));
         }
     }
-    contextCreated(event) {
-        const context = event.data;
+    contextCreated({ data: context }) {
         this.items.insert(this.items.length, context);
         // Select if this is the first item.
         if (this.items.length === 1) {
             this.dropDown.selectItem(context);
         }
     }
-    contextDestroyed(event) {
-        const contextId = event.data;
+    contextDestroyed({ data: contextId }) {
         const contextIndex = this.items.findIndex((context) => context.contextId === contextId);
         if (contextIndex > -1) {
             this.items.remove(contextIndex);
         }
     }
-    contextChanged(event) {
-        const changedContext = event.data;
+    contextChanged({ data: changedContext }) {
         const contextIndex = this.items.findIndex((context) => context.contextId === changedContext.contextId);
         if (contextIndex > -1) {
             this.items.replace(contextIndex, changedContext);

@@ -53,23 +53,23 @@ const str_ = i18n.i18n.registerUIStrings('models/bindings/ResourceScriptMapping.
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class ResourceScriptMapping {
     debuggerModel;
-    workspace;
+    #workspace;
     debuggerWorkspaceBinding;
-    uiSourceCodeToScriptFile;
-    projects;
-    acceptedScripts;
-    eventListeners;
+    #uiSourceCodeToScriptFile;
+    #projects;
+    #acceptedScripts;
+    #eventListeners;
     constructor(debuggerModel, workspace, debuggerWorkspaceBinding) {
         this.debuggerModel = debuggerModel;
-        this.workspace = workspace;
+        this.#workspace = workspace;
         this.debuggerWorkspaceBinding = debuggerWorkspaceBinding;
-        this.uiSourceCodeToScriptFile = new Map();
-        this.projects = new Map();
-        this.acceptedScripts = new Set();
+        this.#uiSourceCodeToScriptFile = new Map();
+        this.#projects = new Map();
+        this.#acceptedScripts = new Set();
         const runtimeModel = debuggerModel.runtimeModel();
-        this.eventListeners = [
+        this.#eventListeners = [
             this.debuggerModel.addEventListener(SDK.DebuggerModel.Events.ParsedScriptSource, event => {
-                this.parsedScriptSource(event);
+                void this.parsedScriptSource(event);
             }, this),
             this.debuggerModel.addEventListener(SDK.DebuggerModel.Events.GlobalObjectCleared, this.globalObjectCleared, this),
             runtimeModel.addEventListener(SDK.RuntimeModel.Events.ExecutionContextDestroyed, this.executionContextDestroyed, this),
@@ -78,13 +78,13 @@ export class ResourceScriptMapping {
     project(script) {
         const prefix = script.isContentScript() ? 'js:extensions:' : 'js::';
         const projectId = prefix + this.debuggerModel.target().id() + ':' + script.frameId;
-        let project = this.projects.get(projectId);
+        let project = this.#projects.get(projectId);
         if (!project) {
             const projectType = script.isContentScript() ? Workspace.Workspace.projectTypes.ContentScripts :
                 Workspace.Workspace.projectTypes.Network;
-            project = new ContentProviderBasedProject(this.workspace, projectId, projectType, '' /* displayName */, false /* isServiceProject */);
+            project = new ContentProviderBasedProject(this.#workspace, projectId, projectType, '' /* displayName */, false /* isServiceProject */);
             NetworkProject.setTargetForProject(project, this.debuggerModel.target());
-            this.projects.set(projectId, project);
+            this.#projects.set(projectId, project);
         }
         return project;
     }
@@ -98,7 +98,7 @@ export class ResourceScriptMapping {
         if (!uiSourceCode) {
             return null;
         }
-        const scriptFile = this.uiSourceCodeToScriptFile.get(uiSourceCode);
+        const scriptFile = this.#uiSourceCodeToScriptFile.get(uiSourceCode);
         if (!scriptFile) {
             return null;
         }
@@ -108,24 +108,17 @@ export class ResourceScriptMapping {
         if (!scriptFile.hasScripts([script])) {
             return null;
         }
-        const lineNumber = rawLocation.lineNumber - (script.isInlineScriptWithSourceURL() ? script.lineOffset : 0);
-        let columnNumber = rawLocation.columnNumber || 0;
-        if (script.isInlineScriptWithSourceURL() && !lineNumber && columnNumber) {
-            columnNumber -= script.columnOffset;
-        }
+        const { lineNumber, columnNumber = 0 } = rawLocation;
         return uiSourceCode.uiLocation(lineNumber, columnNumber);
     }
     uiLocationToRawLocations(uiSourceCode, lineNumber, columnNumber) {
-        const scriptFile = this.uiSourceCodeToScriptFile.get(uiSourceCode);
-        if (!scriptFile || typeof scriptFile.script === 'undefined') {
+        const scriptFile = this.#uiSourceCodeToScriptFile.get(uiSourceCode);
+        if (!scriptFile) {
             return [];
         }
-        const script = scriptFile.script;
+        const { script } = scriptFile;
         if (!script) {
             return [];
-        }
-        if (script.isInlineScriptWithSourceURL()) {
-            return [this.debuggerModel.createRawLocation(script, lineNumber + script.lineOffset, lineNumber ? columnNumber : columnNumber + script.columnOffset)];
         }
         return [this.debuggerModel.createRawLocation(script, lineNumber, columnNumber)];
     }
@@ -147,14 +140,14 @@ export class ResourceScriptMapping {
         if (!this.acceptsScript(script)) {
             return;
         }
-        this.acceptedScripts.add(script);
+        this.#acceptedScripts.add(script);
         const originalContentProvider = script.originalContentProvider();
         const url = script.sourceURL;
         const project = this.project(script);
         // Remove previous UISourceCode, if any
         const oldUISourceCode = project.uiSourceCodeForURL(url);
         if (oldUISourceCode) {
-            const scriptFile = this.uiSourceCodeToScriptFile.get(oldUISourceCode);
+            const scriptFile = this.#uiSourceCodeToScriptFile.get(oldUISourceCode);
             if (scriptFile && scriptFile.script) {
                 await this.removeScript(scriptFile.script);
             }
@@ -165,26 +158,26 @@ export class ResourceScriptMapping {
         const metadata = metadataForURL(this.debuggerModel.target(), script.frameId, url);
         // Bind UISourceCode to scripts.
         const scriptFile = new ResourceScriptFile(this, uiSourceCode, [script]);
-        this.uiSourceCodeToScriptFile.set(uiSourceCode, scriptFile);
+        this.#uiSourceCodeToScriptFile.set(uiSourceCode, scriptFile);
         const mimeType = script.isWasm() ? 'application/wasm' : 'text/javascript';
         project.addUISourceCodeWithProvider(uiSourceCode, originalContentProvider, metadata, mimeType);
         await this.debuggerWorkspaceBinding.updateLocations(script);
     }
     scriptFile(uiSourceCode) {
-        return this.uiSourceCodeToScriptFile.get(uiSourceCode) || null;
+        return this.#uiSourceCodeToScriptFile.get(uiSourceCode) || null;
     }
     async removeScript(script) {
-        if (!this.acceptedScripts.has(script)) {
+        if (!this.#acceptedScripts.has(script)) {
             return;
         }
-        this.acceptedScripts.delete(script);
+        this.#acceptedScripts.delete(script);
         const project = this.project(script);
         const uiSourceCode = project.uiSourceCodeForURL(script.sourceURL);
-        const scriptFile = this.uiSourceCodeToScriptFile.get(uiSourceCode);
+        const scriptFile = this.#uiSourceCodeToScriptFile.get(uiSourceCode);
         if (scriptFile) {
             scriptFile.dispose();
         }
-        this.uiSourceCodeToScriptFile.delete(uiSourceCode);
+        this.#uiSourceCodeToScriptFile.delete(uiSourceCode);
         project.removeFile(script.sourceURL);
         await this.debuggerWorkspaceBinding.updateLocations(script);
     }
@@ -192,103 +185,103 @@ export class ResourceScriptMapping {
         const executionContext = event.data;
         const scripts = this.debuggerModel.scriptsForExecutionContext(executionContext);
         for (const script of scripts) {
-            this.removeScript(script);
+            void this.removeScript(script);
         }
     }
     globalObjectCleared() {
-        const scripts = Array.from(this.acceptedScripts);
+        const scripts = Array.from(this.#acceptedScripts);
         for (const script of scripts) {
-            this.removeScript(script);
+            void this.removeScript(script);
         }
     }
     resetForTest() {
-        const scripts = Array.from(this.acceptedScripts);
+        const scripts = Array.from(this.#acceptedScripts);
         for (const script of scripts) {
-            this.removeScript(script);
+            void this.removeScript(script);
         }
     }
     dispose() {
-        Common.EventTarget.removeEventListeners(this.eventListeners);
-        const scripts = Array.from(this.acceptedScripts);
+        Common.EventTarget.removeEventListeners(this.#eventListeners);
+        const scripts = Array.from(this.#acceptedScripts);
         for (const script of scripts) {
-            this.removeScript(script);
+            void this.removeScript(script);
         }
-        for (const project of this.projects.values()) {
+        for (const project of this.#projects.values()) {
             project.removeProject();
         }
-        this.projects.clear();
+        this.#projects.clear();
     }
 }
 export class ResourceScriptFile extends Common.ObjectWrapper.ObjectWrapper {
-    resourceScriptMapping;
-    uiSourceCodeInternal;
+    #resourceScriptMapping;
+    #uiSourceCodeInternal;
     scriptInternal;
-    scriptSource;
-    isDivergingFromVMInternal;
-    hasDivergedFromVMInternal;
-    isMergingToVMInternal;
+    #scriptSource;
+    #isDivergingFromVMInternal;
+    #hasDivergedFromVMInternal;
+    #isMergingToVMInternal;
     constructor(resourceScriptMapping, uiSourceCode, scripts) {
         super();
         console.assert(scripts.length > 0);
-        this.resourceScriptMapping = resourceScriptMapping;
-        this.uiSourceCodeInternal = uiSourceCode;
-        if (this.uiSourceCodeInternal.contentType().isScript()) {
+        this.#resourceScriptMapping = resourceScriptMapping;
+        this.#uiSourceCodeInternal = uiSourceCode;
+        if (this.#uiSourceCodeInternal.contentType().isScript()) {
             this.scriptInternal = scripts[scripts.length - 1];
         }
-        this.uiSourceCodeInternal.addEventListener(Workspace.UISourceCode.Events.WorkingCopyChanged, this.workingCopyChanged, this);
-        this.uiSourceCodeInternal.addEventListener(Workspace.UISourceCode.Events.WorkingCopyCommitted, this.workingCopyCommitted, this);
+        this.#uiSourceCodeInternal.addEventListener(Workspace.UISourceCode.Events.WorkingCopyChanged, this.workingCopyChanged, this);
+        this.#uiSourceCodeInternal.addEventListener(Workspace.UISourceCode.Events.WorkingCopyCommitted, this.workingCopyCommitted, this);
     }
     hasScripts(scripts) {
         return Boolean(this.scriptInternal) && this.scriptInternal === scripts[0];
     }
     isDiverged() {
-        if (this.uiSourceCodeInternal.isDirty()) {
+        if (this.#uiSourceCodeInternal.isDirty()) {
             return true;
         }
         if (!this.scriptInternal) {
             return false;
         }
-        if (typeof this.scriptSource === 'undefined' || this.scriptSource === null) {
+        if (typeof this.#scriptSource === 'undefined' || this.#scriptSource === null) {
             return false;
         }
-        const workingCopy = this.uiSourceCodeInternal.workingCopy();
+        const workingCopy = this.#uiSourceCodeInternal.workingCopy();
         if (!workingCopy) {
             return false;
         }
         // Match ignoring sourceURL.
-        if (!workingCopy.startsWith(this.scriptSource.trimRight())) {
+        if (!workingCopy.startsWith(this.#scriptSource.trimRight())) {
             return true;
         }
-        const suffix = this.uiSourceCodeInternal.workingCopy().substr(this.scriptSource.length);
+        const suffix = this.#uiSourceCodeInternal.workingCopy().substr(this.#scriptSource.length);
         return Boolean(suffix.length) && !suffix.match(SDK.Script.sourceURLRegex);
     }
     workingCopyChanged() {
-        this.update();
+        void this.update();
     }
     workingCopyCommitted() {
-        if (this.uiSourceCodeInternal.project().canSetFileContent()) {
+        if (this.#uiSourceCodeInternal.project().canSetFileContent()) {
             return;
         }
         if (!this.scriptInternal) {
             return;
         }
-        const debuggerModel = this.resourceScriptMapping.debuggerModel;
+        const debuggerModel = this.#resourceScriptMapping.debuggerModel;
         const breakpoints = BreakpointManager.instance()
-            .breakpointLocationsForUISourceCode(this.uiSourceCodeInternal)
+            .breakpointLocationsForUISourceCode(this.#uiSourceCodeInternal)
             .map(breakpointLocation => breakpointLocation.breakpoint);
-        const source = this.uiSourceCodeInternal.workingCopy();
+        const source = this.#uiSourceCodeInternal.workingCopy();
         debuggerModel.setScriptSource(this.scriptInternal.scriptId, source, (error, exceptionDetails) => {
-            this.scriptSourceWasSet(source, breakpoints, error, exceptionDetails);
+            void this.scriptSourceWasSet(source, breakpoints, error, exceptionDetails);
         });
     }
     async scriptSourceWasSet(source, breakpoints, error, exceptionDetails) {
         if (!error && !exceptionDetails) {
-            this.scriptSource = source;
+            this.#scriptSource = source;
         }
         await this.update();
         if (!error && !exceptionDetails) {
-            // Live edit can cause breakpoints to be in the wrong position, or to be lost altogether.
-            // If any breakpoints were in the pre-live edit script, they need to be re-added.
+            // Live edit can cause #breakpoints to be in the wrong position, or to be lost altogether.
+            // If any #breakpoints were in the pre-live edit script, they need to be re-added.
             await Promise.all(breakpoints.map(breakpoint => breakpoint.refreshInDebugger()));
             return;
         }
@@ -297,58 +290,58 @@ export class ResourceScriptFile extends Common.ObjectWrapper.ObjectWrapper {
             return;
         }
         const messageText = i18nString(UIStrings.liveEditCompileFailed, { PH1: exceptionDetails.text });
-        this.uiSourceCodeInternal.addLineMessage(Workspace.UISourceCode.Message.Level.Error, messageText, exceptionDetails.lineNumber, exceptionDetails.columnNumber);
+        this.#uiSourceCodeInternal.addLineMessage(Workspace.UISourceCode.Message.Level.Error, messageText, exceptionDetails.lineNumber, exceptionDetails.columnNumber);
     }
     async update() {
-        if (this.isDiverged() && !this.hasDivergedFromVMInternal) {
+        if (this.isDiverged() && !this.#hasDivergedFromVMInternal) {
             await this.divergeFromVM();
         }
-        else if (!this.isDiverged() && this.hasDivergedFromVMInternal) {
+        else if (!this.isDiverged() && this.#hasDivergedFromVMInternal) {
             await this.mergeToVM();
         }
     }
     async divergeFromVM() {
         if (this.scriptInternal) {
-            this.isDivergingFromVMInternal = true;
-            await this.resourceScriptMapping.debuggerWorkspaceBinding.updateLocations(this.scriptInternal);
-            delete this.isDivergingFromVMInternal;
-            this.hasDivergedFromVMInternal = true;
+            this.#isDivergingFromVMInternal = true;
+            await this.#resourceScriptMapping.debuggerWorkspaceBinding.updateLocations(this.scriptInternal);
+            this.#isDivergingFromVMInternal = undefined;
+            this.#hasDivergedFromVMInternal = true;
             this.dispatchEventToListeners("DidDivergeFromVM" /* DidDivergeFromVM */);
         }
     }
     async mergeToVM() {
         if (this.scriptInternal) {
-            delete this.hasDivergedFromVMInternal;
-            this.isMergingToVMInternal = true;
-            await this.resourceScriptMapping.debuggerWorkspaceBinding.updateLocations(this.scriptInternal);
-            delete this.isMergingToVMInternal;
+            this.#hasDivergedFromVMInternal = undefined;
+            this.#isMergingToVMInternal = true;
+            await this.#resourceScriptMapping.debuggerWorkspaceBinding.updateLocations(this.scriptInternal);
+            this.#isMergingToVMInternal = undefined;
             this.dispatchEventToListeners("DidMergeToVM" /* DidMergeToVM */);
         }
     }
     hasDivergedFromVM() {
-        return Boolean(this.hasDivergedFromVMInternal);
+        return Boolean(this.#hasDivergedFromVMInternal);
     }
     isDivergingFromVM() {
-        return Boolean(this.isDivergingFromVMInternal);
+        return Boolean(this.#isDivergingFromVMInternal);
     }
     isMergingToVM() {
-        return Boolean(this.isMergingToVMInternal);
+        return Boolean(this.#isMergingToVMInternal);
     }
     checkMapping() {
-        if (!this.scriptInternal || typeof this.scriptSource !== 'undefined') {
+        if (!this.scriptInternal || typeof this.#scriptSource !== 'undefined') {
             this.mappingCheckedForTest();
             return;
         }
-        this.scriptInternal.requestContent().then(deferredContent => {
-            this.scriptSource = deferredContent.content;
-            this.update().then(() => this.mappingCheckedForTest());
+        void this.scriptInternal.requestContent().then(deferredContent => {
+            this.#scriptSource = deferredContent.content;
+            void this.update().then(() => this.mappingCheckedForTest());
         });
     }
     mappingCheckedForTest() {
     }
     dispose() {
-        this.uiSourceCodeInternal.removeEventListener(Workspace.UISourceCode.Events.WorkingCopyChanged, this.workingCopyChanged, this);
-        this.uiSourceCodeInternal.removeEventListener(Workspace.UISourceCode.Events.WorkingCopyCommitted, this.workingCopyCommitted, this);
+        this.#uiSourceCodeInternal.removeEventListener(Workspace.UISourceCode.Events.WorkingCopyChanged, this.workingCopyChanged, this);
+        this.#uiSourceCodeInternal.removeEventListener(Workspace.UISourceCode.Events.WorkingCopyCommitted, this.workingCopyCommitted, this);
     }
     addSourceMapURL(sourceMapURL) {
         if (!this.scriptInternal) {
@@ -363,7 +356,7 @@ export class ResourceScriptFile extends Common.ObjectWrapper.ObjectWrapper {
         return this.scriptInternal || null;
     }
     get uiSourceCode() {
-        return this.uiSourceCodeInternal;
+        return this.#uiSourceCodeInternal;
     }
 }
 //# sourceMappingURL=ResourceScriptMapping.js.map

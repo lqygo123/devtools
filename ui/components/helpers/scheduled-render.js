@@ -43,7 +43,7 @@ export async function scheduleRender(component, callback) {
         if (!newCallback) {
             return;
         }
-        scheduleRender(component, newCallback);
+        void scheduleRender(component, newCallback);
     }
 }
 export function isScheduledRender(component) {

@@ -12,10 +12,10 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/issues/AffectedElementsView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class AffectedElementsView extends AffectedResourcesView {
-    async appendAffectedElements(affectedElements) {
+    async #appendAffectedElements(affectedElements) {
         let count = 0;
         for (const element of affectedElements) {
-            await this.appendAffectedElement(element);
+            await this.#appendAffectedElement(element);
             count++;
         }
         this.updateAffectedResourceCount(count);
@@ -23,7 +23,7 @@ export class AffectedElementsView extends AffectedResourcesView {
     getResourceNameWithCount(count) {
         return i18nString(UIStrings.nElements, { n: count });
     }
-    async appendAffectedElement(element) {
+    async #appendAffectedElement(element) {
         const cellElement = await this.createElementCell(element, this.issue.getCategory());
         const rowElement = document.createElement('tr');
         rowElement.appendChild(cellElement);
@@ -31,7 +31,7 @@ export class AffectedElementsView extends AffectedResourcesView {
     }
     update() {
         this.clear();
-        this.appendAffectedElements(this.issue.elements());
+        void this.#appendAffectedElements(this.issue.elements());
     }
 }
 //# sourceMappingURL=AffectedElementsView.js.map

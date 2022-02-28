@@ -48,7 +48,7 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/issues/AffectedHeavyAdView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class AffectedHeavyAdView extends AffectedResourcesView {
-    appendAffectedHeavyAds(heavyAds) {
+    #appendAffectedHeavyAds(heavyAds) {
         const header = document.createElement('tr');
         this.appendColumnTitle(header, i18nString(UIStrings.limitExceeded));
         this.appendColumnTitle(header, i18nString(UIStrings.resolutionStatus));
@@ -56,7 +56,7 @@ export class AffectedHeavyAdView extends AffectedResourcesView {
         this.affectedResources.appendChild(header);
         let count = 0;
         for (const heavyAd of heavyAds) {
-            this.appendAffectedHeavyAd(heavyAd.details());
+            this.#appendAffectedHeavyAd(heavyAd.details());
             count++;
         }
         this.updateAffectedResourceCount(count);
@@ -64,7 +64,7 @@ export class AffectedHeavyAdView extends AffectedResourcesView {
     getResourceNameWithCount(count) {
         return i18nString(UIStrings.nResources, { n: count });
     }
-    statusToString(status) {
+    #statusToString(status) {
         switch (status) {
             case "HeavyAdBlocked" /* HeavyAdBlocked */:
                 return i18nString(UIStrings.removed);
@@ -73,7 +73,7 @@ export class AffectedHeavyAdView extends AffectedResourcesView {
         }
         return '';
     }
-    limitToString(status) {
+    #limitToString(status) {
         switch (status) {
             case "CpuPeakLimit" /* CpuPeakLimit */:
                 return i18nString(UIStrings.cpuPeakLimit);
@@ -84,16 +84,16 @@ export class AffectedHeavyAdView extends AffectedResourcesView {
         }
         return '';
     }
-    appendAffectedHeavyAd(heavyAd) {
+    #appendAffectedHeavyAd(heavyAd) {
         const element = document.createElement('tr');
         element.classList.add('affected-resource-heavy-ad');
         const reason = document.createElement('td');
         reason.classList.add('affected-resource-heavy-ad-info');
-        reason.textContent = this.limitToString(heavyAd.reason);
+        reason.textContent = this.#limitToString(heavyAd.reason);
         element.appendChild(reason);
         const status = document.createElement('td');
         status.classList.add('affected-resource-heavy-ad-info');
-        status.textContent = this.statusToString(heavyAd.resolution);
+        status.textContent = this.#statusToString(heavyAd.resolution);
         element.appendChild(status);
         const frameId = heavyAd.frame.frameId;
         const frameUrl = this.createFrameCell(frameId, this.issue.getCategory());
@@ -102,7 +102,7 @@ export class AffectedHeavyAdView extends AffectedResourcesView {
     }
     update() {
         this.clear();
-        this.appendAffectedHeavyAds(this.issue.getHeavyAdIssues());
+        this.#appendAffectedHeavyAds(this.issue.getHeavyAdIssues());
     }
 }
 //# sourceMappingURL=AffectedHeavyAdView.js.map

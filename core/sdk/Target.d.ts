@@ -3,18 +3,7 @@ import type * as Protocol from '../../generated/protocol.js';
 import type { TargetManager } from './TargetManager.js';
 import { SDKModel } from './SDKModel.js';
 export declare class Target extends ProtocolClient.InspectorBackend.TargetBase {
-    private readonly targetManagerInternal;
-    private nameInternal;
-    private inspectedURLInternal;
-    private inspectedURLName;
-    private readonly capabilitiesMask;
-    private typeInternal;
-    private readonly parentTargetInternal;
-    private idInternal;
-    private modelByConstructor;
-    private isSuspended;
-    private targetInfoInternal;
-    private creatingModels?;
+    #private;
     constructor(targetManager: TargetManager, id: Protocol.Target.TargetID | 'main', name: string, type: Type, parentTarget: Target | null, sessionId: string, suspended: boolean, connection: ProtocolClient.InspectorBackend.Connection | null, targetInfo?: Protocol.Target.TargetInfo);
     createModels(required: Set<new (arg1: Target) => SDKModel>): void;
     id(): Protocol.Target.TargetID | 'main';
@@ -42,7 +31,8 @@ export declare enum Type {
     Worker = "worker",
     SharedWorker = "shared-worker",
     Node = "node",
-    Browser = "browser"
+    Browser = "browser",
+    AuctionWorklet = "auction-worklet"
 }
 export declare enum Capability {
     Browser = 1,
@@ -64,5 +54,6 @@ export declare enum Capability {
     WebAuthn = 65536,
     IO = 131072,
     Media = 262144,
+    EventBreakpoints = 524288,
     None = 0
 }

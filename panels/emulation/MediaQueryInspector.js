@@ -7,6 +7,7 @@ import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Bindings from '../../models/bindings/bindings.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import mediaQueryInspectorStyles from './mediaQueryInspector.css.legacy.js';
 const UIStrings = {
     /**
     * @description A context menu item/command in the Media Query Inspector of the Device Toolbar.
@@ -27,7 +28,7 @@ export class MediaQueryInspector extends UI.Widget.Widget {
     cachedQueryModels;
     constructor(getWidthCallback, setWidthCallback) {
         super(true);
-        this.registerRequiredCSS('panels/emulation/mediaQueryInspector.css');
+        this.registerRequiredCSS(mediaQueryInspectorStyles);
         this.contentElement.classList.add('media-inspector-view');
         this.contentElement.addEventListener('click', this.onMediaQueryClicked.bind(this), false);
         this.contentElement.addEventListener('contextmenu', this.onContextMenu.bind(this), false);
@@ -122,16 +123,16 @@ export class MediaQueryInspector extends UI.Widget.Widget {
             const title = contextMenuItems[i];
             subMenuItem.defaultSection().appendItem(title, this.revealSourceLocation.bind(this, uiLocations.get(title)));
         }
-        contextMenu.show();
+        void contextMenu.show();
     }
     revealSourceLocation(location) {
-        Common.Revealer.reveal(location);
+        void Common.Revealer.reveal(location);
     }
     scheduleMediaQueriesUpdate() {
         if (!this.isShowing()) {
             return;
         }
-        this.mediaThrottler.schedule(this.refetchMediaQueries.bind(this));
+        void this.mediaThrottler.schedule(this.refetchMediaQueries.bind(this));
     }
     refetchMediaQueries() {
         if (!this.isShowing() || !this.cssModel) {

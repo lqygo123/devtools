@@ -1,6 +1,6 @@
 import { ObjectWrapper } from './Object.js';
-export declare class Console extends ObjectWrapper {
-    private readonly messagesInternal;
+export declare class Console extends ObjectWrapper<EventTypes> {
+    #private;
     /**
      * Instantiable via the instance() factory below.
      */
@@ -19,6 +19,9 @@ export declare class Console extends ObjectWrapper {
 export declare enum Events {
     MessageAdded = "messageAdded"
 }
+export declare type EventTypes = {
+    [Events.MessageAdded]: Message;
+};
 export declare enum MessageLevel {
     Info = "info",
     Warning = "warning",

@@ -101,8 +101,8 @@ export class FilteredUISourceCodeListProvider extends QuickOpen.FilteredListWidg
         new FilePathScoreFunction(query).calculateScore(fullDisplayName, indexes);
         const fileNameIndex = fullDisplayName.lastIndexOf('/');
         titleElement.textContent = uiSourceCode.displayName() + (this.queryLineNumberAndColumnNumber || '');
-        this.renderSubtitleElement(subtitleElement, fullDisplayName);
-        /** @type {!HTMLElement} */ UI.Tooltip.Tooltip.install(subtitleElement, fullDisplayName);
+        this.renderSubtitleElement(subtitleElement, fullDisplayName.substring(0, fileNameIndex + 1));
+        UI.Tooltip.Tooltip.install(subtitleElement, fullDisplayName);
         const ranges = [];
         for (let i = 0; i < indexes.length; ++i) {
             ranges.push({ offset: indexes[i], length: 1 });
@@ -128,7 +128,7 @@ export class FilteredUISourceCodeListProvider extends QuickOpen.FilteredListWidg
         first.textContent = text.substring(0, splitPosition);
         const second = element.createChild('div', 'second-part');
         second.textContent = text.substring(splitPosition);
-        /** @type {!HTMLElement} */ UI.Tooltip.Tooltip.install(element, text);
+        UI.Tooltip.Tooltip.install(element, text);
     }
     selectItem(itemIndex, promptValue) {
         const parsedExpression = promptValue.trim().match(/^([^:]*)(:\d+)?(:\d+)?$/);

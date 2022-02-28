@@ -3,22 +3,23 @@ export interface LiveLocation {
     update(): Promise<void>;
     uiLocation(): Promise<Workspace.UISourceCode.UILocation | null>;
     dispose(): void;
+    isDisposed(): boolean;
     isIgnoreListed(): Promise<boolean>;
 }
 export declare class LiveLocationWithPool implements LiveLocation {
-    private updateDelegate;
-    private readonly locationPool;
-    private updatePromise;
+    #private;
     constructor(updateDelegate: (arg0: LiveLocation) => Promise<void>, locationPool: LiveLocationPool);
     update(): Promise<void>;
     uiLocation(): Promise<Workspace.UISourceCode.UILocation | null>;
     dispose(): void;
+    isDisposed(): boolean;
     isIgnoreListed(): Promise<boolean>;
 }
 export declare class LiveLocationPool {
-    private readonly locations;
+    #private;
     constructor();
     add(location: LiveLocation): void;
     delete(location: LiveLocation): void;
+    has(location: LiveLocation): boolean;
     disposeAll(): void;
 }

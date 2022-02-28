@@ -15,7 +15,7 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('entrypoints/worker_app/WorkerMain.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 let workerMainImplInstance;
-export class WorkerMainImpl extends Common.ObjectWrapper.ObjectWrapper {
+export class WorkerMainImpl {
     static instance(opts = { forceNew: null }) {
         const { forceNew } = opts;
         if (!workerMainImplInstance || forceNew) {
@@ -24,7 +24,7 @@ export class WorkerMainImpl extends Common.ObjectWrapper.ObjectWrapper {
         return workerMainImplInstance;
     }
     async run() {
-        SDK.Connections.initMainConnection(async () => {
+        void SDK.Connections.initMainConnection(async () => {
             if (await SDK.TargetManager.TargetManager.instance().maybeAttachInitialTarget()) {
                 return;
             }

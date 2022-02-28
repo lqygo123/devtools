@@ -350,6 +350,9 @@ export const generatedPropertyValues: {
     'font-style': {
         values: string[];
     };
+    'font-synthesis-small-caps': {
+        values: string[];
+    };
     'font-synthesis-style': {
         values: string[];
     };
@@ -675,6 +678,9 @@ export const generatedPropertyValues: {
         values: string[];
     };
     'text-decoration-thickness': {
+        values: string[];
+    };
+    'text-emphasis-color': {
         values: string[];
     };
     'text-justify': {

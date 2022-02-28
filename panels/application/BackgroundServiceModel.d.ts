@@ -1,7 +1,7 @@
 import * as SDK from '../../core/sdk/sdk.js';
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
 import type * as Protocol from '../../generated/protocol.js';
-export declare class BackgroundServiceModel extends SDK.SDKModel.SDKModel implements ProtocolProxyApi.BackgroundServiceDispatcher {
+export declare class BackgroundServiceModel extends SDK.SDKModel.SDKModel<EventTypes> implements ProtocolProxyApi.BackgroundServiceDispatcher {
     private readonly backgroundServiceAgent;
     private readonly events;
     constructor(target: SDK.Target.Target);
@@ -16,3 +16,10 @@ export declare enum Events {
     RecordingStateChanged = "RecordingStateChanged",
     BackgroundServiceEventReceived = "BackgroundServiceEventReceived"
 }
+export declare type EventTypes = {
+    [Events.RecordingStateChanged]: {
+        isRecording: boolean;
+        serviceName: Protocol.BackgroundService.ServiceName;
+    };
+    [Events.BackgroundServiceEventReceived]: Protocol.BackgroundService.BackgroundServiceEvent;
+};

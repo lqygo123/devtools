@@ -38,6 +38,7 @@ import * as Bindings from '../../models/bindings/bindings.js';
 import * as IssuesManager from '../../models/issues_manager/issues_manager.js';
 import * as Logs from '../../models/logs/logs.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
+import * as CodeHighlighter from '../../ui/components/code_highlighter/code_highlighter.js';
 import * as IssueCounter from '../../ui/components/issue_counter/issue_counter.js';
 // eslint-disable-next-line rulesdir/es_modules_import
 import objectValueStyles from '../../ui/legacy/components/object_ui/objectValue.css.js';
@@ -83,6 +84,10 @@ const UIStrings = {
     *@description Title of a setting under the Console category that can be invoked through the Command Menu
     */
     groupSimilarMessagesInConsole: 'Group similar messages in console',
+    /**
+    *@description Title of a setting under the Console category that can be invoked through the Command Menu
+    */
+    showCorsErrorsInConsole: 'Show `CORS` errors in console',
     /**
     * @description Tooltip for the the console sidebar toggle in the Console panel. Command to
     * open/show the sidebar.
@@ -246,6 +251,7 @@ export class ConsoleView extends UI.Widget.VBox {
     showSettingsPaneButton;
     progressToolbarItem;
     groupSimilarSetting;
+    showCorsErrorsSetting;
     preserveLogCheckbox;
     hideNetworkMessagesCheckbox;
     timestampsSetting;
@@ -257,12 +263,10 @@ export class ConsoleView extends UI.Widget.VBox {
     viewportThrottler;
     pendingBatchResize;
     onMessageResizedBound;
-    topGroup;
-    currentGroup;
     promptElement;
     linkifier;
     consoleMessages;
-    viewMessageSymbol;
+    consoleGroupStarts;
     consoleHistorySetting;
     prompt;
     immediatelyFilterMessagesForTest;
@@ -342,6 +346,12 @@ export class ConsoleView extends UI.Widget.VBox {
         this.groupSimilarSetting = Common.Settings.Settings.instance().moduleSetting('consoleGroupSimilar');
         this.groupSimilarSetting.addChangeListener(() => this.updateMessageList());
         const groupSimilarToggle = new UI.Toolbar.ToolbarSettingCheckbox(this.groupSimilarSetting, i18nString(UIStrings.groupSimilarMessagesInConsole));
+        this.showCorsErrorsSetting = Common.Settings.Settings.instance().moduleSetting('consoleShowsCorsErrors');
+        this.showCorsErrorsSetting.addChangeListener(() => {
+            Host.userMetrics.showCorsErrorsSettingChanged(this.showCorsErrorsSetting.get());
+            this.updateMessageList();
+        });
+        const showCorsErrorsToggle = new UI.Toolbar.ToolbarSettingCheckbox(this.showCorsErrorsSetting, i18nString(UIStrings.showCorsErrorsInConsole));
         const toolbar = new UI.Toolbar.Toolbar('console-main-toolbar', this.consoleToolbarContainer);
         toolbar.makeWrappable(true);
         const rightToolbar = new UI.Toolbar.Toolbar('', this.consoleToolbarContainer);
@@ -363,7 +373,7 @@ export class ConsoleView extends UI.Widget.VBox {
         this.issueCounter.data = {
             clickHandler: () => {
                 Host.userMetrics.issuesPanelOpenedFrom(Host.UserMetrics.IssueOpener.StatusBarIssuesCounter);
-                UI.ViewManager.ViewManager.instance().showView('issues-pane');
+                void UI.ViewManager.ViewManager.instance().showView('issues-pane');
             },
             issuesManager: IssuesManager.IssuesManager.IssuesManager.instance(),
             accessibleName: i18nString(UIStrings.issueToolbarTooltipGeneral),
@@ -391,6 +401,7 @@ export class ConsoleView extends UI.Widget.VBox {
         settingsToolbarLeft.appendToolbarItem(this.preserveLogCheckbox);
         settingsToolbarLeft.appendToolbarItem(filterByExecutionContextCheckbox);
         settingsToolbarLeft.appendToolbarItem(groupSimilarToggle);
+        settingsToolbarLeft.appendToolbarItem(showCorsErrorsToggle);
         const settingsToolbarRight = new UI.Toolbar.Toolbar('', settingsPane.element);
         settingsToolbarRight.makeVertical();
         settingsToolbarRight.appendToolbarItem(new UI.Toolbar.ToolbarSettingCheckbox(monitoringXHREnabledSetting));
@@ -403,17 +414,9 @@ export class ConsoleView extends UI.Widget.VBox {
             settingsPane.element.classList.add('hidden');
         }
         this.showSettingsPaneSetting.addChangeListener(() => settingsPane.element.classList.toggle('hidden', !this.showSettingsPaneSetting.get()));
-        this.pinPane = new ConsolePinPane(liveExpressionButton);
+        this.pinPane = new ConsolePinPane(liveExpressionButton, () => this.prompt.focus());
         this.pinPane.element.classList.add('console-view-pinpane');
         this.pinPane.show(this.contentsElement);
-        this.pinPane.element.addEventListener('keydown', event => {
-            if ((event.key === 'Enter' &&
-                UI.KeyboardShortcut.KeyboardShortcut.eventHasCtrlEquivalentKey(event)) ||
-                event.keyCode === UI.KeyboardShortcut.Keys.Esc.code) {
-                this.prompt.focus();
-                event.consume();
-            }
-        });
         this.viewport = new ConsoleViewport(this);
         this.viewport.setStickToBottom(true);
         this.viewport.contentElement().classList.add('console-group', 'console-group-messages');
@@ -429,10 +432,8 @@ export class ConsoleView extends UI.Widget.VBox {
         this.viewportThrottler = new Common.Throttler.Throttler(50);
         this.pendingBatchResize = false;
         this.onMessageResizedBound = (e) => {
-            this.onMessageResized(e);
+            void this.onMessageResized(e);
         };
-        this.topGroup = ConsoleGroup.createTopGroup();
-        this.currentGroup = this.topGroup;
         this.promptElement = this.messagesElement.createChild('div', 'source-code');
         this.promptElement.id = 'console-prompt';
         // FIXME: This is a workaround for the selection machinery bug. See crbug.com/410899
@@ -449,7 +450,7 @@ export class ConsoleView extends UI.Widget.VBox {
         this.linkifier =
             new Components.Linkifier.Linkifier(MaxLengthForLinks, /* useLinkDecorator */ undefined, refilterMessages);
         this.consoleMessages = [];
-        this.viewMessageSymbol = Symbol('viewMessage');
+        this.consoleGroupStarts = [];
         this.consoleHistorySetting = Common.Settings.Settings.instance().createLocalSetting('consoleHistory', []);
         this.prompt = new ConsolePrompt();
         this.prompt.show(this.promptElement);
@@ -534,10 +535,9 @@ export class ConsoleView extends UI.Widget.VBox {
     }
     registerWithMessageSink() {
         Common.Console.Console.instance().messages().forEach(this.addSinkMessage, this);
-        Common.Console.Console.instance().addEventListener(Common.Console.Events.MessageAdded, messageAdded, this);
-        function messageAdded(event) {
-            this.addSinkMessage(event.data);
-        }
+        Common.Console.Console.instance().addEventListener(Common.Console.Events.MessageAdded, ({ data: message }) => {
+            this.addSinkMessage(message);
+        }, this);
     }
     addSinkMessage(message) {
         let level = "verbose" /* Verbose */;
@@ -570,7 +570,7 @@ export class ConsoleView extends UI.Widget.VBox {
         super.wasShown();
         this.updateIssuesToolbarItem();
         this.viewport.refresh();
-        this.registerCSSFiles([consoleViewStyles, objectValueStyles]);
+        this.registerCSSFiles([consoleViewStyles, objectValueStyles, CodeHighlighter.Style.default]);
     }
     focus() {
         if (this.viewport.hasVirtualSelection()) {
@@ -691,6 +691,21 @@ export class ConsoleView extends UI.Widget.VBox {
         }
         const insertedInMiddle = insertAt < this.consoleMessages.length;
         this.consoleMessages.splice(insertAt, 0, viewMessage);
+        if (message.type !== SDK.ConsoleModel.FrontendMessageType.Command &&
+            message.type !== SDK.ConsoleModel.FrontendMessageType.Result) {
+            // Maintain group tree.
+            // Find parent group.
+            const consoleGroupStartIndex = Platform.ArrayUtilities.upperBound(this.consoleGroupStarts, viewMessage, timeComparator) - 1;
+            if (consoleGroupStartIndex >= 0) {
+                const currentGroup = this.consoleGroupStarts[consoleGroupStartIndex];
+                addToGroup(viewMessage, currentGroup);
+            }
+            // Add new group.
+            if (message.isGroupStartMessage()) {
+                insertAt = Platform.ArrayUtilities.upperBound(this.consoleGroupStarts, viewMessage, timeComparator);
+                this.consoleGroupStarts.splice(insertAt, 0, viewMessage);
+            }
+        }
         this.filter.onMessageAdded(message);
         if (this.isSidebarOpen) {
             this.sidebar.onMessageAdded(viewMessage);
@@ -722,6 +737,29 @@ export class ConsoleView extends UI.Widget.VBox {
         }
         this.scheduleViewportRefresh();
         this.consoleMessageAddedForTest(viewMessage);
+        // Figure out whether the message should belong into this group or the parent group based on group end timestamp.
+        function addToGroup(viewMessage, currentGroup) {
+            const currentEnd = currentGroup.groupEnd();
+            if (currentEnd !== null) {
+                // Exceeds this group's end. It should belong into parent group.
+                if (timeComparator(viewMessage, currentEnd) > 0) {
+                    const parent = currentGroup.consoleGroup();
+                    // No parent group. We reached ungrouped messages. Don't establish group links.
+                    if (parent === null) {
+                        return;
+                    } // Add to parent group.
+                    addToGroup(viewMessage, parent);
+                    return;
+                }
+            }
+            // Add message to this group, and set group of the message.
+            if (viewMessage.consoleMessage().type === "endGroup" /* EndGroup */) {
+                currentGroup.setGroupEnd(viewMessage);
+            }
+            else {
+                viewMessage.setConsoleGroup(currentGroup);
+            }
+        }
         function timeComparator(viewMessage1, viewMessage2) {
             return (messagesSortedBySymbol.get(viewMessage1) || 0) - (messagesSortedBySymbol.get(viewMessage2) || 0);
         }
@@ -750,6 +788,20 @@ export class ConsoleView extends UI.Widget.VBox {
         }
     }
     appendMessageToEnd(viewMessage, preventCollapse) {
+        if (viewMessage.consoleMessage().category === "cors" /* Cors */ &&
+            !this.showCorsErrorsSetting.get()) {
+            return;
+        }
+        const lastMessage = this.visibleViewMessages[this.visibleViewMessages.length - 1];
+        if (viewMessage.consoleMessage().type === "endGroup" /* EndGroup */) {
+            if (lastMessage) {
+                const group = lastMessage.consoleGroup();
+                if (group && !group.messagesHidden()) {
+                    lastMessage.incrementCloseGroupDecorationCount();
+                }
+            }
+            return;
+        }
         if (!this.shouldMessageBeVisible(viewMessage)) {
             this.hiddenByFilterCount++;
             return;
@@ -758,44 +810,50 @@ export class ConsoleView extends UI.Widget.VBox {
             this.tryToCollapseMessages(viewMessage, this.visibleViewMessages[this.visibleViewMessages.length - 1])) {
             return;
         }
-        const lastMessage = this.visibleViewMessages[this.visibleViewMessages.length - 1];
-        if (viewMessage.consoleMessage().type === "endGroup" /* EndGroup */) {
-            if (lastMessage && !this.currentGroup.messagesHidden()) {
-                lastMessage.incrementCloseGroupDecorationCount();
-            }
-            this.currentGroup = this.currentGroup.parentGroup() || this.currentGroup;
-            return;
-        }
-        if (!this.currentGroup.messagesHidden()) {
+        const currentGroup = viewMessage.consoleGroup();
+        if (!currentGroup || !currentGroup.messagesHidden()) {
             const originatingMessage = viewMessage.consoleMessage().originatingMessage();
             if (lastMessage && originatingMessage && lastMessage.consoleMessage() === originatingMessage) {
                 viewMessage.toMessageElement().classList.add('console-adjacent-user-command-result');
             }
+            showGroup(currentGroup, this.visibleViewMessages);
             this.visibleViewMessages.push(viewMessage);
             this.searchMessage(this.visibleViewMessages.length - 1);
         }
-        if (viewMessage.consoleMessage().isGroupStartMessage()) {
-            this.currentGroup = new ConsoleGroup(this.currentGroup, viewMessage);
-        }
         this.messageAppendedForTests();
+        // Show the group the message belongs to, and also show parent groups.
+        function showGroup(currentGroup, visibleViewMessages) {
+            if (currentGroup === null) {
+                return;
+            }
+            // Group is already being shown, no need to traverse to
+            // parent groups since they are also already being shown.
+            if (visibleViewMessages.includes(currentGroup)) {
+                return;
+            }
+            const parentGroup = currentGroup.consoleGroup();
+            if (parentGroup) {
+                showGroup(parentGroup, visibleViewMessages);
+            }
+            visibleViewMessages.push(currentGroup);
+        }
     }
     messageAppendedForTests() {
         // This method is sniffed in tests.
     }
     createViewMessage(message) {
-        const nestingLevel = this.currentGroup.nestingLevel();
         switch (message.type) {
             case SDK.ConsoleModel.FrontendMessageType.Command:
-                return new ConsoleCommand(message, this.linkifier, this.requestResolver, this.issueResolver, nestingLevel, this.onMessageResizedBound);
+                return new ConsoleCommand(message, this.linkifier, this.requestResolver, this.issueResolver, this.onMessageResizedBound);
             case SDK.ConsoleModel.FrontendMessageType.Result:
-                return new ConsoleCommandResult(message, this.linkifier, this.requestResolver, this.issueResolver, nestingLevel, this.onMessageResizedBound);
+                return new ConsoleCommandResult(message, this.linkifier, this.requestResolver, this.issueResolver, this.onMessageResizedBound);
             case "startGroupCollapsed" /* StartGroupCollapsed */:
             case "startGroup" /* StartGroup */:
-                return new ConsoleGroupViewMessage(message, this.linkifier, this.requestResolver, this.issueResolver, nestingLevel, this.updateMessageList.bind(this), this.onMessageResizedBound);
+                return new ConsoleGroupViewMessage(message, this.linkifier, this.requestResolver, this.issueResolver, this.updateMessageList.bind(this), this.onMessageResizedBound);
             case "table" /* Table */:
-                return new ConsoleTableMessageView(message, this.linkifier, this.requestResolver, this.issueResolver, nestingLevel, this.onMessageResizedBound);
+                return new ConsoleTableMessageView(message, this.linkifier, this.requestResolver, this.issueResolver, this.onMessageResizedBound);
             default:
-                return new ConsoleViewMessage(message, this.linkifier, this.requestResolver, this.issueResolver, nestingLevel, this.onMessageResizedBound);
+                return new ConsoleViewMessage(message, this.linkifier, this.requestResolver, this.issueResolver, this.onMessageResizedBound);
         }
     }
     async onMessageResized(event) {
@@ -827,6 +885,7 @@ export class ConsoleView extends UI.Widget.VBox {
         this.linkifier.reset();
         this.filter.clear();
         this.requestResolver.clear();
+        this.consoleGroupStarts = [];
         if (hadFocus) {
             this.prompt.focus();
         }
@@ -836,7 +895,7 @@ export class ConsoleView extends UI.Widget.VBox {
         const contextMenu = new UI.ContextMenu.ContextMenu(event);
         const eventTarget = event.target;
         if (eventTarget.isSelfOrDescendant(this.promptElement)) {
-            contextMenu.show();
+            void contextMenu.show();
             return;
         }
         const sourceElement = eventTarget.enclosingNodeOrSelfWithClass('console-message-wrapper');
@@ -858,7 +917,7 @@ export class ConsoleView extends UI.Widget.VBox {
                 contextMenu.debugSection().appendItem(i18nString(UIStrings.replayXhr), SDK.NetworkManager.NetworkManager.replayRequest.bind(null, request));
             }
         }
-        contextMenu.show();
+        void contextMenu.show();
     }
     async saveConsole() {
         const url = SDK.TargetManager.TargetManager.instance().mainTarget().inspectedURL();
@@ -885,7 +944,7 @@ export class ConsoleView extends UI.Widget.VBox {
             await stream.write(messageContents.join('\n') + '\n');
             progressIndicator.setWorked(messageIndex);
         }
-        stream.close();
+        void stream.close();
         progressIndicator.done();
     }
     tryToCollapseMessages(viewMessage, lastMessage) {
@@ -916,7 +975,7 @@ export class ConsoleView extends UI.Widget.VBox {
             return;
         }
         this.buildHiddenCacheTimeout =
-            this.element.window().requestAnimationFrame(this.buildHiddenCache.bind(this, i, viewMessages));
+            this.element.window().requestAnimationFrame(this.buildHiddenCache.bind(this, i + 1, viewMessages));
     }
     cancelBuildHiddenCache() {
         this.shouldBeHiddenCache.clear();
@@ -926,8 +985,6 @@ export class ConsoleView extends UI.Widget.VBox {
         }
     }
     updateMessageList() {
-        this.topGroup = ConsoleGroup.createTopGroup();
-        this.currentGroup = this.topGroup;
         this.regexMatchRanges = [];
         this.hiddenByFilterCount = 0;
         for (const visibleViewMessage of this.visibleViewMessages) {
@@ -941,7 +998,12 @@ export class ConsoleView extends UI.Widget.VBox {
         else {
             for (const consoleMessage of this.consoleMessages) {
                 consoleMessage.setInSimilarGroup(false);
-                this.appendMessageToEnd(consoleMessage, true /* crbug.com/1082963: prevent collapse of same messages when "Group similar" is false */);
+                if (consoleMessage.consoleMessage().isGroupable()) {
+                    // Since grouping similar messages is disabled, we need clear the
+                    // reference to the artificial console group start.
+                    consoleMessage.clearConsoleGroup();
+                }
+                this.appendMessageToEnd(consoleMessage, true /* crbug.com/1082963: prevent collaps`e of same messages when "Group similar" is false */);
             }
         }
         this.updateFilterStatus();
@@ -992,6 +1054,7 @@ export class ConsoleView extends UI.Widget.VBox {
             this.appendMessageToEnd(startGroupViewMessage);
             for (const viewMessageInGroup of viewMessagesInGroup) {
                 viewMessageInGroup.setInSimilarGroup(true, viewMessagesInGroup[viewMessagesInGroup.length - 1] === viewMessageInGroup);
+                viewMessageInGroup.setConsoleGroup(startGroupViewMessage);
                 this.appendMessageToEnd(viewMessageInGroup, true);
                 alreadyAdded.add(viewMessageInGroup.consoleMessage());
             }
@@ -1030,7 +1093,7 @@ export class ConsoleView extends UI.Widget.VBox {
         this.shortcuts.set(UI.KeyboardShortcut.KeyboardShortcut.makeKey('u', UI.KeyboardShortcut.Modifiers.Ctrl), this.clearPromptBackwards.bind(this));
     }
     clearPromptBackwards() {
-        this.prompt.setText('');
+        this.prompt.clear();
     }
     promptKeyDown(event) {
         const keyboardEvent = event;
@@ -1082,7 +1145,7 @@ export class ConsoleView extends UI.Widget.VBox {
     performSearch(searchConfig, shouldJump, jumpBackwards) {
         this.searchCanceled();
         this.searchableViewInternal.updateSearchMatchesCount(0);
-        this.searchRegex = searchConfig.toSearchRegex(true);
+        this.searchRegex = searchConfig.toSearchRegex(true).regex;
         this.regexMatchRanges = [];
         this.currentMatchRangeIndex = -1;
         if (shouldJump) {
@@ -1125,7 +1188,7 @@ export class ConsoleView extends UI.Widget.VBox {
         }
         if (index === this.visibleViewMessages.length) {
             this.cleanupAfterSearch();
-            setTimeout(this.searchFinishedForTests.bind(this), 0);
+            window.setTimeout(this.searchFinishedForTests.bind(this), 0);
             return;
         }
         this.innerSearchTimeoutId = window.setTimeout(this.innerSearch.bind(this, index), 100);
@@ -1370,7 +1433,7 @@ export class ConsoleViewFilter {
         for (const [level, levelText] of this.levelLabels.entries()) {
             contextMenu.defaultSection().appendCheckboxItem(levelText, toggleShowLevel.bind(null, level), levels[level]);
         }
-        contextMenu.show();
+        void contextMenu.show();
         function toggleShowLevel(level) {
             levels[level] = !levels[level];
             setting.set(levels);
@@ -1397,29 +1460,6 @@ export class ConsoleViewFilter {
         this.hideNetworkMessagesSetting.set(false);
         this.textFilterUI.setValue('');
         this.onFilterChanged();
-    }
-}
-export class ConsoleGroup {
-    parentGroupInternal;
-    nestingLevelInternal;
-    messagesHiddenInternal;
-    constructor(parentGroup, groupMessage) {
-        this.parentGroupInternal = parentGroup;
-        this.nestingLevelInternal = parentGroup ? parentGroup.nestingLevel() + 1 : 0;
-        this.messagesHiddenInternal = groupMessage && groupMessage.collapsed() ||
-            this.parentGroupInternal && this.parentGroupInternal.messagesHidden() || false;
-    }
-    static createTopGroup() {
-        return new ConsoleGroup(null, null);
-    }
-    messagesHidden() {
-        return this.messagesHiddenInternal;
-    }
-    nestingLevel() {
-        return this.nestingLevelInternal;
-    }
-    parentGroup() {
-        return this.parentGroupInternal;
     }
 }
 let actionDelegateInstance;

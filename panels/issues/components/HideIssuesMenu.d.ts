@@ -1,21 +1,14 @@
+import * as Common from '../../../core/common/common.js';
 export interface HiddenIssuesMenuData {
-    issueCode: string;
-    forHiddenIssue: boolean;
+    menuItemLabel: Common.UIString.LocalizedString;
+    menuItemAction: () => void;
 }
 export declare class HideIssuesMenu extends HTMLElement {
+    #private;
     static readonly litTagName: import("../../../ui/lit-html/static.js").Static;
-    private readonly shadow;
-    private code;
-    private visible;
-    private hideIssueSetting;
-    private forHiddenIssue;
     set data(data: HiddenIssuesMenuData);
     connectedCallback(): void;
-    setVisible(x: boolean): void;
     onMenuOpen(event: Event): void;
-    onHideIssueByCode(): void;
-    onUnhideIssueByCode(): void;
-    private render;
 }
 declare global {
     interface HTMLElementTagNameMap {

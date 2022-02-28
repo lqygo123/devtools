@@ -10,7 +10,7 @@ import * as PerfUI from '../../ui/legacy/components/perf_ui/perf_ui.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { ProfileFlameChartDataProvider } from './CPUProfileFlameChart.js';
-import { HeapTimelineOverview, IdsRangeChanged } from './HeapTimelineOverview.js';
+import { HeapTimelineOverview } from './HeapTimelineOverview.js';
 import { ProfileType, ProfileEvents } from './ProfileHeader.js';
 import { ProfileView, WritableProfileHeader } from './ProfileView.js';
 const UIStrings = {
@@ -138,11 +138,11 @@ export class HeapProfileView extends ProfileView {
         this.lastOrdinal = 0;
         this.timelineOverview = new HeapTimelineOverview();
         if (Root.Runtime.experiments.isEnabled('samplingHeapProfilerTimeline')) {
-            this.timelineOverview.addEventListener(IdsRangeChanged, this.onIdsRangeChanged.bind(this));
+            this.timelineOverview.addEventListener("IdsRangeChanged" /* IdsRangeChanged */, this.onIdsRangeChanged.bind(this));
             this.timelineOverview.show(this.element, this.element.firstChild);
             this.timelineOverview.start();
             this.profileType.addEventListener("StatsUpdate" /* StatsUpdate */, this.onStatsUpdate, this);
-            this.profileType.once(ProfileEvents.ProfileComplete).then(() => {
+            void this.profileType.once(ProfileEvents.ProfileComplete).then(() => {
                 this.profileType.removeEventListener("StatsUpdate" /* StatsUpdate */, this.onStatsUpdate, this);
                 this.timelineOverview.stop();
                 this.timelineOverview.updateGrid();
@@ -153,8 +153,7 @@ export class HeapProfileView extends ProfileView {
         return [...await super.toolbarItems(), this.selectedSizeText];
     }
     onIdsRangeChanged(event) {
-        const minId = event.data.minId;
-        const maxId = event.data.maxId;
+        const { minId, maxId } = event.data;
         this.selectedSizeText.setText(i18nString(UIStrings.selectedSizeS, { PH1: Platform.NumberUtilities.bytesToString(event.data.size) }));
         this.setSelectionRange(minId, maxId);
     }
@@ -178,7 +177,7 @@ export class HeapProfileView extends ProfileView {
         this.sizes.push(0);
         this.timestamps.push(Date.now());
         this.ordinals.push(this.lastOrdinal + 1);
-        for (const sample of profile.samples) {
+        for (const sample of profile?.samples ?? []) {
             this.lastOrdinal = Math.max(this.lastOrdinal, sample.ordinal);
             const bucket = Platform.ArrayUtilities.upperBound(this.ordinals, sample.ordinal, Platform.ArrayUtilities.DEFAULT_COMPARATOR) -
                 1;
@@ -211,7 +210,7 @@ export class HeapProfileView extends ProfileView {
         return new HeapFlameChartDataProvider(this.profile(), this.profileHeader.heapProfilerModel());
     }
 }
-export class SamplingHeapProfileTypeBase extends ProfileType {
+export class SamplingHeapProfileTypeBase extends Common.ObjectWrapper.eventMixin(ProfileType) {
     recording;
     clearedDuringRecording;
     constructor(typeId, description) {
@@ -220,7 +219,7 @@ export class SamplingHeapProfileTypeBase extends ProfileType {
         this.clearedDuringRecording = false;
     }
     profileBeingRecorded() {
-        return /** @type {?SamplingHeapProfileHeader} */ super.profileBeingRecorded();
+        return super.profileBeingRecorded();
     }
     typeName() {
         return 'Heap';
@@ -233,7 +232,7 @@ export class SamplingHeapProfileTypeBase extends ProfileType {
     }
     buttonClicked() {
         if (this.recording) {
-            this.stopRecordingProfile();
+            void this.stopRecordingProfile();
         }
         else {
             this.startRecordingProfile();
@@ -287,7 +286,7 @@ export class SamplingHeapProfileTypeBase extends ProfileType {
     }
     profileBeingRecordedRemoved() {
         this.clearedDuringRecording = true;
-        this.stopRecordingProfile();
+        void this.stopRecordingProfile();
     }
     startSampling() {
         throw 'Not implemented';
@@ -331,10 +330,10 @@ export class SamplingHeapProfileType extends SamplingHeapProfileTypeBase {
         if (!heapProfilerModel) {
             return;
         }
-        heapProfilerModel.startSampling();
+        void heapProfilerModel.startSampling();
         if (Root.Runtime.experiments.isEnabled('samplingHeapProfilerTimeline')) {
             this.updateTimer = window.setTimeout(() => {
-                this.updateStats();
+                void this.updateStats();
             }, this.updateIntervalMs);
         }
     }
@@ -371,7 +370,7 @@ export class SamplingHeapProfileType extends SamplingHeapProfileTypeBase {
         }
         this.dispatchEventToListeners("StatsUpdate" /* StatsUpdate */, profile);
         this.updateTimer = window.setTimeout(() => {
-            this.updateStats();
+            void this.updateStats();
         }, this.updateIntervalMs);
     }
     // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -410,6 +409,9 @@ export class SamplingHeapProfileHeader extends WritableProfileHeader {
     }
     heapProfilerModel() {
         return this.heapProfilerModelInternal;
+    }
+    profileType() {
+        return super.profileType();
     }
 }
 export class SamplingHeapProfileNode extends SDK.ProfileTreeModel.ProfileNode {

@@ -4,14 +4,7 @@ import type * as Protocol from '../../generated/protocol.js';
 import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export declare class ChildTargetManager extends SDKModel<EventTypes> implements ProtocolProxyApi.TargetDispatcher {
-    private readonly targetManager;
-    private parentTarget;
-    private readonly targetAgent;
-    private readonly targetInfosInternal;
-    private readonly childTargetsBySessionId;
-    private readonly childTargetsById;
-    private readonly parallelConnections;
-    private parentTargetId;
+    #private;
     constructor(parentTarget: Target);
     static install(attachCallback?: ((arg0: {
         target: Target;

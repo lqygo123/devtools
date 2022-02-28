@@ -41,30 +41,31 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('core/sdk/CompilerSourceMappingContentProvider.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class CompilerSourceMappingContentProvider {
-    sourceURL;
-    contentTypeInternal;
-    initiator;
+    #sourceURL;
+    #contentTypeInternal;
+    #initiator;
     constructor(sourceURL, contentType, initiator) {
-        this.sourceURL = sourceURL;
-        this.contentTypeInternal = contentType;
-        this.initiator = initiator;
+        this.#sourceURL = sourceURL;
+        this.#contentTypeInternal = contentType;
+        this.#initiator = initiator;
     }
+    // TODO(crbug.com/1253323): Cast to RawPathString will be removed when migration to branded types is complete.
     contentURL() {
-        return this.sourceURL;
+        return this.#sourceURL;
     }
     contentType() {
-        return this.contentTypeInternal;
+        return this.#contentTypeInternal;
     }
     async contentEncoded() {
         return false;
     }
     async requestContent() {
         try {
-            const { content } = await PageResourceLoader.instance().loadResource(this.sourceURL, this.initiator);
+            const { content } = await PageResourceLoader.instance().loadResource(this.#sourceURL, this.#initiator);
             return { content, isEncoded: false };
         }
         catch (e) {
-            const error = i18nString(UIStrings.couldNotLoadContentForSS, { PH1: this.sourceURL, PH2: e.message });
+            const error = i18nString(UIStrings.couldNotLoadContentForSS, { PH1: this.#sourceURL, PH2: e.message });
             console.error(error);
             return { content: null, error, isEncoded: false };
         }

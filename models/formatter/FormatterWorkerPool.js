@@ -132,12 +132,6 @@ export class FormatterWorkerPool {
             }));
         }
     }
-    findLastExpression(content) {
-        return this.runTask("findLastExpression" /* FIND_LAST_EXPRESSION */, { content });
-    }
-    findLastFunctionCall(content) {
-        return this.runTask("findLastFunctionCall" /* FIND_LAST_FUNCTION_CALL */, { content });
-    }
     argumentsList(content) {
         return this.runTask("argumentsList" /* ARGUMENTS_LIST */, { content });
     }

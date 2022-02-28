@@ -2,10 +2,7 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as Workspace from '../workspace/workspace.js';
 import type { SourceMapping } from './CSSWorkspaceBinding.js';
 export declare class SASSSourceMapping implements SourceMapping {
-    private readonly sourceMapManager;
-    private readonly project;
-    private readonly eventListeners;
-    private readonly bindings;
+    #private;
     constructor(target: SDK.Target.Target, sourceMapManager: SDK.SourceMapManager.SourceMapManager<SDK.CSSStyleSheetHeader.CSSStyleSheetHeader>, workspace: Workspace.Workspace.WorkspaceImpl);
     private sourceMapAttachedForTest;
     private sourceMapAttached;

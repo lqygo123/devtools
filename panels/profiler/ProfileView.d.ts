@@ -66,9 +66,9 @@ export declare class ProfileView extends UI.View.SimpleView implements UI.Search
     onEntryInvoked(event: Common.EventTarget.EventTargetEvent<number>): Promise<void>;
     changeView(): void;
     nodeSelected(selected: boolean): void;
-    focusClicked(_event: Common.EventTarget.EventTargetEvent): void;
-    excludeClicked(_event: Common.EventTarget.EventTargetEvent): void;
-    resetClicked(_event: Common.EventTarget.EventTargetEvent): void;
+    focusClicked(): void;
+    excludeClicked(): void;
+    resetClicked(): void;
     sortProfile(): void;
 }
 export declare const maxLinkLength = 30;

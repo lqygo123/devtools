@@ -9,6 +9,7 @@ export declare class CPUProfileNode extends ProfileNode {
     constructor(node: Protocol.Profiler.ProfileNode, sampleTime: number);
 }
 export declare class CPUProfileDataModel extends ProfileTreeModel {
+    #private;
     profileStartTime: number;
     profileEndTime: number;
     timestamps: number[];
@@ -16,12 +17,9 @@ export declare class CPUProfileDataModel extends ProfileTreeModel {
     lines: any;
     totalHitCount: number;
     profileHead: CPUProfileNode;
-    private idToNode;
     gcNode: CPUProfileNode;
     programNode?: ProfileNode;
     idleNode?: ProfileNode;
-    private stackStartTimes?;
-    private stackChildrenDuration?;
     constructor(profile: Protocol.Profiler.Profile, target: Target | null);
     private compatibilityConversionHeadToNodes;
     private convertTimeDeltas;

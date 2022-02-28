@@ -29,7 +29,7 @@ export class InputModel extends SDK.SDKModel.SDKModel {
         }
         const keyboardEvent = event;
         const text = event.type === 'keypress' ? String.fromCharCode(keyboardEvent.charCode) : undefined;
-        this.inputAgent.invoke_dispatchKeyEvent({
+        void this.inputAgent.invoke_dispatchKeyEvent({
             type: type,
             modifiers: this.modifiersForEvent(keyboardEvent),
             text: text,
@@ -88,14 +88,14 @@ export class InputModel extends SDK.SDKModel.SDKModel {
         if (event.type === 'mouseup') {
             this.activeTouchOffsetTop = null;
         }
-        this.inputAgent.invoke_emulateTouchFromMouseEvent(params);
+        void this.inputAgent.invoke_emulateTouchFromMouseEvent(params);
     }
     cancelTouch() {
         if (this.activeTouchParams !== null) {
             const params = this.activeTouchParams;
             this.activeTouchParams = null;
             params.type = 'mouseReleased';
-            this.inputAgent.invoke_emulateTouchFromMouseEvent(params);
+            void this.inputAgent.invoke_emulateTouchFromMouseEvent(params);
         }
     }
     modifiersForEvent(event) {

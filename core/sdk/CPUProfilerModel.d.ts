@@ -5,12 +5,8 @@ import type { RuntimeModel } from './RuntimeModel.js';
 import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export declare class CPUProfilerModel extends SDKModel<EventTypes> implements ProtocolProxyApi.ProfilerDispatcher {
-    private isRecording;
-    private nextAnonymousConsoleProfileNumber;
-    private anonymousConsoleProfileIdToTitle;
-    private readonly profilerAgent;
-    private preciseCoverageDeltaUpdateCallback;
-    private readonly debuggerModelInternal;
+    #private;
+    readonly registeredConsoleProfileMessages: ProfileFinishedData[];
     constructor(target: Target);
     runtimeModel(): RuntimeModel;
     debuggerModel(): DebuggerModel;

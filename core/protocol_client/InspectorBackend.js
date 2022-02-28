@@ -42,13 +42,13 @@ export const qualifyName = (domain, name) => {
 };
 export class InspectorBackend {
     agentPrototypes = new Map();
-    initialized = false;
-    eventParameterNamesForDomain = new Map();
+    #initialized = false;
+    #eventParameterNamesForDomain = new Map();
     getOrCreateEventParameterNamesForDomain(domain) {
-        let map = this.eventParameterNamesForDomain.get(domain);
+        let map = this.#eventParameterNamesForDomain.get(domain);
         if (!map) {
             map = new Map();
-            this.eventParameterNamesForDomain.set(domain, map);
+            this.#eventParameterNamesForDomain.set(domain, map);
         }
         return map;
     }
@@ -56,7 +56,7 @@ export class InspectorBackend {
         return this.getOrCreateEventParameterNamesForDomain(domain);
     }
     getEventParamterNames() {
-        return this.eventParameterNamesForDomain;
+        return this.#eventParameterNamesForDomain;
     }
     static reportProtocolError(error, messageObject) {
         console.error(error + ': ' + JSON.stringify(messageObject));
@@ -65,7 +65,7 @@ export class InspectorBackend {
         console.warn(error + ': ' + JSON.stringify(messageObject));
     }
     isInitialized() {
-        return this.initialized;
+        return this.#initialized;
     }
     agentPrototype(domain) {
         let prototype = this.agentPrototypes.get(domain);
@@ -78,7 +78,7 @@ export class InspectorBackend {
     registerCommand(method, parameters, replyArgs) {
         const [domain, command] = splitQualifiedName(method);
         this.agentPrototype(domain).registerCommand(command, parameters, replyArgs);
-        this.initialized = true;
+        this.#initialized = true;
     }
     registerEnum(type, values) {
         const [domain, name] = splitQualifiedName(type);
@@ -89,13 +89,13 @@ export class InspectorBackend {
         }
         // @ts-ignore Protocol global namespace pollution
         Protocol[domain][name] = values;
-        this.initialized = true;
+        this.#initialized = true;
     }
     registerEvent(eventName, params) {
         const domain = eventName.split('.')[0];
         const eventParameterNames = this.getOrCreateEventParameterNamesForDomain(domain);
         eventParameterNames.set(eventName, params);
-        this.initialized = true;
+        this.#initialized = true;
     }
 }
 let connectionFactory;
@@ -150,24 +150,24 @@ export const test = {
 };
 const LongPollingMethods = new Set(['CSS.takeComputedStyleUpdates']);
 export class SessionRouter {
-    connectionInternal;
-    lastMessageId;
-    pendingResponsesCount;
-    pendingLongPollingMessageIds;
-    sessions;
-    pendingScripts;
+    #connectionInternal;
+    #lastMessageId;
+    #pendingResponsesCount;
+    #pendingLongPollingMessageIds;
+    #sessions;
+    #pendingScripts;
     constructor(connection) {
-        this.connectionInternal = connection;
-        this.lastMessageId = 1;
-        this.pendingResponsesCount = 0;
-        this.pendingLongPollingMessageIds = new Set();
-        this.sessions = new Map();
-        this.pendingScripts = [];
+        this.#connectionInternal = connection;
+        this.#lastMessageId = 1;
+        this.#pendingResponsesCount = 0;
+        this.#pendingLongPollingMessageIds = new Set();
+        this.#sessions = new Map();
+        this.#pendingScripts = [];
         test.deprecatedRunAfterPendingDispatches = this.deprecatedRunAfterPendingDispatches.bind(this);
         test.sendRawMessage = this.sendRawMessageForTesting.bind(this);
-        this.connectionInternal.setOnMessage(this.onMessage.bind(this));
-        this.connectionInternal.setOnDisconnect(reason => {
-            const session = this.sessions.get('');
+        this.#connectionInternal.setOnMessage(this.onMessage.bind(this));
+        this.#connectionInternal.setOnDisconnect(reason => {
+            const session = this.#sessions.get('');
             if (session) {
                 session.target.dispose(reason);
             }
@@ -177,37 +177,37 @@ export class SessionRouter {
         // Only the Audits panel uses proxy connections. If it is ever possible to have multiple active at the
         // same time, it should be tested thoroughly.
         if (proxyConnection) {
-            for (const session of this.sessions.values()) {
+            for (const session of this.#sessions.values()) {
                 if (session.proxyConnection) {
                     console.error('Multiple simultaneous proxy connections are currently unsupported');
                     break;
                 }
             }
         }
-        this.sessions.set(sessionId, { target, callbacks: new Map(), proxyConnection });
+        this.#sessions.set(sessionId, { target, callbacks: new Map(), proxyConnection });
     }
     unregisterSession(sessionId) {
-        const session = this.sessions.get(sessionId);
+        const session = this.#sessions.get(sessionId);
         if (!session) {
             return;
         }
         for (const callback of session.callbacks.values()) {
             SessionRouter.dispatchUnregisterSessionError(callback);
         }
-        this.sessions.delete(sessionId);
+        this.#sessions.delete(sessionId);
     }
     getTargetBySessionId(sessionId) {
-        const session = this.sessions.get(sessionId ? sessionId : '');
+        const session = this.#sessions.get(sessionId ? sessionId : '');
         if (!session) {
             return null;
         }
         return session.target;
     }
     nextMessageId() {
-        return this.lastMessageId++;
+        return this.#lastMessageId++;
     }
     connection() {
-        return this.connectionInternal;
+        return this.#connectionInternal;
     }
     sendMessage(sessionId, domain, method, params, callback) {
         const messageId = this.nextMessageId();
@@ -228,16 +228,16 @@ export class SessionRouter {
             const paramsObject = JSON.parse(JSON.stringify(params || {}));
             test.onMessageSent({ domain, method, params: paramsObject, id: messageId, sessionId }, this.getTargetBySessionId(sessionId));
         }
-        ++this.pendingResponsesCount;
+        ++this.#pendingResponsesCount;
         if (LongPollingMethods.has(method)) {
-            this.pendingLongPollingMessageIds.add(messageId);
+            this.#pendingLongPollingMessageIds.add(messageId);
         }
-        const session = this.sessions.get(sessionId);
+        const session = this.#sessions.get(sessionId);
         if (!session) {
             return;
         }
         session.callbacks.set(messageId, { callback, method });
-        this.connectionInternal.sendRawMessage(JSON.stringify(messageObject));
+        this.#connectionInternal.sendRawMessage(JSON.stringify(messageObject));
     }
     sendRawMessageForTesting(method, params, callback) {
         const domain = method.split('.')[0];
@@ -254,7 +254,7 @@ export class SessionRouter {
         const messageObject = ((typeof message === 'string') ? JSON.parse(message) : message);
         // Send all messages to proxy connections.
         let suppressUnknownMessageErrors = false;
-        for (const session of this.sessions.values()) {
+        for (const session of this.#sessions.values()) {
             if (!session.proxyConnection) {
                 continue;
             }
@@ -266,7 +266,7 @@ export class SessionRouter {
             suppressUnknownMessageErrors = true;
         }
         const sessionId = messageObject.sessionId || '';
-        const session = this.sessions.get(sessionId);
+        const session = this.#sessions.get(sessionId);
         if (!session) {
             if (!suppressUnknownMessageErrors) {
                 InspectorBackend.reportProtocolError('Protocol Error: the message with wrong session id', messageObject);
@@ -290,9 +290,9 @@ export class SessionRouter {
                 return;
             }
             callback.callback(messageObject.error || null, messageObject.result || null);
-            --this.pendingResponsesCount;
-            this.pendingLongPollingMessageIds.delete(messageObject.id);
-            if (this.pendingScripts.length && !this.hasOutstandingNonLongPollingRequests()) {
+            --this.#pendingResponsesCount;
+            this.#pendingLongPollingMessageIds.delete(messageObject.id);
+            if (this.#pendingScripts.length && !this.hasOutstandingNonLongPollingRequests()) {
                 this.deprecatedRunAfterPendingDispatches();
             }
         }
@@ -307,14 +307,14 @@ export class SessionRouter {
         }
     }
     hasOutstandingNonLongPollingRequests() {
-        return this.pendingResponsesCount - this.pendingLongPollingMessageIds.size > 0;
+        return this.#pendingResponsesCount - this.#pendingLongPollingMessageIds.size > 0;
     }
     deprecatedRunAfterPendingDispatches(script) {
         if (script) {
-            this.pendingScripts.push(script);
+            this.#pendingScripts.push(script);
         }
         // Execute all promises.
-        setTimeout(() => {
+        window.setTimeout(() => {
             if (!this.hasOutstandingNonLongPollingRequests()) {
                 this.executeAfterPendingDispatches();
             }
@@ -325,8 +325,8 @@ export class SessionRouter {
     }
     executeAfterPendingDispatches() {
         if (!this.hasOutstandingNonLongPollingRequests()) {
-            const scripts = this.pendingScripts;
-            this.pendingScripts = [];
+            const scripts = this.#pendingScripts;
+            this.#pendingScripts = [];
             for (let id = 0; id < scripts.length; ++id) {
                 scripts[id]();
             }
@@ -338,7 +338,7 @@ export class SessionRouter {
             code: ConnectionClosedErrorCode,
             data: null,
         };
-        setTimeout(() => callback(error, null), 0);
+        window.setTimeout(() => callback(error, null), 0);
     }
     static dispatchUnregisterSessionError({ callback, method }) {
         const error = {
@@ -346,15 +346,15 @@ export class SessionRouter {
             code: ConnectionClosedErrorCode,
             data: null,
         };
-        setTimeout(() => callback(error, null), 0);
+        window.setTimeout(() => callback(error, null), 0);
     }
 }
 export class TargetBase {
     needsNodeJSPatching;
     sessionId;
     routerInternal;
-    agents = new Map();
-    dispatchers = new Map();
+    #agents = new Map();
+    #dispatchers = new Map();
     constructor(needsNodeJSPatching, parentTarget, sessionId, connection) {
         this.needsNodeJSPatching = needsNodeJSPatching;
         this.sessionId = sessionId;
@@ -376,15 +376,15 @@ export class TargetBase {
         for (const [domain, agentPrototype] of inspectorBackend.agentPrototypes) {
             const agent = Object.create(agentPrototype);
             agent.target = this;
-            this.agents.set(domain, agent);
+            this.#agents.set(domain, agent);
         }
         for (const [domain, eventParameterNames] of inspectorBackend.getEventParamterNames().entries()) {
-            this.dispatchers.set(domain, new DispatcherManager(eventParameterNames));
+            this.#dispatchers.set(domain, new DispatcherManager(eventParameterNames));
         }
     }
     dispatch(eventMessage) {
         const [domainName, method] = splitQualifiedName(eventMessage.method);
-        const dispatcher = this.dispatchers.get(domainName);
+        const dispatcher = this.#dispatchers.get(domainName);
         if (!dispatcher) {
             InspectorBackend.reportProtocolError(`Protocol Error: the message ${eventMessage.method} is for non-existing domain '${domainName}'`, eventMessage);
             return;
@@ -413,7 +413,7 @@ export class TargetBase {
      * name, because if `Domain` allows multiple domains, the type is unsound.
      */
     getAgent(domain) {
-        const agent = this.agents.get(domain);
+        const agent = this.#agents.get(domain);
         if (!agent) {
             throw new Error('Accessing undefined agent');
         }
@@ -424,9 +424,6 @@ export class TargetBase {
     }
     animationAgent() {
         return this.getAgent('Animation');
-    }
-    applicationCacheAgent() {
-        return this.getAgent('ApplicationCache');
     }
     auditsAgent() {
         return this.getAgent('Audits');
@@ -466,6 +463,9 @@ export class TargetBase {
     }
     emulationAgent() {
         return this.getAgent('Emulation');
+    }
+    eventBreakpointsAgent() {
+        return this.getAgent('EventBreakpoints');
     }
     heapProfilerAgent() {
         return this.getAgent('HeapProfiler');
@@ -539,7 +539,7 @@ export class TargetBase {
      * name, because if `Domain` allows multiple domains, the type is unsound.
      */
     registerDispatcher(domain, dispatcher) {
-        const manager = this.dispatchers.get(domain);
+        const manager = this.#dispatchers.get(domain);
         if (!manager) {
             return;
         }
@@ -550,17 +550,17 @@ export class TargetBase {
      * name, because if `Domain` allows multiple domains, the type is unsound.
      */
     unregisterDispatcher(domain, dispatcher) {
-        const manager = this.dispatchers.get(domain);
+        const manager = this.#dispatchers.get(domain);
         if (!manager) {
             return;
         }
         manager.removeDomainDispatcher(dispatcher);
     }
+    registerAccessibilityDispatcher(dispatcher) {
+        this.registerDispatcher('Accessibility', dispatcher);
+    }
     registerAnimationDispatcher(dispatcher) {
         this.registerDispatcher('Animation', dispatcher);
-    }
-    registerApplicationCacheDispatcher(dispatcher) {
-        this.registerDispatcher('ApplicationCache', dispatcher);
     }
     registerAuditsDispatcher(dispatcher) {
         this.registerDispatcher('Audits', dispatcher);
@@ -639,9 +639,9 @@ export class TargetBase {
     }
 }
 /**
- * This is a class that serves as the prototype for a domains agents (every target
- * has it's own set of agents). The InspectorBackend keeps an instance of this class
- * per domain, and each TargetBase creates its agents (via Object.create) and installs
+ * This is a class that serves as the prototype for a domains #agents (every target
+ * has it's own set of #agents). The InspectorBackend keeps an instance of this class
+ * per domain, and each TargetBase creates its #agents (via Object.create) and installs
  * this instance as prototype.
  *
  * The reasons this is done is so that on the prototypes we can install the implementations
@@ -756,39 +756,39 @@ class _AgentPrototype {
     }
 }
 /**
- * A `DispatcherManager` has a collection of dispatchers that implement one of the
+ * A `DispatcherManager` has a collection of #dispatchers that implement one of the
  * `ProtocolProxyApi.{Foo}Dispatcher` interfaces. Each target uses one of these per
- * domain to manage the registered dispatchers. The class knows the parameter names
- * of the events via `eventArgs`, which is a map managed by the inspector back-end
+ * domain to manage the registered #dispatchers. The class knows the parameter names
+ * of the events via `#eventArgs`, which is a map managed by the inspector back-end
  * so that there is only one map per domain that is shared among all DispatcherManagers.
  */
 class DispatcherManager {
-    eventArgs;
-    dispatchers = [];
+    #eventArgs;
+    #dispatchers = [];
     constructor(eventArgs) {
-        this.eventArgs = eventArgs;
+        this.#eventArgs = eventArgs;
     }
     addDomainDispatcher(dispatcher) {
-        this.dispatchers.push(dispatcher);
+        this.#dispatchers.push(dispatcher);
     }
     removeDomainDispatcher(dispatcher) {
-        const index = this.dispatchers.indexOf(dispatcher);
+        const index = this.#dispatchers.indexOf(dispatcher);
         if (index === -1) {
             return;
         }
-        this.dispatchers.splice(index, 1);
+        this.#dispatchers.splice(index, 1);
     }
     dispatch(event, messageObject) {
-        if (!this.dispatchers.length) {
+        if (!this.#dispatchers.length) {
             return;
         }
-        if (!this.eventArgs.has(messageObject.method)) {
+        if (!this.#eventArgs.has(messageObject.method)) {
             InspectorBackend.reportProtocolWarning(`Protocol Warning: Attempted to dispatch an unspecified event '${messageObject.method}'`, messageObject);
             return;
         }
         const messageParams = { ...messageObject.params };
-        for (let index = 0; index < this.dispatchers.length; ++index) {
-            const dispatcher = this.dispatchers[index];
+        for (let index = 0; index < this.#dispatchers.length; ++index) {
+            const dispatcher = this.#dispatchers[index];
             if (event in dispatcher) {
                 const f = dispatcher[event];
                 // @ts-ignore Can't type check the dispatch.

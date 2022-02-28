@@ -54,7 +54,7 @@ export class ConsoleContextSelector {
         if (to && to.frameId) {
             const frame = SDK.FrameManager.FrameManager.instance().getFrame(to.frameId);
             if (frame && !frame.isTopFrame()) {
-                frame.highlight();
+                void frame.highlight();
             }
         }
         if (fromElement) {
@@ -134,8 +134,7 @@ export class ConsoleContextSelector {
         const executionContext = event.data;
         this.executionContextDestroyed(executionContext);
     }
-    executionContextChangedExternally(event) {
-        const executionContext = event.data;
+    executionContextChangedExternally({ data: executionContext, }) {
         this.dropDown.selectItem(executionContext);
     }
     isTopContext(executionContext) {
@@ -204,7 +203,7 @@ export class ConsoleContextSelector {
         return !callFrameContext || item === callFrameContext;
     }
     itemSelected(item) {
-        this.toolbarItemInternal.element.classList.toggle('warning', !this.isTopContext(item) && this.hasTopContext());
+        this.toolbarItemInternal.element.classList.toggle('highlight', !this.isTopContext(item) && this.hasTopContext());
         const title = item ? i18nString(UIStrings.javascriptContextS, { PH1: this.titleFor(item) }) :
             i18nString(UIStrings.javascriptContextNotSelected);
         this.toolbarItemInternal.setTitle(title);

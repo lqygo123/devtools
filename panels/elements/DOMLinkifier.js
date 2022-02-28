@@ -72,7 +72,7 @@ export const linkifyNodeReference = function (node, options = {
     const link = shadowRoot.createChild('div', 'node-link');
     decorateNodeLabel(node, link, options.tooltip);
     link.addEventListener('click', () => {
-        Common.Revealer.reveal(node, false);
+        void Common.Revealer.reveal(node, false);
         return false;
     }, false);
     link.addEventListener('mouseover', node.highlight.bind(node, undefined), false);
@@ -100,7 +100,7 @@ export const linkifyDeferredNodeReference = function (deferredNode, options = {
         UI.ARIAUtils.markAsLink(link);
     }
     function onDeferredNodeResolved(node) {
-        Common.Revealer.reveal(node);
+        void Common.Revealer.reveal(node);
     }
     return root;
 };

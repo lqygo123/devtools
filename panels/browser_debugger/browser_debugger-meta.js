@@ -1,7 +1,6 @@
 // Copyright 2020 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as Root from '../../core/root/root.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import * as i18n from '../../core/i18n/i18n.js';
@@ -76,8 +75,6 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 let loadedBrowserDebuggerModule;
 async function loadBrowserDebuggerModule() {
     if (!loadedBrowserDebuggerModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/browser_debugger');
         loadedBrowserDebuggerModule = await import('./browser_debugger.js');
     }
     return loadedBrowserDebuggerModule;
@@ -90,8 +87,6 @@ let loadedSourcesModule;
 //  collision with node_app as a separate view with the same id is registered in it.
 async function loadSourcesModule() {
     if (!loadedSourcesModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('sources');
         loadedSourcesModule = await import('../sources/sources.js');
     }
     return loadedSourcesModule;

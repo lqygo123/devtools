@@ -123,13 +123,13 @@ export class TimelineController {
         tracingStoppedPromises.push(this.stopProfilingOnAllModels());
         const extensionCompletionPromises = this.extensionSessions.map(session => session.stop());
         if (extensionCompletionPromises.length) {
-            tracingStoppedPromises.push(Promise.race([Promise.all(extensionCompletionPromises), new Promise(r => setTimeout(r, 5000))]));
+            tracingStoppedPromises.push(Promise.race([Promise.all(extensionCompletionPromises), new Promise(r => window.setTimeout(r, 5000))]));
         }
         await Promise.all(tracingStoppedPromises);
     }
     modelAdded(cpuProfilerModel) {
         if (this.profiling) {
-            cpuProfilerModel.startRecording();
+            void cpuProfilerModel.startRecording();
         }
     }
     modelRemoved(_cpuProfilerModel) {
@@ -187,7 +187,7 @@ export class TimelineController {
     }
     allSourcesFinished() {
         this.client.processingStarted();
-        setTimeout(() => this.finalizeTrace(), 0);
+        window.setTimeout(() => this.finalizeTrace(), 0);
     }
     async finalizeTrace() {
         this.injectCpuProfileEvents();

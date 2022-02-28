@@ -7,10 +7,8 @@ import { RemoteObject, RemoteObjectProperty } from './RemoteObject.js';
 import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export declare class RuntimeModel extends SDKModel<EventTypes> {
+    #private;
     readonly agent: ProtocolProxyApi.RuntimeApi;
-    private readonly executionContextById;
-    private executionContextComparatorInternal;
-    private hasSideEffectSupportInternal;
     constructor(target: Target);
     static isSideEffectFailure(response: Protocol.Runtime.EvaluateResponse | EvaluationResult): boolean;
     debuggerModel(): DebuggerModel;
@@ -87,7 +85,7 @@ export interface QueryObjectRequestedEvent {
 }
 export declare type EventTypes = {
     [Events.BindingCalled]: Protocol.Runtime.BindingCalledEvent;
-    [Events.ExecutionContextCreated]: Protocol.Runtime.ExecutionContextDescription;
+    [Events.ExecutionContextCreated]: ExecutionContext;
     [Events.ExecutionContextDestroyed]: ExecutionContext;
     [Events.ExecutionContextChanged]: ExecutionContext;
     [Events.ExecutionContextOrderChanged]: RuntimeModel;
@@ -97,10 +95,10 @@ export declare type EventTypes = {
     [Events.QueryObjectRequested]: QueryObjectRequestedEvent;
 };
 export declare class ExecutionContext {
+    #private;
     id: Protocol.Runtime.ExecutionContextId;
     uniqueId: string;
     name: string;
-    private labelInternal;
     origin: string;
     isDefault: boolean;
     runtimeModel: RuntimeModel;

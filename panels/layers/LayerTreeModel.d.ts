@@ -1,7 +1,7 @@
 import * as SDK from '../../core/sdk/sdk.js';
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
 import type * as Protocol from '../../generated/protocol.js';
-export declare class LayerTreeModel extends SDK.SDKModel.SDKModel {
+export declare class LayerTreeModel extends SDK.SDKModel.SDKModel<EventTypes> {
     readonly layerTreeAgent: ProtocolProxyApi.LayerTreeApi;
     readonly paintProfilerModel: SDK.PaintProfiler.PaintProfilerModel;
     private layerTreeInternal;
@@ -22,6 +22,10 @@ export declare enum Events {
     LayerTreeChanged = "LayerTreeChanged",
     LayerPainted = "LayerPainted"
 }
+export declare type EventTypes = {
+    [Events.LayerTreeChanged]: void;
+    [Events.LayerPainted]: AgentLayer;
+};
 export declare class AgentLayerTree extends SDK.LayerTreeBase.LayerTreeBase {
     private layerTreeModel;
     constructor(layerTreeModel: LayerTreeModel);

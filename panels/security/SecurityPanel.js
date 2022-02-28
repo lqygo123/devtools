@@ -500,8 +500,7 @@ export class SecurityPanel extends UI.Panel.PanelWithSidebar {
         this.sidebarMainViewElement.setSecurityState(visibleSecurityState.securityState);
         this.mainView.updateVisibleSecurityState(visibleSecurityState);
     }
-    onVisibleSecurityStateChanged(event) {
-        const data = event.data;
+    onVisibleSecurityStateChanged({ data }) {
         this.updateVisibleSecurityState(data);
     }
     selectAndSwitchToMainView() {
@@ -711,10 +710,10 @@ export class SecurityPanelSidebarTree extends UI.TreeOutline.TreeOutlineInShadow
         this.elementsByOrigin = new Map();
     }
     originGroupTitle(originGroup) {
-        return /** @type {string} */ this.originGroupTitles.get(originGroup);
+        return this.originGroupTitles.get(originGroup);
     }
     originGroupElement(originGroup) {
-        return /** @type {!UI.TreeOutline.TreeElement} */ this.originGroups.get(originGroup);
+        return this.originGroups.get(originGroup);
     }
     createOriginGroupElement(originGroupTitle) {
         const originGroup = new UI.TreeOutline.TreeElement(originGroupTitle, true);
@@ -1168,7 +1167,7 @@ export class SecurityMainView extends UI.Widget.VBox {
     }
     showNetworkFilter(filterKey, e) {
         e.consume();
-        Common.Revealer.reveal(NetworkForward.UIFilter.UIRequestFilter.filters([{ filterType: NetworkForward.UIFilter.FilterType.MixedContent, filterValue: filterKey }]));
+        void Common.Revealer.reveal(NetworkForward.UIFilter.UIRequestFilter.filters([{ filterType: NetworkForward.UIFilter.FilterType.MixedContent, filterValue: filterKey }]));
     }
     wasShown() {
         super.wasShown();
@@ -1195,7 +1194,7 @@ export class SecurityOriginView extends UI.Widget.VBox {
         const originNetworkButton = UI.UIUtils.createTextButton(i18nString(UIStrings.viewRequestsInNetworkPanel), event => {
             event.consume();
             const parsedURL = new Common.ParsedURL.ParsedURL(origin);
-            Common.Revealer.reveal(NetworkForward.UIFilter.UIRequestFilter.filters([
+            void Common.Revealer.reveal(NetworkForward.UIFilter.UIRequestFilter.filters([
                 { filterType: NetworkForward.UIFilter.FilterType.Domain, filterValue: parsedURL.host },
                 { filterType: NetworkForward.UIFilter.FilterType.Scheme, filterValue: parsedURL.scheme },
             ]));

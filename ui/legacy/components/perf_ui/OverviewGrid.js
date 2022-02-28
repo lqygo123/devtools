@@ -31,7 +31,9 @@ import * as Common from '../../../../core/common/common.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as UI from '../../legacy.js';
+import * as ThemeSupport from '../../theme_support/theme_support.js';
 import { TimelineGrid } from './TimelineGrid.js';
+import overviewGridStyles from './overviewGrid.css.legacy.js';
 const UIStrings = {
     /**
     *@description Label for the window for Overview grids
@@ -131,7 +133,7 @@ export class Window extends Common.ObjectWrapper.ObjectWrapper {
         }
         this.parentElement.addEventListener('wheel', this.onMouseWheel.bind(this), true);
         this.parentElement.addEventListener('dblclick', this.resizeWindowMaximum.bind(this), true);
-        UI.Utils.appendStyle(this.parentElement, 'ui/legacy/components/perf_ui/overviewGrid.css');
+        ThemeSupport.ThemeSupport.instance().appendStyle(this.parentElement, overviewGridStyles);
         this.leftResizeElement = parentElement.createChild('div', 'overview-grid-window-resizer');
         UI.UIUtils.installDragHandle(this.leftResizeElement, this.resizerElementStartDragging.bind(this), this.leftResizeElementDragging.bind(this), null, 'ew-resize');
         this.rightResizeElement = parentElement.createChild('div', 'overview-grid-window-resizer');
@@ -354,11 +356,10 @@ export class Window extends Common.ObjectWrapper.ObjectWrapper {
         this.windowLeft = windowLeft;
         this.windowRight = windowRight;
         this.updateCurtains();
-        let windowPosition;
         if (this.calculator) {
-            windowPosition = this.calculateWindowPosition();
+            this.dispatchEventToListeners(Events.WindowChangedWithPosition, this.calculateWindowPosition());
         }
-        this.dispatchEventToListeners(Events.WindowChanged, windowPosition);
+        this.dispatchEventToListeners(Events.WindowChanged);
     }
     updateCurtains() {
         const windowLeft = this.windowLeft || 0;
@@ -446,6 +447,7 @@ export class Window extends Common.ObjectWrapper.ObjectWrapper {
 export var Events;
 (function (Events) {
     Events["WindowChanged"] = "WindowChanged";
+    Events["WindowChangedWithPosition"] = "WindowChangedWithPosition";
 })(Events || (Events = {}));
 export class WindowSelector {
     startPosition;

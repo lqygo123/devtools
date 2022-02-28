@@ -6,31 +6,31 @@ import * as LitHtml from '../../../ui/lit-html/lit-html.js';
 import elementsPanelLinkStyles from './elementsPanelLink.css.js';
 export class ElementsPanelLink extends HTMLElement {
     static litTagName = LitHtml.literal `devtools-elements-panel-link`;
-    shadow = this.attachShadow({ mode: 'open' });
-    onElementRevealIconClick = () => { };
-    onElementRevealIconMouseEnter = () => { };
-    onElementRevealIconMouseLeave = () => { };
+    #shadow = this.attachShadow({ mode: 'open' });
+    #onElementRevealIconClick = () => { };
+    #onElementRevealIconMouseEnter = () => { };
+    #onElementRevealIconMouseLeave = () => { };
     set data(data) {
-        this.onElementRevealIconClick = data.onElementRevealIconClick;
-        this.onElementRevealIconMouseEnter = data.onElementRevealIconMouseEnter;
-        this.onElementRevealIconMouseLeave = data.onElementRevealIconMouseLeave;
-        this.update();
+        this.#onElementRevealIconClick = data.onElementRevealIconClick;
+        this.#onElementRevealIconMouseEnter = data.onElementRevealIconMouseEnter;
+        this.#onElementRevealIconMouseLeave = data.onElementRevealIconMouseLeave;
+        this.#update();
     }
-    update() {
-        this.render();
+    #update() {
+        this.#render();
     }
     connectedCallback() {
-        this.shadow.adoptedStyleSheets = [elementsPanelLinkStyles];
+        this.#shadow.adoptedStyleSheets = [elementsPanelLinkStyles];
     }
-    render() {
+    #render() {
         // clang-format off
         LitHtml.render(LitHtml.html `
       <span
         class="element-reveal-icon"
-        @click=${this.onElementRevealIconClick}
-        @mouseenter=${this.onElementRevealIconMouseEnter}
-        @mouseleave=${this.onElementRevealIconMouseLeave}></span>
-      `, this.shadow, { host: this });
+        @click=${this.#onElementRevealIconClick}
+        @mouseenter=${this.#onElementRevealIconMouseEnter}
+        @mouseleave=${this.#onElementRevealIconMouseLeave}></span>
+      `, this.#shadow, { host: this });
         // clang-format on
     }
 }

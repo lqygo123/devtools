@@ -5,6 +5,7 @@ import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Common from '../common/common.js';
 import * as HostModule from '../host/host.js';
 import * as Platform from '../platform/platform.js';
+import * as Root from '../root/root.js';
 import { cssMetadata, GridAreaRowRegex } from './CSSMetadata.js';
 export class CSSProperty {
     ownerStyle;
@@ -17,11 +18,10 @@ export class CSSProperty {
     implicit;
     text;
     range;
-    active;
-    nameRangeInternal;
-    valueRangeInternal;
-    invalidProperty;
-    invalidString;
+    #active;
+    #nameRangeInternal;
+    #valueRangeInternal;
+    #invalidString;
     constructor(ownerStyle, index, name, value, important, disabled, parsedOk, implicit, text, range) {
         this.ownerStyle = ownerStyle;
         this.index = index;
@@ -33,10 +33,9 @@ export class CSSProperty {
         this.implicit = implicit; // A longhand, implicitly set by missing values of shorthand.
         this.text = text;
         this.range = range ? TextUtils.TextRange.TextRange.fromObject(range) : null;
-        this.active = true;
-        this.nameRangeInternal = null;
-        this.valueRangeInternal = null;
-        this.invalidProperty = null;
+        this.#active = true;
+        this.#nameRangeInternal = null;
+        this.#valueRangeInternal = null;
     }
     static parsePayload(ownerStyle, index, payload) {
         // The following default field values are used in the payload:
@@ -48,7 +47,7 @@ export class CSSProperty {
         return result;
     }
     ensureRanges() {
-        if (this.nameRangeInternal && this.valueRangeInternal) {
+        if (this.#nameRangeInternal && this.#valueRangeInternal) {
             return;
         }
         const range = this.range;
@@ -63,8 +62,8 @@ export class CSSProperty {
         }
         const nameSourceRange = new TextUtils.TextRange.SourceRange(nameIndex, this.name.length);
         const valueSourceRange = new TextUtils.TextRange.SourceRange(valueIndex, this.value.length);
-        this.nameRangeInternal = rebase(text.toTextRange(nameSourceRange), range.startLine, range.startColumn);
-        this.valueRangeInternal = rebase(text.toTextRange(valueSourceRange), range.startLine, range.startColumn);
+        this.#nameRangeInternal = rebase(text.toTextRange(nameSourceRange), range.startLine, range.startColumn);
+        this.#valueRangeInternal = rebase(text.toTextRange(valueSourceRange), range.startLine, range.startColumn);
         function rebase(oneLineRange, lineOffset, columnOffset) {
             if (oneLineRange.startLine === 0) {
                 oneLineRange.startColumn += columnOffset;
@@ -77,11 +76,11 @@ export class CSSProperty {
     }
     nameRange() {
         this.ensureRanges();
-        return this.nameRangeInternal;
+        return this.#nameRangeInternal;
     }
     valueRange() {
         this.ensureRanges();
-        return this.valueRangeInternal;
+        return this.#valueRangeInternal;
     }
     rebase(edit) {
         if (this.ownerStyle.styleSheetId !== edit.styleSheetId) {
@@ -92,7 +91,7 @@ export class CSSProperty {
         }
     }
     setActive(active) {
-        this.active = active;
+        this.#active = active;
     }
     get propertyText() {
         if (this.text !== undefined) {
@@ -104,7 +103,7 @@ export class CSSProperty {
         return this.name + ': ' + this.value + (this.important ? ' !important' : '') + ';';
     }
     activeInStyle() {
-        return this.active;
+        return this.#active;
     }
     trimmedValueWithoutImportant() {
         const important = '!important';
@@ -141,7 +140,7 @@ export class CSSProperty {
         const styleText = CSSProperty.formatStyle(newStyleText, indentation, endIndentation, tokenizerFactory);
         return this.ownerStyle.setText(styleText, majorChange);
     }
-    static formatStyle(styleText, indentation, endIndentation, tokenizerFactory, codeMirrorMode) {
+    static formatStyle(styleText, indentation, endIndentation, tokenizerFactory) {
         const doubleIndent = indentation.substring(endIndentation.length) + indentation;
         if (indentation) {
             indentation = '\n' + indentation;
@@ -151,7 +150,7 @@ export class CSSProperty {
         let propertyText = '';
         let insideProperty = false;
         let needsSemi = false;
-        const tokenize = tokenizerFactory.createTokenizer('text/css', codeMirrorMode);
+        const tokenize = tokenizerFactory.createTokenizer('text/css');
         tokenize('*{' + styleText + '}', processToken);
         if (insideProperty) {
             result += propertyText;
@@ -160,10 +159,10 @@ export class CSSProperty {
         return result + (indentation ? '\n' + endIndentation : '');
         function processToken(token, tokenType, _column, _newColumn) {
             if (!insideProperty) {
-                const disabledProperty = tokenType && tokenType.includes('css-comment') && isDisabledProperty(token);
+                const disabledProperty = tokenType && tokenType.includes('comment') && isDisabledProperty(token);
                 const isPropertyStart = tokenType &&
-                    (tokenType.includes('css-string') || tokenType.includes('css-meta') || tokenType.includes('css-property') ||
-                        tokenType.includes('css-variable-2'));
+                    (tokenType.includes('string') || tokenType.includes('meta') || tokenType.includes('property') ||
+                        tokenType.includes('variable-2'));
                 if (disabledProperty) {
                     result = result.trimRight() + indentation + token;
                 }
@@ -173,7 +172,7 @@ export class CSSProperty {
                 }
                 else if (token !== ';' || needsSemi) {
                     result += token;
-                    if (token.trim() && !(tokenType && tokenType.includes('css-comment'))) {
+                    if (token.trim() && !(tokenType && tokenType.includes('comment'))) {
                         needsSemi = token !== ';';
                     }
                 }
@@ -189,11 +188,18 @@ export class CSSProperty {
                 // implementation takes special care to restore a single
                 // whitespace token in this edge case. https://crbug.com/1071296
                 const trimmedPropertyText = propertyText.trim();
-                result = result.trimRight() + indentation + trimmedPropertyText +
-                    (trimmedPropertyText.endsWith(':') ? ' ' : '') + ';';
+                result =
+                    result.trimRight() + indentation + trimmedPropertyText + (trimmedPropertyText.endsWith(':') ? ' ' : '');
                 needsSemi = false;
                 insideProperty = false;
                 propertyName = '';
+                if (Root.Runtime.experiments.isEnabled('preciseChanges')) {
+                    result += token;
+                    return;
+                }
+                // We preserve the legacy behavior to always add semicolon to
+                // declarations regardless of its original text.
+                result += ';';
                 if (token === '}') {
                     result += '}';
                 }
@@ -229,7 +235,7 @@ export class CSSProperty {
     }
     setValue(newValue, majorChange, overwrite, userCallback) {
         const text = this.name + ': ' + newValue + (this.important ? ' !important' : '') + ';';
-        this.setText(text, majorChange, overwrite).then(userCallback);
+        void this.setText(text, majorChange, overwrite).then(userCallback);
     }
     setDisabled(disabled) {
         if (!this.ownerStyle) {
@@ -249,13 +255,13 @@ export class CSSProperty {
      * This stores the warning string when a CSS Property is improperly parsed.
      */
     setDisplayedStringForInvalidProperty(invalidString) {
-        this.invalidString = invalidString;
+        this.#invalidString = invalidString;
     }
     /**
      * Retrieve the warning string for a screen reader to announce when editing the property.
      */
     getInvalidStringForInvalidProperty() {
-        return this.invalidString;
+        return this.#invalidString;
     }
 }
 //# sourceMappingURL=CSSProperty.js.map

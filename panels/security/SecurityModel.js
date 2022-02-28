@@ -44,13 +44,13 @@ export class SecurityModel extends SDK.SDKModel.SDKModel {
         this.dispatcher = new SecurityDispatcher(this);
         this.securityAgent = target.securityAgent();
         target.registerSecurityDispatcher(this.dispatcher);
-        this.securityAgent.invoke_enable();
+        void this.securityAgent.invoke_enable();
     }
     resourceTreeModel() {
-        return /** @type {!SDK.ResourceTreeModel.ResourceTreeModel} */ this.target().model(SDK.ResourceTreeModel.ResourceTreeModel);
+        return this.target().model(SDK.ResourceTreeModel.ResourceTreeModel);
     }
     networkManager() {
-        return /** @type {!SDK.NetworkManager.NetworkManager} */ this.target().model(SDK.NetworkManager.NetworkManager);
+        return this.target().model(SDK.NetworkManager.NetworkManager);
     }
     // eslint-disable-next-line @typescript-eslint/naming-convention
     static SecurityStateComparator(a, b) {

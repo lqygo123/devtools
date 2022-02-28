@@ -9,6 +9,7 @@ import * as EmulationModel from '../../models/emulation/emulation.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import * as MobileThrottling from '../mobile_throttling/mobile_throttling.js';
 import * as EmulationComponents from './components/components.js';
+import deviceModeToolbarStyles from './deviceModeToolbar.css.legacy.js';
 const UIStrings = {
     /**
     * @description Title of the device dimensions selection iteam in the Device Mode Toolbar.
@@ -215,10 +216,6 @@ export class DeviceModeToolbar {
     cachedModelMode;
     constructor(model, showMediaInspectorSetting, showRulersSetting) {
         this.model = model;
-        const device = model.device();
-        if (device) {
-            this.recordDeviceChange(device, null);
-        }
         this.showMediaInspectorSetting = showMediaInspectorSetting;
         this.showRulersSetting = showRulersSetting;
         this.experimentDualScreenSupport = Root.Runtime.experiments.isEnabled('dualScreenSupport');
@@ -273,13 +270,6 @@ export class DeviceModeToolbar {
             rightToolbar.setEnabled(enabled);
             modeToolbar.setEnabled(enabled);
             optionsToolbar.setEnabled(enabled);
-        }
-    }
-    recordDeviceChange(device, oldDevice) {
-        if (device !== oldDevice && device && device.isDualScreen) {
-            // When we start emulating a device, whether we start a new emulation session, or switch to
-            // a new device, if the device is dual screen, we count this once.
-            Host.userMetrics.dualScreenDeviceEmulated(Host.UserMetrics.DualScreenDeviceEmulated.DualScreenDeviceSelected);
         }
     }
     createEmptyToolbarElement() {
@@ -366,7 +356,7 @@ export class DeviceModeToolbar {
     }
     appendScaleMenuItems(contextMenu) {
         if (this.model.type() === EmulationModel.DeviceModeModel.Type.Device) {
-            contextMenu.footerSection().appendItem(i18nString(UIStrings.fitToWindowF, { PH1: this.getPrettyZoomPercentage() }), this.onScaleMenuChanged.bind(this, this.model.fitScale()), false);
+            contextMenu.footerSection().appendItem(i18nString(UIStrings.fitToWindowF, { PH1: this.getPrettyFitZoomPercentage() }), this.onScaleMenuChanged.bind(this, this.model.fitScale()), false);
         }
         contextMenu.footerSection().appendCheckboxItem(i18nString(UIStrings.autoadjustZoom), this.onAutoAdjustScaleChanged.bind(this), this.autoAdjustScaleSetting.get());
         const boundAppendScaleItem = appendScaleItem.bind(this);
@@ -436,13 +426,12 @@ export class DeviceModeToolbar {
     }
     wrapToolbarItem(element) {
         const container = document.createElement('div');
-        const shadowRoot = UI.Utils.createShadowRootWithCoreStyles(container, { cssFile: 'panels/emulation/deviceModeToolbar.css', delegatesFocus: undefined });
+        const shadowRoot = UI.Utils.createShadowRootWithCoreStyles(container, { cssFile: deviceModeToolbarStyles, delegatesFocus: undefined });
         shadowRoot.appendChild(element);
         return new UI.Toolbar.ToolbarItem(container);
     }
     emulateDevice(device) {
         const scale = this.autoAdjustScaleSetting.get() ? undefined : this.model.scaleSetting().get();
-        this.recordDeviceChange(device, this.model.device());
         this.model.emulate(EmulationModel.DeviceModeModel.Type.Device, device, this.lastMode.get(device) || device.modes[0], scale);
     }
     switchToResponsive() {
@@ -512,7 +501,6 @@ export class DeviceModeToolbar {
         if (!device || !device.isDualScreen) {
             return;
         }
-        Host.userMetrics.dualScreenDeviceEmulated(Host.UserMetrics.DualScreenDeviceEmulated.SpanButtonClicked);
         const scale = this.autoAdjustScaleSetting.get() ? undefined : this.model.scaleSetting().get();
         const mode = this.model.mode();
         if (!mode) {
@@ -567,7 +555,7 @@ export class DeviceModeToolbar {
         });
         addOrientation(EmulationModel.EmulatedDevices.Vertical, i18nString(UIStrings.portrait));
         addOrientation(EmulationModel.EmulatedDevices.Horizontal, i18nString(UIStrings.landscape));
-        contextMenu.show();
+        void contextMenu.show();
         function addOrientation(orientation, title) {
             if (!device) {
                 return;
@@ -592,6 +580,9 @@ export class DeviceModeToolbar {
             const scale = autoAdjustScaleSetting.get() ? undefined : model.scaleSetting().get();
             model.emulate(model.type(), model.device(), mode, scale);
         }
+    }
+    getPrettyFitZoomPercentage() {
+        return `${(this.model.fitScale() * 100).toFixed(0)}`;
     }
     getPrettyZoomPercentage() {
         return `${(this.model.scale() * 100).toFixed(0)}`;

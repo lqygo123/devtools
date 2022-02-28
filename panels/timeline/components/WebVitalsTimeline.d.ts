@@ -54,33 +54,14 @@ declare type Constructor<T> = {
 };
 export declare function assertInstanceOf<T>(instance: any, constructor: Constructor<T>): asserts instance is T;
 export declare class WebVitalsTimeline extends HTMLElement {
+    #private;
     static readonly litTagName: import("../../../ui/lit-html/static.js").Static;
-    private readonly shadow;
-    private mainFrameNavigations;
-    private startTime;
-    private duration;
-    private maxDuration;
-    private width;
-    private height;
-    private canvas;
-    private hoverLane;
-    private fcpLane;
-    private lcpLane;
-    private layoutShiftsLane;
-    private longTasksLane;
-    private context;
-    private animationFrame;
-    private overlay;
     constructor();
     set data(data: WebVitalsTimelineData);
     getContext(): CanvasRenderingContext2D;
     getLineHeight(): number;
     hideOverlay(): void;
     showOverlay(content: LitHtml.TemplateResult): void;
-    private handlePointerMove;
-    private updateOverlayPosition;
-    private handlePointerOut;
-    private handleClick;
     /**
      * Transform from time to pixel offset
      * @param x
@@ -94,14 +75,7 @@ export declare class WebVitalsTimeline extends HTMLElement {
     setSize(width: number, height: number): void;
     connectedCallback(): void;
     disconnectedCallback(): void;
-    private getMarkerTypeForFCPEvent;
-    private getMarkerTypeForLCPEvent;
-    private getFCPMarkerOverlay;
-    private getLCPMarkerOverlay;
-    private getLongTaskOverlay;
-    private renderMainFrameNavigations;
     getTimeSinceLastMainFrameNavigation(time: number): number;
     render(): void;
-    private scheduleRender;
 }
 export {};

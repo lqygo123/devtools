@@ -78,7 +78,7 @@ export class ImagePreview {
             if (imageAltText) {
                 imageElement.alt = imageAltText;
             }
-            imageResource.populateImageSource(imageElement);
+            void imageResource.populateImageSource(imageElement);
             function buildContent() {
                 const shadowBoundary = document.createElement('div');
                 const shadowRoot = shadowBoundary.attachShadow({ mode: 'open' });

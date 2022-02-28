@@ -29,20 +29,20 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('models/issues_manager/ContentSecurityPolicyIssue.ts', UIStrings);
 const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined, str_);
 export class ContentSecurityPolicyIssue extends Issue {
-    issueDetails;
+    #issueDetails;
     constructor(issueDetails, issuesModel, issueId) {
         const issueCode = [
             "ContentSecurityPolicyIssue" /* ContentSecurityPolicyIssue */,
             issueDetails.contentSecurityPolicyViolationType,
         ].join('::');
         super(issueCode, issuesModel, issueId);
-        this.issueDetails = issueDetails;
+        this.#issueDetails = issueDetails;
     }
     getCategory() {
         return IssueCategory.ContentSecurityPolicy;
     }
     primaryKey() {
-        return JSON.stringify(this.issueDetails, [
+        return JSON.stringify(this.#issueDetails, [
             'blockedURL',
             'contentSecurityPolicyViolationType',
             'violatedDirective',
@@ -55,17 +55,17 @@ export class ContentSecurityPolicyIssue extends Issue {
         ]);
     }
     getDescription() {
-        const description = issueDescriptions.get(this.issueDetails.contentSecurityPolicyViolationType);
+        const description = issueDescriptions.get(this.#issueDetails.contentSecurityPolicyViolationType);
         if (!description) {
             return null;
         }
         return resolveLazyDescription(description);
     }
     details() {
-        return this.issueDetails;
+        return this.#issueDetails;
     }
     getKind() {
-        if (this.issueDetails.isReportOnly) {
+        if (this.#issueDetails.isReportOnly) {
             return IssueKind.Improvement;
         }
         return IssueKind.PageError;

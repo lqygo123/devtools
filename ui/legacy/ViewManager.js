@@ -11,6 +11,7 @@ import { Toolbar, ToolbarMenuButton } from './Toolbar.js';
 import { createTextChild } from './UIUtils.js';
 import { getRegisteredLocationResolvers, getRegisteredViewExtensions, maybeRemoveViewExtension, registerLocationResolver, registerViewExtension, ViewLocationCategoryValues } from './ViewRegistration.js';
 import { VBox } from './Widget.js';
+import viewContainersStyles from './viewContainers.css.legacy.js';
 const UIStrings = {
     /**
     *@description Aria label for the tab panel view container
@@ -20,6 +21,9 @@ const UIStrings = {
 };
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/ViewManager.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
+export const defaultOptionsForTabs = {
+    security: true,
+};
 export class PreRegisteredView {
     viewRegistration;
     widgetRequested;
@@ -35,6 +39,9 @@ export class PreRegisteredView {
     }
     isCloseable() {
         return this.viewRegistration.persistence === "closeable" /* CLOSEABLE */;
+    }
+    isPreviewFeature() {
+        return Boolean(this.viewRegistration.isPreviewFeature);
     }
     isTransient() {
         return this.viewRegistration.persistence === "transient" /* TRANSIENT */;
@@ -182,7 +189,7 @@ export class ViewManager {
             this.locationOverrideSetting.set(locations);
         }
         // Find new location and show view there
-        this.resolveLocation(locationName).then(location => {
+        void this.resolveLocation(locationName).then(location => {
             if (!location) {
                 throw new Error('Move view: Could not resolve location for view: ' + viewId);
             }
@@ -315,7 +322,7 @@ export class ContainerWidget extends VBox {
         return this.materializePromise;
     }
     wasShown() {
-        this.materialize().then(() => {
+        void this.materialize().then(() => {
             const widget = widgetForView.get(this.view);
             if (widget) {
                 widget.show(this.element);
@@ -338,7 +345,7 @@ export class _ExpandableContainerWidget extends VBox {
     constructor(view) {
         super(true);
         this.element.classList.add('flex-none');
-        this.registerRequiredCSS('ui/legacy/viewContainers.css');
+        this.registerRequiredCSS(viewContainersStyles);
         this.titleElement = document.createElement('div');
         this.titleElement.classList.add('expandable-view-title');
         ARIAUtils.markAsButton(this.titleElement);
@@ -358,7 +365,7 @@ export class _ExpandableContainerWidget extends VBox {
     }
     wasShown() {
         if (this.widget && this.materializePromise) {
-            this.materializePromise.then(() => {
+            void this.materializePromise.then(() => {
                 if (this.titleElement.classList.contains('expanded') && this.widget) {
                     this.widget.show(this.element);
                 }
@@ -409,7 +416,7 @@ export class _ExpandableContainerWidget extends VBox {
         this.titleElement.classList.remove('expanded');
         ARIAUtils.setExpanded(this.titleElement, false);
         this.titleExpandIcon.setIconType('smallicon-triangle-right');
-        this.materialize().then(() => {
+        void this.materialize().then(() => {
             if (this.widget) {
                 this.widget.detach();
             }
@@ -423,7 +430,7 @@ export class _ExpandableContainerWidget extends VBox {
             this.collapse();
         }
         else {
-            this.expand();
+            void this.expand();
         }
     }
     onTitleKeyDown(event) {
@@ -436,7 +443,7 @@ export class _ExpandableContainerWidget extends VBox {
         }
         else if (keyEvent.key === 'ArrowRight') {
             if (!this.titleElement.classList.contains('expanded')) {
-                this.expand();
+                void this.expand();
             }
             else if (this.widget) {
                 this.widget.focus();
@@ -514,9 +521,10 @@ export class _TabbedLocation extends Location {
     setOrUpdateCloseableTabsSetting() {
         // Update the setting value, we respect the closed state decided by the user
         // and append the new tabs with value of true so they are shown open
-        const defaultOptionsForTabs = { 'security': true };
         const tabs = this.closeableTabSetting.get();
-        const newClosable = Object.assign(defaultOptionsForTabs, tabs);
+        const newClosable = Object.assign({
+            ...defaultOptionsForTabs,
+        }, tabs);
         this.closeableTabSetting.set(newClosable);
     }
     widget() {
@@ -571,7 +579,7 @@ export class _TabbedLocation extends Location {
                 const view = Array.from(this.views.values()).find(view => view.viewId() === this.defaultTab);
                 if (view) {
                     // defaultTab is indeed part of the views for this tabbed location
-                    this.showView(view);
+                    void this.showView(view);
                 }
             }
         }
@@ -587,7 +595,7 @@ export class _TabbedLocation extends Location {
             if (view.viewId() === 'issues-pane') {
                 contextMenu.defaultSection().appendItem(title, () => {
                     Host.userMetrics.issuesPanelOpenedFrom(Host.UserMetrics.IssueOpener.HamburgerMenu);
-                    this.showView(view, undefined, true);
+                    void this.showView(view, undefined, true);
                 });
                 continue;
             }
@@ -595,7 +603,7 @@ export class _TabbedLocation extends Location {
         }
     }
     appendTab(view, index) {
-        this.tabbedPaneInternal.appendTab(view.viewId(), view.title(), new ContainerWidget(view), undefined, false, view.isCloseable() || view.isTransient(), index);
+        this.tabbedPaneInternal.appendTab(view.viewId(), view.title(), new ContainerWidget(view), undefined, false, view.isCloseable() || view.isTransient(), view.isPreviewFeature(), index);
     }
     appendView(view, insertBefore) {
         if (this.tabbedPaneInternal.hasTab(view.viewId())) {
@@ -660,21 +668,21 @@ export class _TabbedLocation extends Location {
         this.views.delete(view.viewId());
     }
     tabSelected(event) {
-        const tabId = event.data.tabId;
+        const { tabId } = event.data;
         if (this.lastSelectedTabSetting && event.data['isUserGesture']) {
             this.lastSelectedTabSetting.set(tabId);
         }
     }
     tabClosed(event) {
-        const id = event.data['tabId'];
+        const { tabId } = event.data;
         const tabs = this.closeableTabSetting.get();
-        if (tabs[id]) {
-            tabs[id] = false;
+        if (tabs[tabId]) {
+            tabs[tabId] = false;
             this.closeableTabSetting.set(tabs);
         }
-        const view = this.views.get(id);
+        const view = this.views.get(tabId);
         if (view) {
-            view.disposeView();
+            void view.disposeView();
         }
     }
     persistTabOrder() {
@@ -695,6 +703,11 @@ export class _TabbedLocation extends Location {
             tabOrders[key] = ++lastOrder;
         }
         this.tabOrderSetting.set(tabOrders);
+    }
+    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getCloseableTabSetting() {
+        return this.closeableTabSetting.get();
     }
     static orderStep = 10; // Keep in sync with descriptors.
 }

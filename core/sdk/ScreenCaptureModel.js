@@ -5,34 +5,34 @@ import { OverlayModel } from './OverlayModel.js';
 import { Capability } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export class ScreenCaptureModel extends SDKModel {
-    agent;
-    onScreencastFrame;
-    onScreencastVisibilityChanged;
+    #agent;
+    #onScreencastFrame;
+    #onScreencastVisibilityChanged;
     constructor(target) {
         super(target);
-        this.agent = target.pageAgent();
-        this.onScreencastFrame = null;
-        this.onScreencastVisibilityChanged = null;
+        this.#agent = target.pageAgent();
+        this.#onScreencastFrame = null;
+        this.#onScreencastVisibilityChanged = null;
         target.registerPageDispatcher(this);
     }
     startScreencast(format, quality, maxWidth, maxHeight, everyNthFrame, onFrame, onVisibilityChanged) {
-        this.onScreencastFrame = onFrame;
-        this.onScreencastVisibilityChanged = onVisibilityChanged;
-        this.agent.invoke_startScreencast({ format, quality, maxWidth, maxHeight, everyNthFrame });
+        this.#onScreencastFrame = onFrame;
+        this.#onScreencastVisibilityChanged = onVisibilityChanged;
+        void this.#agent.invoke_startScreencast({ format, quality, maxWidth, maxHeight, everyNthFrame });
     }
     stopScreencast() {
-        this.onScreencastFrame = null;
-        this.onScreencastVisibilityChanged = null;
-        this.agent.invoke_stopScreencast();
+        this.#onScreencastFrame = null;
+        this.#onScreencastVisibilityChanged = null;
+        void this.#agent.invoke_stopScreencast();
     }
     async captureScreenshot(format, quality, clip) {
         await OverlayModel.muteHighlight();
-        const result = await this.agent.invoke_captureScreenshot({ format, quality, clip, fromSurface: true, captureBeyondViewport: true });
+        const result = await this.#agent.invoke_captureScreenshot({ format, quality, clip, fromSurface: true, captureBeyondViewport: true });
         await OverlayModel.unmuteHighlight();
         return result.data;
     }
     async fetchLayoutMetrics() {
-        const response = await this.agent.invoke_getLayoutMetrics();
+        const response = await this.#agent.invoke_getLayoutMetrics();
         if (response.getError()) {
             return null;
         }
@@ -45,14 +45,14 @@ export class ScreenCaptureModel extends SDKModel {
         };
     }
     screencastFrame({ data, metadata, sessionId }) {
-        this.agent.invoke_screencastFrameAck({ sessionId });
-        if (this.onScreencastFrame) {
-            this.onScreencastFrame.call(null, data, metadata);
+        void this.#agent.invoke_screencastFrameAck({ sessionId });
+        if (this.#onScreencastFrame) {
+            this.#onScreencastFrame.call(null, data, metadata);
         }
     }
     screencastVisibilityChanged({ visible }) {
-        if (this.onScreencastVisibilityChanged) {
-            this.onScreencastVisibilityChanged.call(null, visible);
+        if (this.#onScreencastVisibilityChanged) {
+            this.#onScreencastVisibilityChanged.call(null, visible);
         }
     }
     backForwardCacheNotUsed(_params) {

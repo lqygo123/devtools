@@ -4,7 +4,6 @@
 import * as i18n from '../../core/i18n/i18n.js';
 import * as IssuesManager from '../../models/issues_manager/issues_manager.js';
 import * as Adorners from '../../ui/components/adorners/adorners.js';
-import * as IconButton from '../../ui/components/icon_button/icon_button.js';
 import * as UI from '../../ui/legacy/legacy.js';
 const UIStrings = {
     /**
@@ -12,39 +11,31 @@ const UIStrings = {
     */
     hiddenIssues: 'Hidden issues',
     /**
-    * @description Title for the Unhide all issues button
+    * @description Label for the button to unhide all hidden issues
     */
-    unhideIssues: 'Unhide all issues',
+    unhideAll: 'Unhide all',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/issues/HiddenIssuesRow.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class HiddenIssuesRow extends UI.TreeOutline.TreeElement {
-    numHiddenAggregatedIssues;
+    #numHiddenAggregatedIssues;
     constructor() {
         super(undefined, true);
-        this.numHiddenAggregatedIssues = document.createElement('span');
+        this.#numHiddenAggregatedIssues = document.createElement('span');
         this.toggleOnClick = true;
         this.listItemElement.classList.add('issue-category', 'hidden-issues');
         this.childrenListElement.classList.add('hidden-issues-body');
-        this.appendHeader();
+        this.#appendHeader();
     }
-    appendHeader() {
-        const unhideAllIssuesBtn = new IconButton.IconButton.IconButton();
-        unhideAllIssuesBtn.classList.add('unhide-all-issues-button');
-        unhideAllIssuesBtn.title = i18nString(UIStrings.unhideIssues);
-        unhideAllIssuesBtn.data = {
-            groups: [{ iconName: 'refresh_12x12_icon', iconHeight: '12px', iconWidth: '12px', text: '' }],
-            clickHandler: () => IssuesManager.IssuesManager.IssuesManager.instance().unhideAllIssues(),
-            accessibleName: i18nString(UIStrings.unhideIssues),
-            compact: true,
-        };
+    #appendHeader() {
+        const unhideAllIssuesBtn = UI.UIUtils.createTextButton(i18nString(UIStrings.unhideAll), () => IssuesManager.IssuesManager.IssuesManager.instance().unhideAllIssues(), 'unhide-all-issues-button');
         const countAdorner = new Adorners.Adorner.Adorner();
         countAdorner.data = {
             name: 'countWrapper',
-            content: this.numHiddenAggregatedIssues,
+            content: this.#numHiddenAggregatedIssues,
         };
         countAdorner.classList.add('aggregated-issues-count');
-        this.numHiddenAggregatedIssues.textContent = '0';
+        this.#numHiddenAggregatedIssues.textContent = '0';
         const header = document.createElement('div');
         const title = document.createElement('div');
         header.classList.add('header');
@@ -56,7 +47,7 @@ export class HiddenIssuesRow extends UI.TreeOutline.TreeElement {
         this.listItemElement.appendChild(header);
     }
     update(count) {
-        this.numHiddenAggregatedIssues.textContent = `${count}`;
+        this.#numHiddenAggregatedIssues.textContent = `${count}`;
     }
 }
 //# sourceMappingURL=HiddenIssuesRow.js.map

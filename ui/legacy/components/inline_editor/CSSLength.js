@@ -39,6 +39,7 @@ export class CSSLength extends HTMLElement {
     onUnitChange(event) {
         this.length.unit = event.target.value;
         this.dispatchEvent(new ValueChangedEvent(`${this.length.value}${this.length.unit}`));
+        this.dispatchEvent(new DraggingFinishedEvent());
         this.render();
     }
     dragValue(event) {
@@ -58,19 +59,22 @@ export class CSSLength extends HTMLElement {
         this.render();
     }
     onValueMousedown(event) {
+        if (event.button !== 0) {
+            return;
+        }
         this.currentMouseClientX = event.clientX;
         const targetDocument = event.target instanceof Node && event.target.ownerDocument;
         if (targetDocument) {
             targetDocument.addEventListener('mousemove', this.onDraggingValue, { capture: true });
             targetDocument.addEventListener('mouseup', (event) => {
+                targetDocument.removeEventListener('mousemove', this.onDraggingValue, { capture: true });
                 if (!this.isDraggingValue) {
                     return;
                 }
                 event.preventDefault();
                 event.stopPropagation();
-                targetDocument.removeEventListener('mousemove', this.onDraggingValue, { capture: true });
                 this.isDraggingValue = false;
-                this.dispatchEvent(new ValueChangedEvent(`${this.length.value}${this.length.unit}`));
+                this.dispatchEvent(new DraggingFinishedEvent());
             }, { once: true, capture: true });
         }
     }
@@ -111,9 +115,12 @@ export class CSSLength extends HTMLElement {
         <span class="value"
           @mousedown=${this.onValueMousedown}
           @mouseup=${this.onValueMouseup}
-        >${this.length.value}</span><select class="unit ${this.length.unit}" @mouseup=${this.onUnitMouseup} @change=${this.onUnitChange}>
-          ${options}
-        </select>
+        >${this.length.value}</span><span class="unit">${this.length.unit}</span><div class="unit-dropdown">
+          <span class="icon"></span>
+          <select @mouseup=${this.onUnitMouseup} @change=${this.onUnitChange}>
+            ${options}
+          </select>
+        </div>
       `;
         // clang-format on
     }

@@ -1,3 +1,6 @@
+// Copyright 2021 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 /*
  * Copyright (C) 2010 Nikita Vasilyev. All rights reserved.
  * Copyright (C) 2010 Joseph Pecoraro. All rights reserved.
@@ -13,7 +16,7 @@
  * copyright notice, this list of conditions and the following disclaimer
  * in the documentation and/or other materials provided with the
  * distribution.
- *     * Neither the name of Google Inc. nor the names of its
+ *     * Neither the #name of Google Inc. nor the names of its
  * contributors may be used to endorse or promote products derived from
  * this software without specific prior written permission.
  *
@@ -33,54 +36,54 @@ import * as SupportedCSSProperties from '../../generated/SupportedCSSProperties.
 import * as Common from '../common/common.js';
 import * as Platform from '../platform/platform.js';
 export class CSSMetadata {
-    values;
-    longhands;
-    shorthands;
-    inherited;
-    svgProperties;
-    propertyValues;
-    aliasesFor;
-    valuesSet;
-    nameValuePresetsInternal;
-    nameValuePresetsIncludingSVG;
+    #values;
+    #longhands;
+    #shorthands;
+    #inherited;
+    #svgProperties;
+    #propertyValues;
+    #aliasesFor;
+    #valuesSet;
+    #nameValuePresetsInternal;
+    #nameValuePresetsIncludingSVG;
     constructor(properties, aliasesFor) {
-        this.values = [];
-        this.longhands = new Map();
-        this.shorthands = new Map();
-        this.inherited = new Set();
-        this.svgProperties = new Set();
-        this.propertyValues = new Map();
-        this.aliasesFor = aliasesFor;
+        this.#values = [];
+        this.#longhands = new Map();
+        this.#shorthands = new Map();
+        this.#inherited = new Set();
+        this.#svgProperties = new Set();
+        this.#propertyValues = new Map();
+        this.#aliasesFor = aliasesFor;
         for (let i = 0; i < properties.length; ++i) {
             const property = properties[i];
             const propertyName = property.name;
             if (!CSS.supports(propertyName, 'initial')) {
                 continue;
             }
-            this.values.push(propertyName);
+            this.#values.push(propertyName);
             if (property.inherited) {
-                this.inherited.add(propertyName);
+                this.#inherited.add(propertyName);
             }
             if (property.svg) {
-                this.svgProperties.add(propertyName);
+                this.#svgProperties.add(propertyName);
             }
             const longhands = properties[i].longhands;
             if (longhands) {
-                this.longhands.set(propertyName, longhands);
+                this.#longhands.set(propertyName, longhands);
                 for (let j = 0; j < longhands.length; ++j) {
                     const longhandName = longhands[j];
-                    let shorthands = this.shorthands.get(longhandName);
+                    let shorthands = this.#shorthands.get(longhandName);
                     if (!shorthands) {
                         shorthands = [];
-                        this.shorthands.set(longhandName, shorthands);
+                        this.#shorthands.set(longhandName, shorthands);
                     }
                     shorthands.push(propertyName);
                 }
             }
         }
-        this.values.sort(CSSMetadata.sortPrefixesToEnd);
-        this.valuesSet = new Set(this.values);
-        // Reads in auto-generated property names and values from blink/public/renderer/core/css/css_properties.json5
+        this.#values.sort(CSSMetadata.sortPrefixesToEnd);
+        this.#valuesSet = new Set(this.#values);
+        // Reads in auto-generated property names and #values from blink/public/renderer/core/css/css_properties.json5
         // treats _generatedPropertyValues as basis
         const propertyValueSets = new Map();
         for (const [propertyName, basisValueObj] of Object.entries(SupportedCSSProperties.generatedPropertyValues)) {
@@ -96,7 +99,7 @@ export class CSSMetadata {
                 propertyValueSets.set(propertyName, new Set(extraValueObj.values));
             }
         }
-        // finally add common keywords to value sets and convert property values
+        // finally add common keywords to value sets and convert property #values
         // into arrays since callers expect arrays
         for (const [propertyName, values] of propertyValueSets) {
             for (const commonKeyword of CommonKeywords) {
@@ -104,19 +107,19 @@ export class CSSMetadata {
                     values.add(commonKeyword);
                 }
             }
-            this.propertyValues.set(propertyName, [...values]);
+            this.#propertyValues.set(propertyName, [...values]);
         }
-        this.nameValuePresetsInternal = [];
-        this.nameValuePresetsIncludingSVG = [];
-        for (const name of this.valuesSet) {
+        this.#nameValuePresetsInternal = [];
+        this.#nameValuePresetsIncludingSVG = [];
+        for (const name of this.#valuesSet) {
             const values = this.specificPropertyValues(name)
                 .filter(value => CSS.supports(name, value))
                 .sort(CSSMetadata.sortPrefixesToEnd);
             const presets = values.map(value => `${name}: ${value}`);
             if (!this.isSVGProperty(name)) {
-                this.nameValuePresetsInternal.push(...presets);
+                this.#nameValuePresetsInternal.push(...presets);
             }
-            this.nameValuePresetsIncludingSVG.push(...presets);
+            this.#nameValuePresetsIncludingSVG.push(...presets);
         }
     }
     static sortPrefixesToEnd(a, b) {
@@ -131,20 +134,20 @@ export class CSSMetadata {
         return a < b ? -1 : (a > b ? 1 : 0);
     }
     allProperties() {
-        return this.values;
+        return this.#values;
     }
     nameValuePresets(includeSVG) {
-        return includeSVG ? this.nameValuePresetsIncludingSVG : this.nameValuePresetsInternal;
+        return includeSVG ? this.#nameValuePresetsIncludingSVG : this.#nameValuePresetsInternal;
     }
     isSVGProperty(name) {
         name = name.toLowerCase();
-        return this.svgProperties.has(name);
+        return this.#svgProperties.has(name);
     }
     getLonghands(shorthand) {
-        return this.longhands.get(shorthand) || null;
+        return this.#longhands.get(shorthand) || null;
     }
     getShorthands(longhand) {
-        return this.shorthands.get(longhand) || null;
+        return this.#shorthands.get(longhand) || null;
     }
     isColorAwareProperty(propertyName) {
         return colorAwareProperties.has(propertyName.toLowerCase()) || this.isCustomProperty(propertyName.toLowerCase());
@@ -189,7 +192,7 @@ export class CSSMetadata {
     isStringProperty(propertyName) {
         propertyName = propertyName.toLowerCase();
         // TODO(crbug.com/1033910): Generalize this to all CSS properties
-        // that accept <string> values.
+        // that accept <string> #values.
         return propertyName === 'content';
     }
     canonicalPropertyName(name) {
@@ -197,7 +200,7 @@ export class CSSMetadata {
             return name;
         }
         name = name.toLowerCase();
-        const aliasFor = this.aliasesFor.get(name);
+        const aliasFor = this.#aliasesFor.get(name);
         if (aliasFor) {
             return aliasFor;
         }
@@ -205,7 +208,7 @@ export class CSSMetadata {
             return name;
         }
         const match = name.match(/(?:-webkit-)(.+)/);
-        if (!match || !this.valuesSet.has(match[1])) {
+        if (!match || !this.#valuesSet.has(match[1])) {
             return name;
         }
         return match[1];
@@ -216,17 +219,17 @@ export class CSSMetadata {
             propertyName.startsWith('-ms-') || propertyName.startsWith('-o-') || propertyName.startsWith('-webkit-')) {
             return true;
         }
-        return this.valuesSet.has(propertyName);
+        return this.#valuesSet.has(propertyName);
     }
     isPropertyInherited(propertyName) {
         propertyName = propertyName.toLowerCase();
-        return propertyName.startsWith('--') || this.inherited.has(this.canonicalPropertyName(propertyName)) ||
-            this.inherited.has(propertyName);
+        return propertyName.startsWith('--') || this.#inherited.has(this.canonicalPropertyName(propertyName)) ||
+            this.#inherited.has(propertyName);
     }
     specificPropertyValues(propertyName) {
         const unprefixedName = propertyName.replace(/^-webkit-/, '');
-        const propertyValues = this.propertyValues;
-        // propertyValues acts like cache; missing properties are added with possible common keywords
+        const propertyValues = this.#propertyValues;
+        // #propertyValues acts like cache; missing properties are added with possible common keywords
         let keywords = propertyValues.get(propertyName) || propertyValues.get(unprefixedName);
         if (!keywords) {
             keywords = [];
@@ -280,7 +283,7 @@ export const URLRegex = /url\(\s*('.+?'|".+?"|[^)]+)\s*\)/g;
  *    "a a ."
  *
  * 'grid', 'grid-template', e.g.
- *    [track-name] "a a ." minmax(50px, auto) [track-name]
+ *    [track-#name] "a a ." minmax(50px, auto) [track-#name]
  */
 export const GridAreaRowRegex = /((?:\[[\w\- ]+\]\s*)*(?:"[^"]+"|'[^']+'))[^'"\[]*\[?[^'"\[]*/;
 let cssMetadataInstance = null;
@@ -444,7 +447,7 @@ const angleAwareProperties = new Set([
     'offset-rotate',
     'font-style',
 ]);
-// manually maintained list of property values to add into autocomplete list
+// manually maintained list of property #values to add into autocomplete list
 const extraPropertyValues = {
     'background-repeat': { values: ['repeat', 'repeat-x', 'repeat-y', 'no-repeat', 'space', 'round'] },
     'content': { values: ['normal', 'close-quote', 'no-close-quote', 'no-open-quote', 'open-quote'] },
@@ -512,7 +515,6 @@ const extraPropertyValues = {
             'ui-monospace',
             'ui-rounded',
             '-webkit-body',
-            '-webkit-pictograph',
         ],
     },
     'zoom': { values: ['normal'] },

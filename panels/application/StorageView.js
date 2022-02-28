@@ -7,7 +7,6 @@ import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as PerfUI from '../../ui/legacy/components/perf_ui/perf_ui.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { ApplicationCacheModel } from './ApplicationCacheModel.js';
 import { DatabaseModel } from './DatabaseModel.js';
 import { DOMStorageModel } from './DOMStorageModel.js';
 import { IndexedDBModel } from './IndexedDBModel.js';
@@ -82,10 +81,6 @@ const UIStrings = {
      * @description Checkbox label in the Clear Storage section of the Storage View of the Application panel
      */
     cacheStorage: 'Cache storage',
-    /**
-     * @description Checkbox label in the Clear Storage section of the Storage View of the Application panel
-     */
-    applicationCache: 'Application cache',
     /**
      * @description Checkbox label in the Clear Storage section of the Storage View of the Application panel
      */
@@ -174,9 +169,7 @@ export class StorageView extends UI.ThrottledWidget.ThrottledWidget {
         this.reportView = new UI.ReportView.ReportView(i18nString(UIStrings.storageTitle));
         this.reportView.element.classList.add('clear-storage-header');
         this.reportView.show(this.contentElement);
-        /** @type {?SDK.Target.Target} */
         this.target = null;
-        /** @type {?string} */
         this.securityOrigin = null;
         this.settings = new Map();
         for (const type of AllStorageTypes) {
@@ -203,19 +196,18 @@ export class StorageView extends UI.ThrottledWidget.ThrottledWidget {
         quotaOverrideCheckboxRow.appendChild(this.quotaOverrideCheckbox);
         this.quotaOverrideCheckbox.checkboxElement.addEventListener('click', this.onClickCheckbox.bind(this), false);
         this.quotaOverrideControlRow = quota.appendRow();
-        /** @type {!HTMLInputElement} */
         this.quotaOverrideEditor =
             this.quotaOverrideControlRow.createChild('input', 'quota-override-notification-editor');
         this.quotaOverrideControlRow.appendChild(UI.UIUtils.createLabel(i18nString(UIStrings.mb)));
         this.quotaOverrideControlRow.classList.add('hidden');
         this.quotaOverrideEditor.addEventListener('keyup', event => {
             if (event.key === 'Enter') {
-                this.applyQuotaOverrideFromInputField();
+                void this.applyQuotaOverrideFromInputField();
                 event.consume(true);
             }
         });
         this.quotaOverrideEditor.addEventListener('focusout', event => {
-            this.applyQuotaOverrideFromInputField();
+            void this.applyQuotaOverrideFromInputField();
             event.consume(true);
         });
         const errorMessageRow = quota.appendRow();
@@ -238,7 +230,6 @@ export class StorageView extends UI.ThrottledWidget.ThrottledWidget {
         storage.markFieldListAsGroup();
         const caches = this.reportView.appendSection(i18nString(UIStrings.cache));
         this.appendItem(caches, i18nString(UIStrings.cacheStorage), "cache_storage" /* Cache_storage */);
-        this.appendItem(caches, i18nString(UIStrings.applicationCache), "appcache" /* Appcache */);
         caches.markFieldListAsGroup();
         SDK.TargetManager.TargetManager.instance().observeTargets(this);
     }
@@ -284,7 +275,7 @@ export class StorageView extends UI.ThrottledWidget.ThrottledWidget {
             this.quotaOverrideCheckbox.checkboxElement.checked = false;
             this.quotaOverrideErrorMessage.textContent = '';
         }
-        this.doUpdate();
+        void this.doUpdate();
     }
     async applyQuotaOverrideFromInputField() {
         if (!this.target || !this.securityOrigin) {
@@ -349,20 +340,20 @@ export class StorageView extends UI.ThrottledWidget.ThrottledWidget {
         this.clearButton.disabled = true;
         const label = this.clearButton.textContent;
         this.clearButton.textContent = i18nString(UIStrings.clearing);
-        setTimeout(() => {
+        window.setTimeout(() => {
             this.clearButton.disabled = false;
             this.clearButton.textContent = label;
             this.clearButton.focus();
         }, 500);
     }
     static clear(target, securityOrigin, selectedStorageTypes, includeThirdPartyCookies) {
-        target.storageAgent().invoke_clearDataForOrigin({ origin: securityOrigin, storageTypes: selectedStorageTypes.join(',') });
+        void target.storageAgent().invoke_clearDataForOrigin({ origin: securityOrigin, storageTypes: selectedStorageTypes.join(',') });
         const set = new Set(selectedStorageTypes);
         const hasAll = set.has("all" /* All */);
         if (set.has("cookies" /* Cookies */) || hasAll) {
             const cookieModel = target.model(SDK.CookieModel.CookieModel);
             if (cookieModel) {
-                cookieModel.clear(undefined, includeThirdPartyCookies ? undefined : securityOrigin);
+                void cookieModel.clear(undefined, includeThirdPartyCookies ? undefined : securityOrigin);
             }
         }
         if (set.has("indexeddb" /* Indexeddb */) || hasAll) {
@@ -393,12 +384,6 @@ export class StorageView extends UI.ThrottledWidget.ThrottledWidget {
                 model.clearForOrigin(securityOrigin);
             }
         }
-        if (set.has("appcache" /* Appcache */) || hasAll) {
-            const appcacheModel = target.model(ApplicationCacheModel);
-            if (appcacheModel) {
-                appcacheModel.reset();
-            }
-        }
     }
     async doUpdate() {
         if (!this.securityOrigin || !this.target) {
@@ -406,7 +391,7 @@ export class StorageView extends UI.ThrottledWidget.ThrottledWidget {
             this.populatePieChart(0, []);
             return;
         }
-        const securityOrigin = /** @type {string} */ (this.securityOrigin);
+        const securityOrigin = this.securityOrigin;
         const response = await this.target.storageAgent().invoke_getUsageAndQuota({ origin: securityOrigin });
         this.quotaRow.textContent = '';
         if (response.getError()) {
@@ -427,7 +412,6 @@ export class StorageView extends UI.ThrottledWidget.ThrottledWidget {
         }
         if (this.quotaUsage === null || this.quotaUsage !== response.usage) {
             this.quotaUsage = response.usage;
-            /** @type {!Array<!PerfUI.PieChart.Slice>} */
             const slices = [];
             for (const usageForType of response.usageBreakdown.sort((a, b) => b.usage - a.usage)) {
                 const value = usageForType.usage;

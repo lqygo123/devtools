@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 const sheet = new CSSStyleSheet();
@@ -23,8 +23,6 @@ style.setProperty('--image-file-popoverArrows', 'url(\"' + new URL('./popoverArr
 style.setProperty('--image-file-profileGroupIcon', 'url(\"' + new URL('./profileGroupIcon.png', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-profileIcon', 'url(\"' + new URL('./profileIcon.png', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-profileSmallIcon', 'url(\"' + new URL('./profileSmallIcon.png', import.meta.url).toString() + '\")');
-style.setProperty('--image-file-radioDot-dark-theme', 'url(\"' + new URL('./radioDot-dark-theme.png', import.meta.url).toString() + '\")');
-style.setProperty('--image-file-radioDot', 'url(\"' + new URL('./radioDot.png', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-resourcesTimeGraphIcon', 'url(\"' + new URL('./resourcesTimeGraphIcon.avif', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-searchNext', 'url(\"' + new URL('./searchNext.png', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-searchPrev', 'url(\"' + new URL('./searchPrev.png', import.meta.url).toString() + '\")');
@@ -57,13 +55,15 @@ style.setProperty('--image-file-checkboxCheckmark', 'url(\"' + new URL(new URL('
 style.setProperty('--image-file-chevrons', 'url(\"' + new URL(new URL('chevrons.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-chromeSelect', 'url(\"' + new URL(new URL('chromeSelect.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-chromeSelectDark', 'url(\"' + new URL(new URL('chromeSelectDark.svg', import.meta.url).href, import.meta.url).toString() + '\")');
+style.setProperty('--image-file-circled_backslash_icon', 'url(\"' + new URL(new URL('circled_backslash_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
+style.setProperty('--image-file-circled_exclamation_icon', 'url(\"' + new URL(new URL('circled_exclamation_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-close-icon', 'url(\"' + new URL(new URL('close-icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
+style.setProperty('--image-file-copy_icon', 'url(\"' + new URL(new URL('copy_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-dropdown_7x6_icon', 'url(\"' + new URL(new URL('dropdown_7x6_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-elements_panel_icon', 'url(\"' + new URL(new URL('elements_panel_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-errorWave', 'url(\"' + new URL(new URL('errorWave.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-error_icon', 'url(\"' + new URL(new URL('error_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
-style.setProperty('--image-file-exclamation_mark_circle_icon', 'url(\"' + new URL(new URL('exclamation_mark_circle_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
-style.setProperty('--image-file-feedback_thin_16x16_icon', 'url(\"' + new URL(new URL('feedback_thin_16x16_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
+style.setProperty('--image-file-feedback_button_icon', 'url(\"' + new URL(new URL('feedback_button_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-flex-direction-icon', 'url(\"' + new URL(new URL('flex-direction-icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-flex-nowrap-icon', 'url(\"' + new URL(new URL('flex-nowrap-icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-flex-wrap-icon', 'url(\"' + new URL(new URL('flex-wrap-icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
@@ -94,6 +94,7 @@ style.setProperty('--image-file-ic_info_black_18dp', 'url(\"' + new URL(new URL(
 style.setProperty('--image-file-ic_memory_16x16', 'url(\"' + new URL(new URL('ic_memory_16x16.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-ic_page_next_16x16_icon', 'url(\"' + new URL(new URL('ic_page_next_16x16_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-ic_page_prev_16x16_icon', 'url(\"' + new URL(new URL('ic_page_prev_16x16_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
+style.setProperty('--image-file-ic_preview_feature', 'url(\"' + new URL(new URL('ic_preview_feature.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-ic_redo_16x16_icon', 'url(\"' + new URL(new URL('ic_redo_16x16_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-ic_request_response', 'url(\"' + new URL(new URL('ic_request_response.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-ic_response', 'url(\"' + new URL(new URL('ic_response.svg', import.meta.url).href, import.meta.url).toString() + '\")');
@@ -101,6 +102,7 @@ style.setProperty('--image-file-ic_show_node_16x16', 'url(\"' + new URL(new URL(
 style.setProperty('--image-file-ic_suggest_color', 'url(\"' + new URL(new URL('ic_suggest_color.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-ic_undo_16x16_icon', 'url(\"' + new URL(new URL('ic_undo_16x16_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-ic_warning_black_18dp', 'url(\"' + new URL(new URL('ic_warning_black_18dp.svg', import.meta.url).href, import.meta.url).toString() + '\")');
+style.setProperty('--image-file-info-icon', 'url(\"' + new URL(new URL('info-icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-issue-cross-icon', 'url(\"' + new URL(new URL('issue-cross-icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-issue-exclamation-icon', 'url(\"' + new URL(new URL('issue-exclamation-icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-issue-questionmark-icon', 'url(\"' + new URL(new URL('issue-questionmark-icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
@@ -122,6 +124,7 @@ style.setProperty('--image-file-mediumIcons', 'url(\"' + new URL(new URL('medium
 style.setProperty('--image-file-network_conditions_icon', 'url(\"' + new URL(new URL('network_conditions_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-network_panel_icon', 'url(\"' + new URL(new URL('network_panel_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-node_search_icon', 'url(\"' + new URL(new URL('node_search_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
+style.setProperty('--image-file-preview_feature_video_thumbnail', 'url(\"' + new URL(new URL('preview_feature_video_thumbnail.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-refresh_12x12_icon', 'url(\"' + new URL(new URL('refresh_12x12_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-resizeDiagonal', 'url(\"' + new URL(new URL('resizeDiagonal.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-resizeHorizontal', 'url(\"' + new URL(new URL('resizeHorizontal.svg', import.meta.url).href, import.meta.url).toString() + '\")');
@@ -130,6 +133,7 @@ style.setProperty('--image-file-securityIcons', 'url(\"' + new URL(new URL('secu
 style.setProperty('--image-file-settings_14x14_icon', 'url(\"' + new URL(new URL('settings_14x14_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-smallIcons', 'url(\"' + new URL(new URL('smallIcons.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-sources_panel_icon', 'url(\"' + new URL(new URL('sources_panel_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
+style.setProperty('--image-file-survey_feedback_icon', 'url(\"' + new URL(new URL('survey_feedback_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-switcherIcon', 'url(\"' + new URL(new URL('switcherIcon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-three_dots_menu_icon', 'url(\"' + new URL(new URL('three_dots_menu_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');
 style.setProperty('--image-file-trash_bin_icon', 'url(\"' + new URL(new URL('trash_bin_icon.svg', import.meta.url).href, import.meta.url).toString() + '\")');

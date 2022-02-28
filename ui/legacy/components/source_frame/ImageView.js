@@ -35,6 +35,7 @@ import * as Platform from '../../../../core/platform/platform.js';
 import * as TextUtils from '../../../../models/text_utils/text_utils.js';
 import * as Workspace from '../../../../models/workspace/workspace.js';
 import * as UI from '../../legacy.js';
+import imageViewStyles from './imageView.css.legacy.js';
 const UIStrings = {
     /**
     *@description Text in Image View of the Sources panel
@@ -93,7 +94,7 @@ export class ImageView extends UI.View.SimpleView {
     cachedContent;
     constructor(mimeType, contentProvider) {
         super(i18nString(UIStrings.image));
-        this.registerRequiredCSS('ui/legacy/components/source_frame/imageView.css');
+        this.registerRequiredCSS(imageViewStyles);
         this.element.tabIndex = -1;
         this.element.classList.add('image-view');
         this.url = contentProvider.contentURL();
@@ -128,7 +129,7 @@ export class ImageView extends UI.View.SimpleView {
         ];
     }
     wasShown() {
-        this.updateContentIfNeeded();
+        void this.updateContentIfNeeded();
     }
     disposeView() {
         if (this.uiSourceCode) {
@@ -136,7 +137,7 @@ export class ImageView extends UI.View.SimpleView {
         }
     }
     workingCopyCommitted() {
-        this.updateContentIfNeeded();
+        void this.updateContentIfNeeded();
     }
     async updateContentIfNeeded() {
         const { content } = await this.contentProvider.requestContent();
@@ -170,7 +171,7 @@ export class ImageView extends UI.View.SimpleView {
         contextMenu.clipboardSection().appendItem(i18nString(UIStrings.saveImageAs), async () => {
             await this.saveImage();
         });
-        contextMenu.show();
+        void contextMenu.show();
     }
     copyImageAsDataURL() {
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(this.imagePreviewElement.src);

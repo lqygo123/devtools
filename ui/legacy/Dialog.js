@@ -33,6 +33,7 @@ import { GlassPane } from './GlassPane.js';
 import { InspectorView } from './InspectorView.js';
 import { KeyboardShortcut, Keys } from './KeyboardShortcut.js';
 import { WidgetFocusRestorer } from './Widget.js';
+import dialogStyles from './dialog.css.legacy.js';
 export class Dialog extends Common.ObjectWrapper.eventMixin(GlassPane) {
     tabIndexBehavior;
     tabIndexMap;
@@ -43,7 +44,7 @@ export class Dialog extends Common.ObjectWrapper.eventMixin(GlassPane) {
     escapeKeyCallback;
     constructor() {
         super();
-        this.registerRequiredCSS('ui/legacy/dialog.css');
+        this.registerRequiredCSS(dialogStyles);
         this.contentElement.tabIndex = 0;
         this.contentElement.addEventListener('focus', () => this.widget().focus(), false);
         this.widget().setDefaultFocusedElement(this.contentElement);
@@ -115,9 +116,15 @@ export class Dialog extends Common.ObjectWrapper.eventMixin(GlassPane) {
             if (node instanceof HTMLElement) {
                 const element = node;
                 const tabIndex = element.tabIndex;
-                if (tabIndex >= 0 && (!exclusionSet || !exclusionSet.has(element))) {
-                    this.tabIndexMap.set(element, tabIndex);
-                    element.tabIndex = -1;
+                if (!exclusionSet?.has(element)) {
+                    if (tabIndex >= 0) {
+                        this.tabIndexMap.set(element, tabIndex);
+                        element.tabIndex = -1;
+                    }
+                    else if (element.hasAttribute('contenteditable')) {
+                        this.tabIndexMap.set(element, element.hasAttribute('tabindex') ? tabIndex : 0);
+                        element.tabIndex = -1;
+                    }
                 }
             }
         }

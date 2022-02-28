@@ -7,7 +7,7 @@ const UIStrings = {
     /**
     *@description Label for the link for CORS private network issues
     */
-    corsForPrivateNetworksRfc: 'CORS for private networks (RFC1918)',
+    corsPrivateNetworkAccess: 'Private Network Access',
     /**
     *@description Label for the link for CORS network issues
     */
@@ -20,7 +20,6 @@ const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export var IssueCode;
 (function (IssueCode) {
     IssueCode["InsecurePrivateNetwork"] = "CorsIssue::InsecurePrivateNetwork";
-    IssueCode["InsecurePrivateNetworkPreflight"] = "CorsIssue::InsecurePrivateNetworkPreflight";
     IssueCode["InvalidHeaderValues"] = "CorsIssue::InvalidHeaders";
     IssueCode["WildcardOriginNotAllowed"] = "CorsIssue::WildcardOriginWithCredentials";
     IssueCode["PreflightResponseInvalid"] = "CorsIssue::PreflightResponseInvalid";
@@ -31,10 +30,14 @@ export var IssueCode;
     IssueCode["RedirectContainsCredentials"] = "CorsIssue::RedirectContainsCredentials";
     IssueCode["DisallowedByMode"] = "CorsIssue::DisallowedByMode";
     IssueCode["CorsDisabledScheme"] = "CorsIssue::CorsDisabledScheme";
+    // TODO(https://crbug.com/1263483): Remove this once it's removed from CDP.
     IssueCode["PreflightMissingAllowExternal"] = "CorsIssue::PreflightMissingAllowExternal";
+    // TODO(https://crbug.com/1263483): Remove this once it's removed from CDP.
     IssueCode["PreflightInvalidAllowExternal"] = "CorsIssue::PreflightInvalidAllowExternal";
-    IssueCode["InvalidResponse"] = "CorsIssue::InvalidResponse";
     IssueCode["NoCorsRedirectModeNotFollow"] = "CorsIssue::NoCorsRedirectModeNotFollow";
+    IssueCode["InvalidPrivateNetworkAccess"] = "CorsIssue::InvalidPrivateNetworkAccess";
+    IssueCode["UnexpectedPrivateNetworkAccess"] = "CorsIssue::UnexpectedPrivateNetworkAccess";
+    IssueCode["PreflightAllowPrivateNetworkError"] = "CorsIssue::PreflightAllowPrivateNetworkError";
 })(IssueCode || (IssueCode = {}));
 function getIssueCode(details) {
     switch (details.corsErrorStatus.corsError) {
@@ -52,6 +55,7 @@ function getIssueCode(details) {
             return IssueCode.WildcardOriginNotAllowed;
         case "PreflightInvalidStatus" /* PreflightInvalidStatus */:
         case "PreflightDisallowedRedirect" /* PreflightDisallowedRedirect */:
+        case "InvalidResponse" /* InvalidResponse */:
             return IssueCode.PreflightResponseInvalid;
         case "AllowOriginMismatch" /* AllowOriginMismatch */:
         case "PreflightAllowOriginMismatch" /* PreflightAllowOriginMismatch */:
@@ -73,43 +77,47 @@ function getIssueCode(details) {
             return IssueCode.PreflightMissingAllowExternal;
         case "PreflightInvalidAllowExternal" /* PreflightInvalidAllowExternal */:
             return IssueCode.PreflightInvalidAllowExternal;
-        case "InvalidResponse" /* InvalidResponse */:
-            return IssueCode.InvalidResponse;
         case "InsecurePrivateNetwork" /* InsecurePrivateNetwork */:
-            return details.clientSecurityState?.initiatorIsSecureContext ? IssueCode.InsecurePrivateNetworkPreflight :
-                IssueCode.InsecurePrivateNetwork;
+            return IssueCode.InsecurePrivateNetwork;
         case "NoCorsRedirectModeNotFollow" /* NoCorsRedirectModeNotFollow */:
             return IssueCode.NoCorsRedirectModeNotFollow;
+        case "InvalidPrivateNetworkAccess" /* InvalidPrivateNetworkAccess */:
+            return IssueCode.InvalidPrivateNetworkAccess;
+        case "UnexpectedPrivateNetworkAccess" /* UnexpectedPrivateNetworkAccess */:
+            return IssueCode.UnexpectedPrivateNetworkAccess;
+        case "PreflightMissingAllowPrivateNetwork" /* PreflightMissingAllowPrivateNetwork */:
+        case "PreflightInvalidAllowPrivateNetwork" /* PreflightInvalidAllowPrivateNetwork */:
+            return IssueCode.PreflightAllowPrivateNetworkError;
     }
 }
 export class CorsIssue extends Issue {
-    issueDetails;
+    #issueDetails;
     constructor(issueDetails, issuesModel, issueId) {
         super(getIssueCode(issueDetails), issuesModel, issueId);
-        this.issueDetails = issueDetails;
+        this.#issueDetails = issueDetails;
     }
     getCategory() {
         return IssueCategory.Cors;
     }
     details() {
-        return this.issueDetails;
+        return this.#issueDetails;
     }
     getDescription() {
-        switch (getIssueCode(this.issueDetails)) {
+        switch (getIssueCode(this.#issueDetails)) {
             case IssueCode.InsecurePrivateNetwork:
                 return {
                     file: 'corsInsecurePrivateNetwork.md',
                     links: [{
                             link: 'https://developer.chrome.com/blog/private-network-access-update',
-                            linkTitle: i18nString(UIStrings.corsForPrivateNetworksRfc),
+                            linkTitle: i18nString(UIStrings.corsPrivateNetworkAccess),
                         }],
                 };
-            case IssueCode.InsecurePrivateNetworkPreflight:
+            case IssueCode.PreflightAllowPrivateNetworkError:
                 return {
-                    file: 'corsInsecurePrivateNetworkPreflight.md',
+                    file: 'corsPreflightAllowPrivateNetworkError.md',
                     links: [{
                             link: 'https://developer.chrome.com/blog/private-network-access-update',
-                            linkTitle: i18nString(UIStrings.corsForPrivateNetworksRfc),
+                            linkTitle: i18nString(UIStrings.corsPrivateNetworkAccess),
                         }],
                 };
             case IssueCode.InvalidHeaderValues:
@@ -202,16 +210,21 @@ export class CorsIssue extends Issue {
                 };
             case IssueCode.PreflightMissingAllowExternal:
             case IssueCode.PreflightInvalidAllowExternal:
-            case IssueCode.InvalidResponse:
+            case IssueCode.InvalidPrivateNetworkAccess:
+            case IssueCode.UnexpectedPrivateNetworkAccess:
                 return null;
         }
     }
     primaryKey() {
-        return JSON.stringify(this.issueDetails);
+        return JSON.stringify(this.#issueDetails);
     }
     getKind() {
-        if (this.issueDetails.isWarning &&
-            this.issueDetails.corsErrorStatus.corsError === "InsecurePrivateNetwork" /* InsecurePrivateNetwork */) {
+        if (this.#issueDetails.isWarning &&
+            (this.#issueDetails.corsErrorStatus.corsError === "InsecurePrivateNetwork" /* InsecurePrivateNetwork */ ||
+                this.#issueDetails.corsErrorStatus.corsError ===
+                    "PreflightMissingAllowPrivateNetwork" /* PreflightMissingAllowPrivateNetwork */ ||
+                this.#issueDetails.corsErrorStatus.corsError ===
+                    "PreflightInvalidAllowPrivateNetwork" /* PreflightInvalidAllowPrivateNetwork */)) {
             return IssueKind.BreakingChange;
         }
         return IssueKind.PageError;

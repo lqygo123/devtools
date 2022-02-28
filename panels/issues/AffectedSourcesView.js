@@ -13,10 +13,10 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/issues/AffectedSourcesView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class AffectedSourcesView extends AffectedResourcesView {
-    appendAffectedSources(affectedSources) {
+    #appendAffectedSources(affectedSources) {
         let count = 0;
         for (const source of affectedSources) {
-            this.appendAffectedSource(source);
+            this.#appendAffectedSource(source);
             count++;
         }
         this.updateAffectedResourceCount(count);
@@ -24,7 +24,7 @@ export class AffectedSourcesView extends AffectedResourcesView {
     getResourceNameWithCount(count) {
         return i18nString(UIStrings.nSources, { n: count });
     }
-    appendAffectedSource({ url, lineNumber, columnNumber }) {
+    #appendAffectedSource({ url, lineNumber, columnNumber }) {
         const cellElement = document.createElement('td');
         // TODO(chromium:1072331): Check feasibility of plumping through scriptId for `linkifyScriptLocation`
         //                         to support source maps and formatted scripts.
@@ -43,7 +43,7 @@ export class AffectedSourcesView extends AffectedResourcesView {
     }
     update() {
         this.clear();
-        this.appendAffectedSources(this.issue.sources());
+        this.#appendAffectedSources(this.issue.sources());
     }
 }
 //# sourceMappingURL=AffectedSourcesView.js.map

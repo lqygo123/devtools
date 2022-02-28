@@ -135,18 +135,12 @@ export declare class BottomUpTimelineTreeView extends AggregatedTimelineTreeView
     buildTree(): TimelineModel.TimelineProfileTree.Node;
 }
 declare const TimelineStackView_base: (new (...args: any[]) => {
-    "__#1@#events": Common.ObjectWrapper.ObjectWrapper<TimelineStackView.EventTypes>;
-    addEventListener<T extends TimelineStackView.Events.SelectionChanged>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<TimelineStackView.EventTypes, T>>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<TimelineStackView.EventTypes, T>; /**
-    * @description This message is presented as a tooltip when developers investigate the performance
-    * of a page. The tooltip alerts developers that some parts of code in execution were not optimized
-    * (made to run faster) and that associated timing information must be considered with this in
-    * mind. The placeholder text is the reason the code was not optimized.
-    * @example {Optimized too many times} PH1
-    */
-    once<T_1 extends TimelineStackView.Events.SelectionChanged>(eventType: T_1): Promise<Common.EventTarget.EventPayload<TimelineStackView.EventTypes, T_1>>;
-    removeEventListener<T_2 extends TimelineStackView.Events.SelectionChanged>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<TimelineStackView.EventTypes, T_2>>) => void, thisObject?: Object | undefined): void;
+    "__#6@#events": Common.ObjectWrapper.ObjectWrapper<TimelineStackView.EventTypes>;
+    addEventListener<T extends TimelineStackView.Events.SelectionChanged>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<TimelineStackView.EventTypes[T]>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<TimelineStackView.EventTypes, T>;
+    once<T_1 extends TimelineStackView.Events.SelectionChanged>(eventType: T_1): Promise<TimelineStackView.EventTypes[T_1]>;
+    removeEventListener<T_2 extends TimelineStackView.Events.SelectionChanged>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<TimelineStackView.EventTypes[T_2]>) => void, thisObject?: Object | undefined): void;
     hasEventListeners(eventType: TimelineStackView.Events.SelectionChanged): boolean;
-    dispatchEventToListeners<T_3 extends TimelineStackView.Events.SelectionChanged>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<Common.EventTarget.EventPayload<TimelineStackView.EventTypes, T_3>>): void;
+    dispatchEventToListeners<T_3 extends TimelineStackView.Events.SelectionChanged>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<TimelineStackView.EventTypes, T_3>): void;
 }) & typeof UI.Widget.VBox;
 export declare class TimelineStackView extends TimelineStackView_base {
     private readonly treeView;

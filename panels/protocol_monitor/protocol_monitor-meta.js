@@ -22,8 +22,6 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 let loadedProtocolMonitorModule;
 async function loadProtocolMonitorModule() {
     if (!loadedProtocolMonitorModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/protocol_monitor');
         loadedProtocolMonitorModule = await import('./protocol_monitor.js');
     }
     return loadedProtocolMonitorModule;

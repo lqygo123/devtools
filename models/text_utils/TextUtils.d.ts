@@ -51,7 +51,7 @@ export declare class BalancedJSONTokenizer {
     remainder(): string;
 }
 export interface TokenizerFactory {
-    createTokenizer(mimeType: string, mode?: CodeMirror.Mode<any>): (arg0: string, arg1: (arg0: string, arg1: string | null, arg2: number, arg3: number) => void) => void;
+    createTokenizer(mimeType: string): (arg0: string, arg1: (arg0: string, arg1: string | null, arg2: number, arg3: number) => void) => void;
 }
 export declare function isMinified(text: string): boolean;
 export declare const performSearchInContent: (content: string, query: string, caseSensitive: boolean, isRegex: boolean) => SearchMatch[];

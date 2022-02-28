@@ -6,14 +6,21 @@ export interface PlayerEvent extends Protocol.Media.PlayerEvent {
     displayTimestamp: string;
     event: string;
 }
-export declare const enum ProtocolTriggers {
+export declare const enum Events {
     PlayerPropertiesChanged = "PlayerPropertiesChanged",
     PlayerEventsAdded = "PlayerEventsAdded",
     PlayerMessagesLogged = "PlayerMessagesLogged",
     PlayerErrorsRaised = "PlayerErrorsRaised",
     PlayersCreated = "PlayersCreated"
 }
-export declare class MediaModel extends SDK.SDKModel.SDKModel implements ProtocolProxyApi.MediaDispatcher {
+export declare type EventTypes = {
+    [Events.PlayerPropertiesChanged]: Protocol.Media.PlayerPropertiesChangedEvent;
+    [Events.PlayerEventsAdded]: Protocol.Media.PlayerEventsAddedEvent;
+    [Events.PlayerMessagesLogged]: Protocol.Media.PlayerMessagesLoggedEvent;
+    [Events.PlayerErrorsRaised]: Protocol.Media.PlayerErrorsRaisedEvent;
+    [Events.PlayersCreated]: Protocol.Media.PlayerId[];
+};
+export declare class MediaModel extends SDK.SDKModel.SDKModel<EventTypes> implements ProtocolProxyApi.MediaDispatcher {
     private enabled;
     private readonly agent;
     constructor(target: SDK.Target.Target);

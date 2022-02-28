@@ -5,13 +5,9 @@ import type * as Protocol from '../../generated/protocol.js';
 import type { Breakpoint } from './BreakpointManager.js';
 import type { DebuggerSourceMapping, DebuggerWorkspaceBinding } from './DebuggerWorkspaceBinding.js';
 export declare class ResourceScriptMapping implements DebuggerSourceMapping {
+    #private;
     readonly debuggerModel: SDK.DebuggerModel.DebuggerModel;
-    private workspace;
     readonly debuggerWorkspaceBinding: DebuggerWorkspaceBinding;
-    private readonly uiSourceCodeToScriptFile;
-    private readonly projects;
-    private acceptedScripts;
-    private readonly eventListeners;
     constructor(debuggerModel: SDK.DebuggerModel.DebuggerModel, workspace: Workspace.Workspace.WorkspaceImpl, debuggerWorkspaceBinding: DebuggerWorkspaceBinding);
     private project;
     rawLocationToUILocation(rawLocation: SDK.DebuggerModel.Location): Workspace.UISourceCode.UILocation | null;
@@ -26,13 +22,8 @@ export declare class ResourceScriptMapping implements DebuggerSourceMapping {
     dispose(): void;
 }
 export declare class ResourceScriptFile extends Common.ObjectWrapper.ObjectWrapper<ResourceScriptFile.EventTypes> {
-    private readonly resourceScriptMapping;
-    private readonly uiSourceCodeInternal;
+    #private;
     scriptInternal: SDK.Script.Script | undefined;
-    private scriptSource?;
-    private isDivergingFromVMInternal?;
-    private hasDivergedFromVMInternal?;
-    private isMergingToVMInternal?;
     constructor(resourceScriptMapping: ResourceScriptMapping, uiSourceCode: Workspace.UISourceCode.UISourceCode, scripts: SDK.Script.Script[]);
     hasScripts(scripts: SDK.Script.Script[]): boolean;
     private isDiverged;

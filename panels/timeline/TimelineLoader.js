@@ -62,7 +62,7 @@ export class TimelineLoader {
         const fileReader = new Bindings.FileUtils.ChunkedFileReader(file, TransferChunkLengthBytes);
         loader.canceledCallback = fileReader.cancel.bind(fileReader);
         loader.totalSize = file.size;
-        fileReader.read(loader).then(success => {
+        void fileReader.read(loader).then(success => {
             if (!success && fileReader.error()) {
                 // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,16 +73,16 @@ export class TimelineLoader {
     }
     static loadFromEvents(events, client) {
         const loader = new TimelineLoader(client);
-        setTimeout(async () => {
+        window.setTimeout(async () => {
             const eventsPerChunk = 5000;
             client.loadingStarted();
             for (let i = 0; i < events.length; i += eventsPerChunk) {
                 const chunk = events.slice(i, i + eventsPerChunk);
                 loader.tracingModel.addEvents(chunk);
                 client.loadingProgress((i + chunk.length) / events.length);
-                await new Promise(r => setTimeout(r)); // Yield event loop to paint.
+                await new Promise(r => window.setTimeout(r)); // Yield event loop to paint.
             }
-            loader.close();
+            void loader.close();
         });
         return loader;
     }
@@ -211,7 +211,7 @@ export class TimelineLoader {
             return;
         }
         this.client.processingStarted();
-        setTimeout(() => this.finalizeTrace(), 0);
+        window.setTimeout(() => this.finalizeTrace(), 0);
     }
     finalizeTrace() {
         if (this.state === State.LoadingCPUProfileFormat) {

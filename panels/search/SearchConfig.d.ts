@@ -34,9 +34,6 @@ export declare class QueryTerm {
     isNegative: boolean;
     constructor(text: string, isNegative: boolean);
 }
-/**
- * @interface
- */
 export interface SearchResult {
     label(): string;
     description(): string;
@@ -45,9 +42,6 @@ export interface SearchResult {
     matchLineContent(index: number): string;
     matchRevealable(index: number): Object;
 }
-/**
- * @interface
- */
 export interface SearchScope {
     performSearch(searchConfig: SearchConfig, progress: Common.Progress.Progress, searchResultCallback: (arg0: SearchResult) => void, searchFinishedCallback: (arg0: boolean) => void): void | Promise<void>;
     performIndexing(progress: Common.Progress.Progress): void;

@@ -1,13 +1,22 @@
 import * as Common from '../../core/common/common.js';
+import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 import * as NetworkForward from '../../panels/network/forward/forward.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import type { NetworkLogViewInterface, NetworkNode } from './NetworkDataGridNode.js';
+import type { NetworkLogViewInterface, NetworkNode, EventTypes } from './NetworkDataGridNode.js';
 import { NetworkGroupNode, NetworkRequestNode } from './NetworkDataGridNode.js';
 import type { NetworkTimeCalculator } from './NetworkTimeCalculator.js';
-export declare class NetworkLogView extends UI.Widget.VBox implements SDK.TargetManager.SDKModelObserver<SDK.NetworkManager.NetworkManager>, NetworkLogViewInterface {
+declare const NetworkLogView_base: (new (...args: any[]) => {
+    "__#6@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T]>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<EventTypes[T_1]>;
+    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2]>) => void, thisObject?: Object | undefined): void;
+    hasEventListeners(eventType: keyof EventTypes): boolean;
+    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+}) & typeof UI.Widget.VBox;
+export declare class NetworkLogView extends NetworkLogView_base implements SDK.TargetManager.SDKModelObserver<SDK.NetworkManager.NetworkManager>, NetworkLogViewInterface {
     private readonly networkInvertFilterSetting;
     private readonly networkHideDataURLSetting;
     private readonly networkShowIssuesOnlySetting;
@@ -190,3 +199,4 @@ export interface GroupLookupInterface {
     reset(): void;
 }
 export declare type Filter = (request: SDK.NetworkRequest.NetworkRequest) => boolean;
+export {};

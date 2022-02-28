@@ -1,3 +1,6 @@
+// Copyright 2021 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 /*
  * Copyright (C) 2010 Google Inc. All rights reserved.
  *
@@ -11,7 +14,7 @@
  * copyright notice, this list of conditions and the following disclaimer
  * in the documentation and/or other materials provided with the
  * distribution.
- *     * Neither the name of Google Inc. nor the names of its
+ *     * Neither the #name of Google Inc. nor the names of its
  * contributors may be used to endorse or promote products derived from
  * this software without specific prior written permission.
  *
@@ -108,47 +111,48 @@ export var StepMode;
 export class DebuggerModel extends SDKModel {
     agent;
     runtimeModelInternal;
-    sourceMapManagerInternal;
-    sourceMapIdToScript;
-    debuggerPausedDetailsInternal;
-    scriptsInternal;
-    scriptsBySourceURL;
-    discardableScripts;
+    #sourceMapManagerInternal;
+    #sourceMapIdToScript;
+    #debuggerPausedDetailsInternal;
+    #scriptsInternal;
+    #scriptsBySourceURL;
+    #discardableScripts;
     continueToLocationCallback;
-    selectedCallFrameInternal;
-    debuggerEnabledInternal;
-    debuggerId;
-    skipAllPausesTimeout;
-    beforePausedCallback;
-    computeAutoStepRangesCallback;
-    expandCallFramesCallback;
+    #selectedCallFrameInternal;
+    #debuggerEnabledInternal;
+    #debuggerId;
+    #skipAllPausesTimeout;
+    #beforePausedCallback;
+    #computeAutoStepRangesCallback;
+    #expandCallFramesCallback;
     evaluateOnCallFrameCallback;
-    breakpointResolvedEventTarget;
-    autoStepOver;
-    isPausingInternal;
+    // We need to be able to register listeners for individual breakpoints. As such, we dispatch
+    // on breakpoint ids, which are not statically known. The event #payload will always be a `Location`.
+    #breakpointResolvedEventTarget = new Common.ObjectWrapper.ObjectWrapper();
+    #autoStepOver;
+    #isPausingInternal;
     constructor(target) {
         super(target);
         target.registerDebuggerDispatcher(new DebuggerDispatcher(this));
         this.agent = target.debuggerAgent();
         this.runtimeModelInternal = target.model(RuntimeModel);
-        this.sourceMapManagerInternal = new SourceMapManager(target);
-        this.sourceMapIdToScript = new Map();
-        this.debuggerPausedDetailsInternal = null;
-        this.scriptsInternal = new Map();
-        this.scriptsBySourceURL = new Map();
-        this.discardableScripts = [];
+        this.#sourceMapManagerInternal = new SourceMapManager(target);
+        this.#sourceMapIdToScript = new Map();
+        this.#debuggerPausedDetailsInternal = null;
+        this.#scriptsInternal = new Map();
+        this.#scriptsBySourceURL = new Map();
+        this.#discardableScripts = [];
         this.continueToLocationCallback = null;
-        this.selectedCallFrameInternal = null;
-        this.debuggerEnabledInternal = false;
-        this.debuggerId = null;
-        this.skipAllPausesTimeout = 0;
-        this.beforePausedCallback = null;
-        this.computeAutoStepRangesCallback = null;
-        this.expandCallFramesCallback = null;
+        this.#selectedCallFrameInternal = null;
+        this.#debuggerEnabledInternal = false;
+        this.#debuggerId = null;
+        this.#skipAllPausesTimeout = 0;
+        this.#beforePausedCallback = null;
+        this.#computeAutoStepRangesCallback = null;
+        this.#expandCallFramesCallback = null;
         this.evaluateOnCallFrameCallback = null;
-        this.breakpointResolvedEventTarget = new Common.ObjectWrapper.ObjectWrapper();
-        this.autoStepOver = false;
-        this.isPausingInternal = false;
+        this.#autoStepOver = false;
+        this.#isPausingInternal = false;
         Common.Settings.Settings.instance()
             .moduleSetting('pauseOnExceptionEnabled')
             .addChangeListener(this.pauseOnExceptionStateChanged, this);
@@ -162,12 +166,12 @@ export class DebuggerModel extends SDKModel {
             .moduleSetting('breakpointsActive')
             .addChangeListener(this.breakpointsActiveChanged, this);
         if (!target.suspended()) {
-            this.enableDebugger();
+            void this.enableDebugger();
         }
-        this.sourceMapManagerInternal.setEnabled(Common.Settings.Settings.instance().moduleSetting('jsSourceMapsEnabled').get());
+        this.#sourceMapManagerInternal.setEnabled(Common.Settings.Settings.instance().moduleSetting('jsSourceMapsEnabled').get());
         Common.Settings.Settings.instance()
             .moduleSetting('jsSourceMapsEnabled')
-            .addChangeListener(event => this.sourceMapManagerInternal.setEnabled(event.data));
+            .addChangeListener(event => this.#sourceMapManagerInternal.setEnabled(event.data));
         const resourceTreeModel = target.model(ResourceTreeModel);
         if (resourceTreeModel) {
             resourceTreeModel.addEventListener(ResourceTreeModelEvents.FrameNavigated, this.onFrameNavigated, this);
@@ -180,32 +184,32 @@ export class DebuggerModel extends SDKModel {
         return executionContextId + ':' + sourceURL + ':' + sourceMapURL;
     }
     sourceMapManager() {
-        return this.sourceMapManagerInternal;
+        return this.#sourceMapManagerInternal;
     }
     runtimeModel() {
         return this.runtimeModelInternal;
     }
     debuggerEnabled() {
-        return Boolean(this.debuggerEnabledInternal);
+        return Boolean(this.#debuggerEnabledInternal);
     }
     async enableDebugger() {
-        if (this.debuggerEnabledInternal) {
+        if (this.#debuggerEnabledInternal) {
             return;
         }
-        this.debuggerEnabledInternal = true;
+        this.#debuggerEnabledInternal = true;
         // Set a limit for the total size of collected script sources retained by debugger.
         // 10MB for remote frontends, 100MB for others.
         const isRemoteFrontend = Root.Runtime.Runtime.queryParam('remoteFrontend') || Root.Runtime.Runtime.queryParam('ws');
         const maxScriptsCacheSize = isRemoteFrontend ? 10e6 : 100e6;
         const enablePromise = this.agent.invoke_enable({ maxScriptsCacheSize });
-        enablePromise.then(this.registerDebugger.bind(this));
+        void enablePromise.then(this.registerDebugger.bind(this));
         this.pauseOnExceptionStateChanged();
-        this.asyncStackTracesStateChanged();
+        void this.asyncStackTracesStateChanged();
         if (!Common.Settings.Settings.instance().moduleSetting('breakpointsActive').get()) {
             this.breakpointsActiveChanged();
         }
         if (_scheduledPauseOnAsyncCall) {
-            this.pauseOnAsyncCall(_scheduledPauseOnAsyncCall);
+            void this.pauseOnAsyncCall(_scheduledPauseOnAsyncCall);
         }
         this.dispatchEventToListeners(Events.DebuggerWasEnabled, this);
         await enablePromise;
@@ -214,7 +218,7 @@ export class DebuggerModel extends SDKModel {
         const isRemoteFrontend = Root.Runtime.Runtime.queryParam('remoteFrontend') || Root.Runtime.Runtime.queryParam('ws');
         const maxScriptsCacheSize = isRemoteFrontend ? 10e6 : 100e6;
         const enablePromise = this.agent.invoke_enable({ maxScriptsCacheSize });
-        enablePromise.then(this.registerDebugger.bind(this));
+        void enablePromise.then(this.registerDebugger.bind(this));
         return enablePromise;
     }
     onFrameNavigated() {
@@ -229,11 +233,11 @@ export class DebuggerModel extends SDKModel {
         }
         const { debuggerId } = response;
         _debuggerIdToModel.set(debuggerId, this);
-        this.debuggerId = debuggerId;
+        this.#debuggerId = debuggerId;
         this.dispatchEventToListeners(Events.DebuggerIsReadyToPause, this);
     }
     isReadyToPause() {
-        return Boolean(this.debuggerId);
+        return Boolean(this.#debuggerId);
     }
     static async modelForDebuggerId(debuggerId) {
         if (DebuggerModel.shouldResyncDebuggerId) {
@@ -251,34 +255,34 @@ export class DebuggerModel extends SDKModel {
         }
     }
     async disableDebugger() {
-        if (!this.debuggerEnabledInternal) {
+        if (!this.#debuggerEnabledInternal) {
             return;
         }
-        this.debuggerEnabledInternal = false;
+        this.#debuggerEnabledInternal = false;
         await this.asyncStackTracesStateChanged();
         await this.agent.invoke_disable();
-        this.isPausingInternal = false;
+        this.#isPausingInternal = false;
         this.globalObjectCleared();
         this.dispatchEventToListeners(Events.DebuggerWasDisabled);
-        if (typeof this.debuggerId === 'string') {
-            _debuggerIdToModel.delete(this.debuggerId);
+        if (typeof this.#debuggerId === 'string') {
+            _debuggerIdToModel.delete(this.#debuggerId);
         }
-        this.debuggerId = null;
+        this.#debuggerId = null;
     }
     skipAllPauses(skip) {
-        if (this.skipAllPausesTimeout) {
-            clearTimeout(this.skipAllPausesTimeout);
-            this.skipAllPausesTimeout = 0;
+        if (this.#skipAllPausesTimeout) {
+            clearTimeout(this.#skipAllPausesTimeout);
+            this.#skipAllPausesTimeout = 0;
         }
-        this.agent.invoke_setSkipAllPauses({ skip });
+        void this.agent.invoke_setSkipAllPauses({ skip });
     }
     skipAllPausesUntilReloadOrTimeout(timeout) {
-        if (this.skipAllPausesTimeout) {
-            clearTimeout(this.skipAllPausesTimeout);
+        if (this.#skipAllPausesTimeout) {
+            clearTimeout(this.#skipAllPausesTimeout);
         }
-        this.agent.invoke_setSkipAllPauses({ skip: true });
+        void this.agent.invoke_setSkipAllPauses({ skip: true });
         // If reload happens before the timeout, the flag will be already unset and the timeout callback won't change anything.
-        this.skipAllPausesTimeout = window.setTimeout(this.skipAllPauses.bind(this, false), timeout);
+        this.#skipAllPausesTimeout = window.setTimeout(this.skipAllPauses.bind(this, false), timeout);
     }
     pauseOnExceptionStateChanged() {
         let state;
@@ -291,63 +295,63 @@ export class DebuggerModel extends SDKModel {
         else {
             state = "uncaught" /* Uncaught */;
         }
-        this.agent.invoke_setPauseOnExceptions({ state });
+        void this.agent.invoke_setPauseOnExceptions({ state });
     }
     asyncStackTracesStateChanged() {
         const maxAsyncStackChainDepth = 32;
         const enabled = !Common.Settings.Settings.instance().moduleSetting('disableAsyncStackTraces').get() &&
-            this.debuggerEnabledInternal;
+            this.#debuggerEnabledInternal;
         const maxDepth = enabled ? maxAsyncStackChainDepth : 0;
         return this.agent.invoke_setAsyncCallStackDepth({ maxDepth });
     }
     breakpointsActiveChanged() {
-        this.agent.invoke_setBreakpointsActive({ active: Common.Settings.Settings.instance().moduleSetting('breakpointsActive').get() });
+        void this.agent.invoke_setBreakpointsActive({ active: Common.Settings.Settings.instance().moduleSetting('breakpointsActive').get() });
     }
     setComputeAutoStepRangesCallback(callback) {
-        this.computeAutoStepRangesCallback = callback;
+        this.#computeAutoStepRangesCallback = callback;
     }
     async computeAutoStepSkipList(mode) {
         let ranges = [];
-        if (this.computeAutoStepRangesCallback && this.debuggerPausedDetailsInternal) {
-            const [callFrame] = this.debuggerPausedDetailsInternal.callFrames;
-            ranges = await this.computeAutoStepRangesCallback.call(null, mode, callFrame);
+        if (this.#computeAutoStepRangesCallback && this.#debuggerPausedDetailsInternal) {
+            const [callFrame] = this.#debuggerPausedDetailsInternal.callFrames;
+            ranges = await this.#computeAutoStepRangesCallback.call(null, mode, callFrame);
         }
         const skipList = ranges.map(location => new LocationRange(location.start.scriptId, new ScriptPosition(location.start.lineNumber, location.start.columnNumber), new ScriptPosition(location.end.lineNumber, location.end.columnNumber)));
         return sortAndMergeRanges(skipList).map(x => x.payload());
     }
     async stepInto() {
         const skipList = await this.computeAutoStepSkipList(StepMode.StepInto);
-        this.agent.invoke_stepInto({ breakOnAsyncCall: false, skipList });
+        void this.agent.invoke_stepInto({ breakOnAsyncCall: false, skipList });
     }
     async stepOver() {
         // Mark that in case of auto-stepping, we should be doing
         // step-over instead of step-in.
-        this.autoStepOver = true;
+        this.#autoStepOver = true;
         const skipList = await this.computeAutoStepSkipList(StepMode.StepOver);
-        this.agent.invoke_stepOver({ skipList });
+        void this.agent.invoke_stepOver({ skipList });
     }
     async stepOut() {
         const skipList = await this.computeAutoStepSkipList(StepMode.StepOut);
         if (skipList.length !== 0) {
-            this.agent.invoke_stepOver({ skipList });
+            void this.agent.invoke_stepOver({ skipList });
         }
         else {
-            this.agent.invoke_stepOut();
+            void this.agent.invoke_stepOut();
         }
     }
     scheduleStepIntoAsync() {
-        this.computeAutoStepSkipList(StepMode.StepInto).then(skipList => {
-            this.agent.invoke_stepInto({ breakOnAsyncCall: true, skipList });
+        void this.computeAutoStepSkipList(StepMode.StepInto).then(skipList => {
+            void this.agent.invoke_stepInto({ breakOnAsyncCall: true, skipList });
         });
     }
     resume() {
-        this.agent.invoke_resume({ terminateOnResume: false });
-        this.isPausingInternal = false;
+        void this.agent.invoke_resume({ terminateOnResume: false });
+        this.#isPausingInternal = false;
     }
     pause() {
-        this.isPausingInternal = true;
+        this.#isPausingInternal = true;
         this.skipAllPauses(false);
-        this.agent.invoke_pause();
+        void this.agent.invoke_pause();
     }
     pauseOnAsyncCall(parentStackTraceId) {
         return this.agent.invoke_pauseOnAsyncCall({ parentStackTraceId: parentStackTraceId });
@@ -356,13 +360,14 @@ export class DebuggerModel extends SDKModel {
         // Convert file url to node-js path.
         let urlRegex;
         if (this.target().type() === Type.Node && url.startsWith('file://')) {
-            const platformPath = Common.ParsedURL.ParsedURL.urlToPlatformPath(url, Host.Platform.isWin());
+            // TODO(crbug.com/1253323): Cast to UrlString will be removed when migration to branded types is complete.
+            const platformPath = Common.ParsedURL.ParsedURL.capFilePrefix(url, Host.Platform.isWin());
             urlRegex =
                 `${Platform.StringUtilities.escapeForRegExp(platformPath)}|${Platform.StringUtilities.escapeForRegExp(url)}`;
         }
         // Adjust column if needed.
         let minColumnNumber = 0;
-        const scripts = this.scriptsBySourceURL.get(url) || [];
+        const scripts = this.#scriptsBySourceURL.get(url) || [];
         for (let i = 0, l = scripts.length; i < l; ++i) {
             const script = scripts[i];
             if (lineNumber === script.lineOffset) {
@@ -436,7 +441,7 @@ export class DebuggerModel extends SDKModel {
         return response.getError() ? null : response.stackTrace;
     }
     breakpointResolved(breakpointId, location) {
-        this.breakpointResolvedEventTarget.dispatchEventToListeners(breakpointId, Location.fromPayload(this, location));
+        this.#breakpointResolvedEventTarget.dispatchEventToListeners(breakpointId, Location.fromPayload(this, location));
     }
     globalObjectCleared() {
         this.setDebuggerPausedDetails(null);
@@ -445,30 +450,30 @@ export class DebuggerModel extends SDKModel {
         this.dispatchEventToListeners(Events.GlobalObjectCleared, this);
     }
     reset() {
-        for (const scriptWithSourceMap of this.sourceMapIdToScript.values()) {
-            this.sourceMapManagerInternal.detachSourceMap(scriptWithSourceMap);
+        for (const scriptWithSourceMap of this.#sourceMapIdToScript.values()) {
+            this.#sourceMapManagerInternal.detachSourceMap(scriptWithSourceMap);
         }
-        this.sourceMapIdToScript.clear();
-        this.scriptsInternal.clear();
-        this.scriptsBySourceURL.clear();
-        this.discardableScripts = [];
-        this.autoStepOver = false;
+        this.#sourceMapIdToScript.clear();
+        this.#scriptsInternal.clear();
+        this.#scriptsBySourceURL.clear();
+        this.#discardableScripts = [];
+        this.#autoStepOver = false;
     }
     scripts() {
-        return Array.from(this.scriptsInternal.values());
+        return Array.from(this.#scriptsInternal.values());
     }
     scriptForId(scriptId) {
-        return this.scriptsInternal.get(scriptId) || null;
+        return this.#scriptsInternal.get(scriptId) || null;
     }
     scriptsForSourceURL(sourceURL) {
         if (!sourceURL) {
             return [];
         }
-        return this.scriptsBySourceURL.get(sourceURL) || [];
+        return this.#scriptsBySourceURL.get(sourceURL) || [];
     }
     scriptsForExecutionContext(executionContext) {
         const result = [];
-        for (const script of this.scriptsInternal.values()) {
+        for (const script of this.#scriptsInternal.values()) {
             if (script.executionContextId === executionContext.id) {
                 result.push(script);
             }
@@ -476,54 +481,54 @@ export class DebuggerModel extends SDKModel {
         return result;
     }
     setScriptSource(scriptId, newSource, callback) {
-        const script = this.scriptsInternal.get(scriptId);
+        const script = this.#scriptsInternal.get(scriptId);
         if (script) {
-            script.editSource(newSource, this.didEditScriptSource.bind(this, scriptId, newSource, callback));
+            void script.editSource(newSource, this.didEditScriptSource.bind(this, scriptId, newSource, callback));
         }
     }
     didEditScriptSource(scriptId, newSource, callback, error, exceptionDetails, callFrames, asyncStackTrace, asyncStackTraceId, needsStepIn) {
         callback(error, exceptionDetails);
         if (needsStepIn) {
-            this.stepInto();
+            void this.stepInto();
             return;
         }
-        if (!error && callFrames && callFrames.length && this.debuggerPausedDetailsInternal) {
-            this.pausedScript(callFrames, this.debuggerPausedDetailsInternal.reason, this.debuggerPausedDetailsInternal.auxData, this.debuggerPausedDetailsInternal.breakpointIds, asyncStackTrace, asyncStackTraceId);
+        if (!error && callFrames && callFrames.length && this.#debuggerPausedDetailsInternal) {
+            void this.pausedScript(callFrames, this.#debuggerPausedDetailsInternal.reason, this.#debuggerPausedDetailsInternal.auxData, this.#debuggerPausedDetailsInternal.breakpointIds, asyncStackTrace, asyncStackTraceId);
         }
     }
     get callFrames() {
-        return this.debuggerPausedDetailsInternal ? this.debuggerPausedDetailsInternal.callFrames : null;
+        return this.#debuggerPausedDetailsInternal ? this.#debuggerPausedDetailsInternal.callFrames : null;
     }
     debuggerPausedDetails() {
-        return this.debuggerPausedDetailsInternal;
+        return this.#debuggerPausedDetailsInternal;
     }
     setDebuggerPausedDetails(debuggerPausedDetails) {
         if (debuggerPausedDetails) {
-            this.isPausingInternal = false;
-            this.debuggerPausedDetailsInternal = debuggerPausedDetails;
-            if (this.beforePausedCallback) {
-                if (!this.beforePausedCallback.call(null, debuggerPausedDetails)) {
+            this.#isPausingInternal = false;
+            this.#debuggerPausedDetailsInternal = debuggerPausedDetails;
+            if (this.#beforePausedCallback) {
+                if (!this.#beforePausedCallback.call(null, debuggerPausedDetails)) {
                     return false;
                 }
             }
             // If we resolved a location in auto-stepping callback, reset the
             // step-over marker.
-            this.autoStepOver = false;
+            this.#autoStepOver = false;
             this.dispatchEventToListeners(Events.DebuggerPaused, this);
             this.setSelectedCallFrame(debuggerPausedDetails.callFrames[0]);
         }
         else {
-            this.isPausingInternal = false;
-            this.debuggerPausedDetailsInternal = null;
+            this.#isPausingInternal = false;
+            this.#debuggerPausedDetailsInternal = null;
             this.setSelectedCallFrame(null);
         }
         return true;
     }
     setBeforePausedCallback(callback) {
-        this.beforePausedCallback = callback;
+        this.#beforePausedCallback = callback;
     }
     setExpandCallFramesCallback(callback) {
-        this.expandCallFramesCallback = callback;
+        this.#expandCallFramesCallback = callback;
     }
     setEvaluateOnCallFrameCallback(callback) {
         this.evaluateOnCallFrameCallback = callback;
@@ -541,8 +546,8 @@ export class DebuggerModel extends SDKModel {
             return;
         }
         const pausedDetails = new DebuggerPausedDetails(this, callFrames, reason, auxData, breakpointIds, asyncStackTrace, asyncStackTraceId);
-        if (this.expandCallFramesCallback) {
-            pausedDetails.callFrames = await this.expandCallFramesCallback.call(null, pausedDetails.callFrames);
+        if (this.#expandCallFramesCallback) {
+            pausedDetails.callFrames = await this.#expandCallFramesCallback.call(null, pausedDetails.callFrames);
         }
         if (this.continueToLocationCallback) {
             const callback = this.continueToLocationCallback;
@@ -552,11 +557,11 @@ export class DebuggerModel extends SDKModel {
             }
         }
         if (!this.setDebuggerPausedDetails(pausedDetails)) {
-            if (this.autoStepOver) {
-                this.stepOver();
+            if (this.#autoStepOver) {
+                void this.stepOver();
             }
             else {
-                this.stepInto();
+                void this.stepInto();
             }
         }
         else {
@@ -572,7 +577,7 @@ export class DebuggerModel extends SDKModel {
     // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     executionContextId, hash, executionContextAuxData, isLiveEdit, sourceMapURL, hasSourceURLComment, hasSyntaxError, length, isModule, originStackTrace, codeOffset, scriptLanguage, debugSymbols, embedderName) {
-        const knownScript = this.scriptsInternal.get(scriptId);
+        const knownScript = this.#scriptsInternal.get(scriptId);
         if (knownScript) {
             return knownScript;
         }
@@ -585,67 +590,67 @@ export class DebuggerModel extends SDKModel {
         this.dispatchEventToListeners(Events.ParsedScriptSource, script);
         const sourceMapId = DebuggerModel.sourceMapId(script.executionContextId, script.sourceURL, script.sourceMapURL);
         if (sourceMapId && !hasSyntaxError) {
-            // Consecutive script evaluations in the same execution context with the same sourceURL
+            // Consecutive script evaluations in the same execution context with the same #sourceURL
             // and sourceMappingURL should result in source map reloading.
-            const previousScript = this.sourceMapIdToScript.get(sourceMapId);
+            const previousScript = this.#sourceMapIdToScript.get(sourceMapId);
             if (previousScript) {
-                this.sourceMapManagerInternal.detachSourceMap(previousScript);
+                this.#sourceMapManagerInternal.detachSourceMap(previousScript);
             }
-            this.sourceMapIdToScript.set(sourceMapId, script);
-            this.sourceMapManagerInternal.attachSourceMap(script, script.sourceURL, script.sourceMapURL);
+            this.#sourceMapIdToScript.set(sourceMapId, script);
+            this.#sourceMapManagerInternal.attachSourceMap(script, script.sourceURL, script.sourceMapURL);
         }
         const isDiscardable = hasSyntaxError && script.isAnonymousScript();
         if (isDiscardable) {
-            this.discardableScripts.push(script);
+            this.#discardableScripts.push(script);
             this.collectDiscardedScripts();
         }
         return script;
     }
     setSourceMapURL(script, newSourceMapURL) {
         let sourceMapId = DebuggerModel.sourceMapId(script.executionContextId, script.sourceURL, script.sourceMapURL);
-        if (sourceMapId && this.sourceMapIdToScript.get(sourceMapId) === script) {
-            this.sourceMapIdToScript.delete(sourceMapId);
+        if (sourceMapId && this.#sourceMapIdToScript.get(sourceMapId) === script) {
+            this.#sourceMapIdToScript.delete(sourceMapId);
         }
-        this.sourceMapManagerInternal.detachSourceMap(script);
+        this.#sourceMapManagerInternal.detachSourceMap(script);
         script.sourceMapURL = newSourceMapURL;
         sourceMapId = DebuggerModel.sourceMapId(script.executionContextId, script.sourceURL, script.sourceMapURL);
         if (!sourceMapId) {
             return;
         }
-        this.sourceMapIdToScript.set(sourceMapId, script);
-        this.sourceMapManagerInternal.attachSourceMap(script, script.sourceURL, script.sourceMapURL);
+        this.#sourceMapIdToScript.set(sourceMapId, script);
+        this.#sourceMapManagerInternal.attachSourceMap(script, script.sourceURL, script.sourceMapURL);
     }
     executionContextDestroyed(executionContext) {
-        const sourceMapIds = Array.from(this.sourceMapIdToScript.keys());
+        const sourceMapIds = Array.from(this.#sourceMapIdToScript.keys());
         for (const sourceMapId of sourceMapIds) {
-            const script = this.sourceMapIdToScript.get(sourceMapId);
+            const script = this.#sourceMapIdToScript.get(sourceMapId);
             if (script && script.executionContextId === executionContext.id) {
-                this.sourceMapIdToScript.delete(sourceMapId);
-                this.sourceMapManagerInternal.detachSourceMap(script);
+                this.#sourceMapIdToScript.delete(sourceMapId);
+                this.#sourceMapManagerInternal.detachSourceMap(script);
             }
         }
     }
     registerScript(script) {
-        this.scriptsInternal.set(script.scriptId, script);
+        this.#scriptsInternal.set(script.scriptId, script);
         if (script.isAnonymousScript()) {
             return;
         }
-        let scripts = this.scriptsBySourceURL.get(script.sourceURL);
+        let scripts = this.#scriptsBySourceURL.get(script.sourceURL);
         if (!scripts) {
             scripts = [];
-            this.scriptsBySourceURL.set(script.sourceURL, scripts);
+            this.#scriptsBySourceURL.set(script.sourceURL, scripts);
         }
         scripts.push(script);
     }
     unregisterScript(script) {
         console.assert(script.isAnonymousScript());
-        this.scriptsInternal.delete(script.scriptId);
+        this.#scriptsInternal.delete(script.scriptId);
     }
     collectDiscardedScripts() {
-        if (this.discardableScripts.length < 1000) {
+        if (this.#discardableScripts.length < 1000) {
             return;
         }
-        const scriptsToDiscard = this.discardableScripts.splice(0, 100);
+        const scriptsToDiscard = this.#discardableScripts.splice(0, 100);
         for (const script of scriptsToDiscard) {
             this.unregisterScript(script);
             this.dispatchEventToListeners(Events.DiscardedAnonymousScriptSource, script);
@@ -655,7 +660,7 @@ export class DebuggerModel extends SDKModel {
         return this.createRawLocationByScriptId(script.scriptId, lineNumber, columnNumber, inlineFrameIndex);
     }
     createRawLocationByURL(sourceURL, lineNumber, columnNumber, inlineFrameIndex) {
-        for (const script of this.scriptsBySourceURL.get(sourceURL) || []) {
+        for (const script of this.#scriptsBySourceURL.get(sourceURL) || []) {
             if (script.lineOffset > lineNumber ||
                 (script.lineOffset === lineNumber && columnNumber !== undefined && script.columnOffset > columnNumber)) {
                 continue;
@@ -672,19 +677,10 @@ export class DebuggerModel extends SDKModel {
         return new Location(this, scriptId, lineNumber, columnNumber, inlineFrameIndex);
     }
     createRawLocationsByStackTrace(stackTrace) {
-        const frames = [];
-        let current = stackTrace;
-        while (current) {
-            for (const frame of current.callFrames) {
-                frames.push(frame);
-            }
-            current = current.parent;
-        }
         const rawLocations = [];
-        for (const frame of frames) {
-            const rawLocation = this.createRawLocationByScriptId(frame.scriptId, frame.lineNumber, frame.columnNumber);
-            if (rawLocation) {
-                rawLocations.push(rawLocation);
+        for (let current = stackTrace; current; current = current.parent) {
+            for (const { scriptId, lineNumber, columnNumber } of current.callFrames) {
+                rawLocations.push(this.createRawLocationByScriptId(scriptId, lineNumber, columnNumber));
             }
         }
         return rawLocations;
@@ -693,17 +689,17 @@ export class DebuggerModel extends SDKModel {
         return Boolean(this.debuggerPausedDetails());
     }
     isPausing() {
-        return this.isPausingInternal;
+        return this.#isPausingInternal;
     }
     setSelectedCallFrame(callFrame) {
-        if (this.selectedCallFrameInternal === callFrame) {
+        if (this.#selectedCallFrameInternal === callFrame) {
             return;
         }
-        this.selectedCallFrameInternal = callFrame;
+        this.#selectedCallFrameInternal = callFrame;
         this.dispatchEventToListeners(Events.CallFrameSelected, this);
     }
     selectedCallFrame() {
-        return this.selectedCallFrameInternal;
+        return this.#selectedCallFrameInternal;
     }
     async evaluateOnSelectedCallFrame(options) {
         const callFrame = this.selectedCallFrame();
@@ -751,10 +747,10 @@ export class DebuggerModel extends SDKModel {
         return error;
     }
     addBreakpointListener(breakpointId, listener, thisObject) {
-        this.breakpointResolvedEventTarget.addEventListener(breakpointId, listener, thisObject);
+        this.#breakpointResolvedEventTarget.addEventListener(breakpointId, listener, thisObject);
     }
     removeBreakpointListener(breakpointId, listener, thisObject) {
-        this.breakpointResolvedEventTarget.removeEventListener(breakpointId, listener, thisObject);
+        this.#breakpointResolvedEventTarget.removeEventListener(breakpointId, listener, thisObject);
     }
     async setBlackboxPatterns(patterns) {
         const response = await this.agent.invoke_setBlackboxPatterns({ patterns });
@@ -765,9 +761,9 @@ export class DebuggerModel extends SDKModel {
         return !error;
     }
     dispose() {
-        this.sourceMapManagerInternal.dispose();
-        if (this.debuggerId) {
-            _debuggerIdToModel.delete(this.debuggerId);
+        this.#sourceMapManagerInternal.dispose();
+        if (this.#debuggerId) {
+            _debuggerIdToModel.delete(this.#debuggerId);
         }
         Common.Settings.Settings.instance()
             .moduleSetting('pauseOnExceptionEnabled')
@@ -825,39 +821,39 @@ export var Events;
     Events["DebuggerIsReadyToPause"] = "DebuggerIsReadyToPause";
 })(Events || (Events = {}));
 class DebuggerDispatcher {
-    debuggerModel;
+    #debuggerModel;
     constructor(debuggerModel) {
-        this.debuggerModel = debuggerModel;
+        this.#debuggerModel = debuggerModel;
     }
     paused({ callFrames, reason, data, hitBreakpoints, asyncStackTrace, asyncStackTraceId, asyncCallStackTraceId }) {
-        if (!this.debuggerModel.debuggerEnabled()) {
+        if (!this.#debuggerModel.debuggerEnabled()) {
             return;
         }
-        this.debuggerModel.pausedScript(callFrames, reason, data, hitBreakpoints || [], asyncStackTrace, asyncStackTraceId, asyncCallStackTraceId);
+        void this.#debuggerModel.pausedScript(callFrames, reason, data, hitBreakpoints || [], asyncStackTrace, asyncStackTraceId, asyncCallStackTraceId);
     }
     resumed() {
-        if (!this.debuggerModel.debuggerEnabled()) {
+        if (!this.#debuggerModel.debuggerEnabled()) {
             return;
         }
-        this.debuggerModel.resumedScript();
+        this.#debuggerModel.resumedScript();
     }
     scriptParsed({ scriptId, url, startLine, startColumn, endLine, endColumn, executionContextId, hash, executionContextAuxData, isLiveEdit, sourceMapURL, hasSourceURL, length, isModule, stackTrace, codeOffset, scriptLanguage, debugSymbols, embedderName, }) {
-        if (!this.debuggerModel.debuggerEnabled()) {
+        if (!this.#debuggerModel.debuggerEnabled()) {
             return;
         }
-        this.debuggerModel.parsedScriptSource(scriptId, url, startLine, startColumn, endLine, endColumn, executionContextId, hash, executionContextAuxData, Boolean(isLiveEdit), sourceMapURL, Boolean(hasSourceURL), false, length || 0, isModule || null, stackTrace || null, codeOffset || null, scriptLanguage || null, debugSymbols || null, embedderName || null);
+        this.#debuggerModel.parsedScriptSource(scriptId, url, startLine, startColumn, endLine, endColumn, executionContextId, hash, executionContextAuxData, Boolean(isLiveEdit), sourceMapURL, Boolean(hasSourceURL), false, length || 0, isModule || null, stackTrace || null, codeOffset || null, scriptLanguage || null, debugSymbols || null, embedderName || null);
     }
     scriptFailedToParse({ scriptId, url, startLine, startColumn, endLine, endColumn, executionContextId, hash, executionContextAuxData, sourceMapURL, hasSourceURL, length, isModule, stackTrace, codeOffset, scriptLanguage, embedderName, }) {
-        if (!this.debuggerModel.debuggerEnabled()) {
+        if (!this.#debuggerModel.debuggerEnabled()) {
             return;
         }
-        this.debuggerModel.parsedScriptSource(scriptId, url, startLine, startColumn, endLine, endColumn, executionContextId, hash, executionContextAuxData, false, sourceMapURL, Boolean(hasSourceURL), true, length || 0, isModule || null, stackTrace || null, codeOffset || null, scriptLanguage || null, null, embedderName || null);
+        this.#debuggerModel.parsedScriptSource(scriptId, url, startLine, startColumn, endLine, endColumn, executionContextId, hash, executionContextAuxData, false, sourceMapURL, Boolean(hasSourceURL), true, length || 0, isModule || null, stackTrace || null, codeOffset || null, scriptLanguage || null, null, embedderName || null);
     }
     breakpointResolved({ breakpointId, location }) {
-        if (!this.debuggerModel.debuggerEnabled()) {
+        if (!this.#debuggerModel.debuggerEnabled()) {
             return;
         }
-        this.debuggerModel.breakpointResolved(breakpointId, location);
+        this.#debuggerModel.breakpointResolved(breakpointId, location);
     }
 }
 export class Location {
@@ -886,7 +882,7 @@ export class Location {
         if (pausedCallback) {
             this.debuggerModel.continueToLocationCallback = this.paused.bind(this, pausedCallback);
         }
-        this.debuggerModel.agent.invoke_continueToLocation({
+        void this.debuggerModel.agent.invoke_continueToLocation({
             location: this.payload(),
             targetCallFrames: "current" /* Current */,
         });
@@ -974,36 +970,36 @@ export class BreakLocation extends Location {
 }
 export class CallFrame {
     debuggerModel;
-    scriptInternal;
+    #scriptInternal;
     payload;
-    locationInternal;
-    scopeChainInternal;
-    localScopeInternal;
-    inlineFrameIndexInternal;
-    functionNameInternal;
-    functionLocationInternal;
-    returnValueInternal;
+    #locationInternal;
+    #scopeChainInternal;
+    #localScopeInternal;
+    #inlineFrameIndexInternal;
+    #functionNameInternal;
+    #functionLocationInternal;
+    #returnValueInternal;
     warnings = [];
     constructor(debuggerModel, script, payload, inlineFrameIndex, functionName) {
         this.debuggerModel = debuggerModel;
-        this.scriptInternal = script;
+        this.#scriptInternal = script;
         this.payload = payload;
-        this.locationInternal = Location.fromPayload(debuggerModel, payload.location, inlineFrameIndex);
-        this.scopeChainInternal = [];
-        this.localScopeInternal = null;
-        this.inlineFrameIndexInternal = inlineFrameIndex || 0;
-        this.functionNameInternal = functionName || payload.functionName;
+        this.#locationInternal = Location.fromPayload(debuggerModel, payload.location, inlineFrameIndex);
+        this.#scopeChainInternal = [];
+        this.#localScopeInternal = null;
+        this.#inlineFrameIndexInternal = inlineFrameIndex || 0;
+        this.#functionNameInternal = functionName || payload.functionName;
         for (let i = 0; i < payload.scopeChain.length; ++i) {
             const scope = new Scope(this, i);
-            this.scopeChainInternal.push(scope);
+            this.#scopeChainInternal.push(scope);
             if (scope.type() === "local" /* Local */) {
-                this.localScopeInternal = scope;
+                this.#localScopeInternal = scope;
             }
         }
         if (payload.functionLocation) {
-            this.functionLocationInternal = Location.fromPayload(debuggerModel, payload.functionLocation);
+            this.#functionLocationInternal = Location.fromPayload(debuggerModel, payload.functionLocation);
         }
-        this.returnValueInternal =
+        this.#returnValueInternal =
             payload.returnValue ? this.debuggerModel.runtimeModel().createRemoteObject(payload.returnValue) : null;
     }
     static fromPayloadArray(debuggerModel, callFrames) {
@@ -1018,34 +1014,34 @@ export class CallFrame {
         return result;
     }
     createVirtualCallFrame(inlineFrameIndex, name) {
-        return new CallFrame(this.debuggerModel, this.scriptInternal, this.payload, inlineFrameIndex, name);
+        return new CallFrame(this.debuggerModel, this.#scriptInternal, this.payload, inlineFrameIndex, name);
     }
     addWarning(warning) {
         this.warnings.push(warning);
     }
     get script() {
-        return this.scriptInternal;
+        return this.#scriptInternal;
     }
     get id() {
         return this.payload.callFrameId;
     }
     get inlineFrameIndex() {
-        return this.inlineFrameIndexInternal;
+        return this.#inlineFrameIndexInternal;
     }
     scopeChain() {
-        return this.scopeChainInternal;
+        return this.#scopeChainInternal;
     }
     localScope() {
-        return this.localScopeInternal;
+        return this.#localScopeInternal;
     }
     thisObject() {
         return this.payload.this ? this.debuggerModel.runtimeModel().createRemoteObject(this.payload.this) : null;
     }
     returnValue() {
-        return this.returnValueInternal;
+        return this.#returnValueInternal;
     }
     async setReturnValue(expression) {
-        if (!this.returnValueInternal) {
+        if (!this.#returnValueInternal) {
             return null;
         }
         const evaluateResponse = await this.debuggerModel.agent.invoke_evaluateOnCallFrame({ callFrameId: this.id, expression: expression, silent: true, objectGroup: 'backtrace' });
@@ -1056,17 +1052,17 @@ export class CallFrame {
         if (response.getError()) {
             return null;
         }
-        this.returnValueInternal = this.debuggerModel.runtimeModel().createRemoteObject(evaluateResponse.result);
-        return this.returnValueInternal;
+        this.#returnValueInternal = this.debuggerModel.runtimeModel().createRemoteObject(evaluateResponse.result);
+        return this.#returnValueInternal;
     }
     get functionName() {
-        return this.functionNameInternal;
+        return this.#functionNameInternal;
     }
     location() {
-        return this.locationInternal;
+        return this.#locationInternal;
     }
     functionLocation() {
-        return this.functionLocationInternal || null;
+        return this.#functionLocationInternal || null;
     }
     async evaluate(options) {
         const debuggerModel = this.debuggerModel;
@@ -1108,34 +1104,34 @@ export class CallFrame {
     }
 }
 export class Scope {
-    callFrameInternal;
-    payload;
-    typeInternal;
-    nameInternal;
-    ordinal;
-    startLocationInternal;
-    endLocationInternal;
-    objectInternal;
+    #callFrameInternal;
+    #payload;
+    #typeInternal;
+    #nameInternal;
+    #ordinal;
+    #startLocationInternal;
+    #endLocationInternal;
+    #objectInternal;
     constructor(callFrame, ordinal) {
-        this.callFrameInternal = callFrame;
-        this.payload = callFrame.getPayload().scopeChain[ordinal];
-        this.typeInternal = this.payload.type;
-        this.nameInternal = this.payload.name;
-        this.ordinal = ordinal;
-        this.startLocationInternal =
-            this.payload.startLocation ? Location.fromPayload(callFrame.debuggerModel, this.payload.startLocation) : null;
-        this.endLocationInternal =
-            this.payload.endLocation ? Location.fromPayload(callFrame.debuggerModel, this.payload.endLocation) : null;
-        this.objectInternal = null;
+        this.#callFrameInternal = callFrame;
+        this.#payload = callFrame.getPayload().scopeChain[ordinal];
+        this.#typeInternal = this.#payload.type;
+        this.#nameInternal = this.#payload.name;
+        this.#ordinal = ordinal;
+        this.#startLocationInternal =
+            this.#payload.startLocation ? Location.fromPayload(callFrame.debuggerModel, this.#payload.startLocation) : null;
+        this.#endLocationInternal =
+            this.#payload.endLocation ? Location.fromPayload(callFrame.debuggerModel, this.#payload.endLocation) : null;
+        this.#objectInternal = null;
     }
     callFrame() {
-        return this.callFrameInternal;
+        return this.#callFrameInternal;
     }
     type() {
-        return this.typeInternal;
+        return this.#typeInternal;
     }
     typeName() {
-        switch (this.typeInternal) {
+        switch (this.#typeInternal) {
             case "local" /* Local */:
                 return i18nString(UIStrings.local);
             case "closure" /* Closure */:
@@ -1158,33 +1154,33 @@ export class Scope {
         return '';
     }
     name() {
-        return this.nameInternal;
+        return this.#nameInternal;
     }
     startLocation() {
-        return this.startLocationInternal;
+        return this.#startLocationInternal;
     }
     endLocation() {
-        return this.endLocationInternal;
+        return this.#endLocationInternal;
     }
     object() {
-        if (this.objectInternal) {
-            return this.objectInternal;
+        if (this.#objectInternal) {
+            return this.#objectInternal;
         }
-        const runtimeModel = this.callFrameInternal.debuggerModel.runtimeModel();
-        const declarativeScope = this.typeInternal !== "with" /* With */ &&
-            this.typeInternal !== "global" /* Global */;
+        const runtimeModel = this.#callFrameInternal.debuggerModel.runtimeModel();
+        const declarativeScope = this.#typeInternal !== "with" /* With */ &&
+            this.#typeInternal !== "global" /* Global */;
         if (declarativeScope) {
-            this.objectInternal = runtimeModel.createScopeRemoteObject(this.payload.object, new ScopeRef(this.ordinal, this.callFrameInternal.id));
+            this.#objectInternal = runtimeModel.createScopeRemoteObject(this.#payload.object, new ScopeRef(this.#ordinal, this.#callFrameInternal.id));
         }
         else {
-            this.objectInternal = runtimeModel.createRemoteObject(this.payload.object);
+            this.#objectInternal = runtimeModel.createRemoteObject(this.#payload.object);
         }
-        return this.objectInternal;
+        return this.#objectInternal;
     }
     description() {
-        const declarativeScope = this.typeInternal !== "with" /* With */ &&
-            this.typeInternal !== "global" /* Global */;
-        return declarativeScope ? '' : (this.payload.object.description || '');
+        const declarativeScope = this.#typeInternal !== "with" /* With */ &&
+            this.#typeInternal !== "global" /* Global */;
+        return declarativeScope ? '' : (this.#payload.object.description || '');
     }
     icon() {
         return undefined;
@@ -1220,6 +1216,8 @@ export class DebuggerPausedDetails {
         let stack = asyncStackTrace;
         let previous = null;
         while (stack) {
+            // TODO(crbug.com/1254259): Remove this post-processing step once the V8
+            // inspector back-end change propagated to Node LTS.
             if (stack.description === 'async function' && stack.callFrames.length) {
                 stack.callFrames.shift();
             }

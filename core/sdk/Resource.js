@@ -30,100 +30,100 @@
  */
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Common from '../common/common.js';
-import * as Platfrom from '../platform/platform.js';
+import * as Platform from '../platform/platform.js';
 import { Events } from './NetworkRequest.js';
 export class Resource {
-    resourceTreeModel;
-    requestInternal;
-    urlInternal;
-    documentURLInternal;
-    frameIdInternal;
-    loaderIdInternal;
-    type;
-    mimeTypeInternal;
-    isGeneratedInternal;
-    lastModifiedInternal;
-    contentSizeInternal;
-    contentInternal;
-    contentLoadError;
-    contentEncodedInternal;
-    pendingContentCallbacks;
-    parsedURLInternal;
-    contentRequested;
+    #resourceTreeModel;
+    #requestInternal;
+    #urlInternal;
+    #documentURLInternal;
+    #frameIdInternal;
+    #loaderIdInternal;
+    #type;
+    #mimeTypeInternal;
+    #isGeneratedInternal;
+    #lastModifiedInternal;
+    #contentSizeInternal;
+    #contentInternal;
+    #contentEncodedInternal;
+    #pendingContentCallbacks;
+    #parsedURLInternal;
+    #contentRequested;
     constructor(resourceTreeModel, request, url, documentURL, frameId, loaderId, type, mimeType, lastModified, contentSize) {
-        this.resourceTreeModel = resourceTreeModel;
-        this.requestInternal = request;
+        this.#resourceTreeModel = resourceTreeModel;
+        this.#requestInternal = request;
         this.url = url;
-        this.documentURLInternal = documentURL;
-        this.frameIdInternal = frameId;
-        this.loaderIdInternal = loaderId;
-        this.type = type || Common.ResourceType.resourceTypes.Other;
-        this.mimeTypeInternal = mimeType;
-        this.isGeneratedInternal = false;
-        this.lastModifiedInternal = lastModified && Platfrom.DateUtilities.isValid(lastModified) ? lastModified : null;
-        this.contentSizeInternal = contentSize;
-        this.pendingContentCallbacks = [];
-        if (this.requestInternal && !this.requestInternal.finished) {
-            this.requestInternal.addEventListener(Events.FinishedLoading, this.requestFinished, this);
+        this.#documentURLInternal = documentURL;
+        this.#frameIdInternal = frameId;
+        this.#loaderIdInternal = loaderId;
+        this.#type = type || Common.ResourceType.resourceTypes.Other;
+        this.#mimeTypeInternal = mimeType;
+        this.#isGeneratedInternal = false;
+        this.#lastModifiedInternal = lastModified && Platform.DateUtilities.isValid(lastModified) ? lastModified : null;
+        this.#contentSizeInternal = contentSize;
+        this.#pendingContentCallbacks = [];
+        if (this.#requestInternal && !this.#requestInternal.finished) {
+            this.#requestInternal.addEventListener(Events.FinishedLoading, this.requestFinished, this);
         }
     }
     lastModified() {
-        if (this.lastModifiedInternal || !this.requestInternal) {
-            return this.lastModifiedInternal;
+        if (this.#lastModifiedInternal || !this.#requestInternal) {
+            return this.#lastModifiedInternal;
         }
-        const lastModifiedHeader = this.requestInternal.responseLastModified();
+        const lastModifiedHeader = this.#requestInternal.responseLastModified();
         const date = lastModifiedHeader ? new Date(lastModifiedHeader) : null;
-        this.lastModifiedInternal = date && Platfrom.DateUtilities.isValid(date) ? date : null;
-        return this.lastModifiedInternal;
+        this.#lastModifiedInternal = date && Platform.DateUtilities.isValid(date) ? date : null;
+        return this.#lastModifiedInternal;
     }
     contentSize() {
-        if (typeof this.contentSizeInternal === 'number' || !this.requestInternal) {
-            return this.contentSizeInternal;
+        if (typeof this.#contentSizeInternal === 'number' || !this.#requestInternal) {
+            return this.#contentSizeInternal;
         }
-        return this.requestInternal.resourceSize;
+        return this.#requestInternal.resourceSize;
     }
     get request() {
-        return this.requestInternal;
+        return this.#requestInternal;
     }
     get url() {
-        return this.urlInternal;
+        return this.#urlInternal;
     }
     set url(x) {
-        this.urlInternal = x;
-        this.parsedURLInternal = new Common.ParsedURL.ParsedURL(x);
+        this.#urlInternal = x;
+        this.#parsedURLInternal = new Common.ParsedURL.ParsedURL(x);
     }
     get parsedURL() {
-        return this.parsedURLInternal;
+        return this.#parsedURLInternal;
     }
     get documentURL() {
-        return this.documentURLInternal;
+        return this.#documentURLInternal;
     }
     get frameId() {
-        return this.frameIdInternal;
+        return this.#frameIdInternal;
     }
     get loaderId() {
-        return this.loaderIdInternal;
+        return this.#loaderIdInternal;
     }
     get displayName() {
-        return this.parsedURLInternal ? this.parsedURLInternal.displayName : '';
+        return this.#parsedURLInternal ? this.#parsedURLInternal.displayName : '';
     }
     resourceType() {
-        return this.requestInternal ? this.requestInternal.resourceType() : this.type;
+        return this.#requestInternal ? this.#requestInternal.resourceType() : this.#type;
     }
     get mimeType() {
-        return this.requestInternal ? this.requestInternal.mimeType : this.mimeTypeInternal;
+        return this.#requestInternal ? this.#requestInternal.mimeType : this.#mimeTypeInternal;
     }
     get content() {
-        return this.contentInternal;
+        return this.#contentInternal;
     }
     get isGenerated() {
-        return this.isGeneratedInternal;
+        return this.#isGeneratedInternal;
     }
     set isGenerated(val) {
-        this.isGeneratedInternal = val;
+        this.#isGeneratedInternal = val;
     }
+    // TODO(crbug.com/1253323): Cast to RawPathString will be removed when migration to branded types is complete.
     contentURL() {
-        return this.urlInternal;
+        return this.#urlInternal;
     }
     contentType() {
         if (this.resourceType() === Common.ResourceType.resourceTypes.Document &&
@@ -134,16 +134,16 @@ export class Resource {
     }
     async contentEncoded() {
         await this.requestContent();
-        return this.contentEncodedInternal;
+        return this.#contentEncodedInternal;
     }
     requestContent() {
-        if (typeof this.contentInternal !== 'undefined') {
-            return Promise.resolve({ content: this.contentInternal, isEncoded: this.contentEncodedInternal });
+        if (typeof this.#contentInternal !== 'undefined') {
+            return Promise.resolve({ content: this.#contentInternal, isEncoded: this.#contentEncodedInternal });
         }
         return new Promise(resolve => {
-            this.pendingContentCallbacks.push(resolve);
-            if (!this.requestInternal || this.requestInternal.finished) {
-                this.innerRequestContent();
+            this.#pendingContentCallbacks.push(resolve);
+            if (!this.#requestInternal || this.#requestInternal.finished) {
+                void this.innerRequestContent();
             }
         });
     }
@@ -157,73 +157,72 @@ export class Resource {
         if (this.request) {
             return this.request.searchInContent(query, caseSensitive, isRegex);
         }
-        const result = await this.resourceTreeModel.target().pageAgent().invoke_searchInResource({ frameId: this.frameId, url: this.url, query, caseSensitive, isRegex });
+        const result = await this.#resourceTreeModel.target().pageAgent().invoke_searchInResource({ frameId: this.frameId, url: this.url, query, caseSensitive, isRegex });
         return result.result || [];
     }
     async populateImageSource(image) {
         const { content } = await this.requestContent();
-        const encoded = this.contentEncodedInternal;
-        image.src = TextUtils.ContentProvider.contentAsDataURL(content, this.mimeTypeInternal, encoded) || this.urlInternal;
+        const encoded = this.#contentEncodedInternal;
+        image.src =
+            TextUtils.ContentProvider.contentAsDataURL(content, this.#mimeTypeInternal, encoded) || this.#urlInternal;
     }
     requestFinished() {
-        if (this.requestInternal) {
-            this.requestInternal.removeEventListener(Events.FinishedLoading, this.requestFinished, this);
+        if (this.#requestInternal) {
+            this.#requestInternal.removeEventListener(Events.FinishedLoading, this.requestFinished, this);
         }
-        if (this.pendingContentCallbacks.length) {
-            this.innerRequestContent();
+        if (this.#pendingContentCallbacks.length) {
+            void this.innerRequestContent();
         }
     }
     async innerRequestContent() {
-        if (this.contentRequested) {
+        if (this.#contentRequested) {
             return;
         }
-        this.contentRequested = true;
+        this.#contentRequested = true;
         let loadResult = null;
         if (this.request) {
             const contentData = await this.request.contentData();
             if (!contentData.error) {
-                this.contentInternal = contentData.content;
-                this.contentEncodedInternal = contentData.encoded;
+                this.#contentInternal = contentData.content;
+                this.#contentEncodedInternal = contentData.encoded;
                 loadResult = { content: contentData.content, isEncoded: contentData.encoded };
             }
         }
         if (!loadResult) {
-            const response = await this.resourceTreeModel.target().pageAgent().invoke_getResourceContent({ frameId: this.frameId, url: this.url });
+            const response = await this.#resourceTreeModel.target().pageAgent().invoke_getResourceContent({ frameId: this.frameId, url: this.url });
             const protocolError = response.getError();
             if (protocolError) {
-                this.contentLoadError = protocolError;
-                this.contentInternal = null;
+                this.#contentInternal = null;
                 loadResult = { content: null, error: protocolError, isEncoded: false };
             }
             else {
-                this.contentInternal = response.content;
-                this.contentLoadError = null;
+                this.#contentInternal = response.content;
                 loadResult = { content: response.content, isEncoded: response.base64Encoded };
             }
-            this.contentEncodedInternal = response.base64Encoded;
+            this.#contentEncodedInternal = response.base64Encoded;
         }
-        if (this.contentInternal === null) {
-            this.contentEncodedInternal = false;
+        if (this.#contentInternal === null) {
+            this.#contentEncodedInternal = false;
         }
-        for (const callback of this.pendingContentCallbacks.splice(0)) {
+        for (const callback of this.#pendingContentCallbacks.splice(0)) {
             callback(loadResult);
         }
-        delete this.contentRequested;
+        this.#contentRequested = undefined;
     }
     hasTextContent() {
-        if (this.type.isTextType()) {
+        if (this.#type.isTextType()) {
             return true;
         }
-        if (this.type === Common.ResourceType.resourceTypes.Other) {
-            return Boolean(this.contentInternal) && !this.contentEncodedInternal;
+        if (this.#type === Common.ResourceType.resourceTypes.Other) {
+            return Boolean(this.#contentInternal) && !this.#contentEncodedInternal;
         }
         return false;
     }
     frame() {
-        return this.frameIdInternal ? this.resourceTreeModel.frameForId(this.frameIdInternal) : null;
+        return this.#frameIdInternal ? this.#resourceTreeModel.frameForId(this.#frameIdInternal) : null;
     }
     statusCode() {
-        return this.requestInternal ? this.requestInternal.statusCode : 0;
+        return this.#requestInternal ? this.#requestInternal.statusCode : 0;
     }
 }
 //# sourceMappingURL=Resource.js.map

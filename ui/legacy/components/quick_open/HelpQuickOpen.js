@@ -21,8 +21,12 @@ export class HelpQuickOpen extends Provider {
         return helpQuickOpenInstance;
     }
     addProvider(extension) {
-        if (extension.title) {
-            this.providers.push({ prefix: extension.prefix || '', iconName: extension.iconName, title: extension.title() });
+        if (extension.titleSuggestion) {
+            this.providers.push({
+                prefix: extension.prefix || '',
+                iconName: extension.iconName,
+                title: extension.titlePrefix() + ' ' + extension.titleSuggestion(),
+            });
         }
     }
     itemCount() {
@@ -58,7 +62,8 @@ export class HelpQuickOpen extends Provider {
 registerProvider({
     prefix: '?',
     iconName: 'ic_command_help',
-    title: undefined,
     provider: () => Promise.resolve(HelpQuickOpen.instance()),
+    titlePrefix: () => 'Help',
+    titleSuggestion: undefined,
 });
 //# sourceMappingURL=HelpQuickOpen.js.map

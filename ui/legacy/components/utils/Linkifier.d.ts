@@ -22,7 +22,7 @@ export declare class Linkifier implements SDK.TargetManager.Observer {
     linkifyScriptLocation(target: SDK.Target.Target | null, scriptId: Protocol.Runtime.ScriptId | null, sourceURL: string, lineNumber: number | undefined, options?: LinkifyOptions): HTMLElement;
     linkifyRawLocation(rawLocation: SDK.DebuggerModel.Location, fallbackUrl: string, className?: string): Element;
     maybeLinkifyConsoleCallFrame(target: SDK.Target.Target | null, callFrame: Protocol.Runtime.CallFrame, options?: LinkifyOptions): HTMLElement | null;
-    linkifyStackTraceTopFrame(target: SDK.Target.Target, stackTrace: Protocol.Runtime.StackTrace, classes?: string): HTMLElement;
+    linkifyStackTraceTopFrame(target: SDK.Target.Target, stackTrace: Protocol.Runtime.StackTrace, className?: string): HTMLElement;
     linkifyCSSLocation(rawLocation: SDK.CSSModel.CSSLocation, classes?: string): Element;
     reset(): void;
     dispose(): void;
@@ -50,13 +50,16 @@ export declare class Linkifier implements SDK.TargetManager.Observer {
         handler: () => Promise<void> | void;
     }[];
 }
-export interface LinkDecorator extends Common.EventTarget.EventTarget {
+export interface LinkDecorator extends Common.EventTarget.EventTarget<LinkDecorator.EventTypes> {
     linkIcon(uiSourceCode: Workspace.UISourceCode.UISourceCode): UI.Icon.Icon | null;
 }
 export declare namespace LinkDecorator {
     enum Events {
         LinkIconChanged = "LinkIconChanged"
     }
+    type EventTypes = {
+        [Events.LinkIconChanged]: Workspace.UISourceCode.UISourceCode;
+    };
 }
 export declare class LinkContextMenuProvider implements UI.ContextMenu.Provider {
     static instance(opts?: {
@@ -97,6 +100,7 @@ export interface LinkifyURLOptions {
     className?: string;
     lineNumber?: number;
     columnNumber?: number;
+    showColumnNumber: boolean;
     inlineFrameIndex: number;
     preventClick?: boolean;
     maxLength?: number;
@@ -106,6 +110,7 @@ export interface LinkifyURLOptions {
 export interface LinkifyOptions {
     className?: string;
     columnNumber?: number;
+    showColumnNumber?: boolean;
     inlineFrameIndex: number;
     tabStop?: boolean;
 }

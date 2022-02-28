@@ -53,7 +53,7 @@ export class UISourceCode extends Common.ObjectWrapper.ObjectWrapper {
     nameInternal;
     contentTypeInternal;
     requestContentPromise;
-    decorations;
+    decorations = new Map();
     hasCommitsInternal;
     messagesInternal;
     contentLoadedInternal;
@@ -85,7 +85,6 @@ export class UISourceCode extends Common.ObjectWrapper.ObjectWrapper {
         }
         this.contentTypeInternal = contentType;
         this.requestContentPromise = null;
-        this.decorations = null;
         this.hasCommitsInternal = false;
         this.messagesInternal = null;
         this.contentLoadedInternal = false;
@@ -168,6 +167,7 @@ export class UISourceCode extends Common.ObjectWrapper.ObjectWrapper {
         this.dispatchEventToListeners(Events.TitleChanged, this);
         this.project().workspace().dispatchEventToListeners(WorkspaceImplEvents.UISourceCodeRenamed, { oldURL: oldURL, uiSourceCode: this });
     }
+    // TODO(crbug.com/1253323): Cast to RawPathString will be removed when migration to branded types is complete.
     contentURL() {
         return this.url();
     }
@@ -239,7 +239,7 @@ export class UISourceCode extends Common.ObjectWrapper.ObjectWrapper {
         }
         await Common.Revealer.reveal(this);
         // Make sure we are in the next frame before stopping the world with confirm
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise(resolve => window.setTimeout(resolve, 0));
         const shouldUpdate = window.confirm(i18nString(UIStrings.thisFileWasChangedExternally));
         if (shouldUpdate) {
             this.contentCommitted(updatedContent.content, false);
@@ -253,7 +253,7 @@ export class UISourceCode extends Common.ObjectWrapper.ObjectWrapper {
     }
     commitContent(content) {
         if (this.projectInternal.canSetFileContent()) {
-            this.projectInternal.setFileContent(this, content, false);
+            void this.projectInternal.setFileContent(this, content, false);
         }
         this.contentCommitted(content, true);
     }
@@ -303,7 +303,7 @@ export class UISourceCode extends Common.ObjectWrapper.ObjectWrapper {
     setContent(content, isBase64) {
         this.contentEncodedInternal = isBase64;
         if (this.projectInternal.canSetFileContent()) {
-            this.projectInternal.setFileContent(this, content, isBase64);
+            void this.projectInternal.setFileContent(this, content, isBase64);
         }
         this.contentCommitted(content, true);
     }
@@ -383,40 +383,14 @@ export class UISourceCode extends Common.ObjectWrapper.ObjectWrapper {
         }
         this.messagesInternal = null;
     }
-    addLineDecoration(lineNumber, type, data) {
-        this.addDecoration(TextUtils.TextRange.TextRange.createFromLocation(lineNumber, 0), type, data);
-    }
-    addDecoration(range, type, data) {
-        const marker = new LineMarker(range, type, data);
-        if (!this.decorations) {
-            this.decorations = new Platform.MapUtilities.Multimap();
+    setDecorationData(type, data) {
+        if (data !== this.decorations.get(type)) {
+            this.decorations.set(type, data);
+            this.dispatchEventToListeners(Events.DecorationChanged, type);
         }
-        this.decorations.set(type, marker);
-        this.dispatchEventToListeners(Events.LineDecorationAdded, marker);
     }
-    removeDecorationsForType(type) {
-        if (!this.decorations) {
-            return;
-        }
-        const markers = this.decorations.get(type);
-        this.decorations.deleteAll(type);
-        markers.forEach(marker => {
-            this.dispatchEventToListeners(Events.LineDecorationRemoved, marker);
-        });
-    }
-    allDecorations() {
-        return this.decorations ? this.decorations.valuesArray() : [];
-    }
-    removeAllDecorations() {
-        if (!this.decorations) {
-            return;
-        }
-        const decorationList = this.decorations.valuesArray();
-        this.decorations.clear();
-        decorationList.forEach(marker => this.dispatchEventToListeners(Events.LineDecorationRemoved, marker));
-    }
-    decorationsForType(type) {
-        return this.decorations ? this.decorations.get(type) : null;
+    getDecorationData(type) {
+        return this.decorations.get(type);
     }
     disableEdit() {
         this.disableEditInternal = true;
@@ -434,8 +408,7 @@ export var Events;
     Events["TitleChanged"] = "TitleChanged";
     Events["MessageAdded"] = "MessageAdded";
     Events["MessageRemoved"] = "MessageRemoved";
-    Events["LineDecorationAdded"] = "LineDecorationAdded";
-    Events["LineDecorationRemoved"] = "LineDecorationRemoved";
+    Events["DecorationChanged"] = "DecorationChanged";
 })(Events || (Events = {}));
 export class UILocation {
     uiSourceCode;
@@ -446,7 +419,7 @@ export class UILocation {
         this.lineNumber = lineNumber;
         this.columnNumber = columnNumber;
     }
-    linkText(skipTrim) {
+    linkText(skipTrim, showColumnNumber) {
         let linkText = this.uiSourceCode.displayName(skipTrim);
         if (this.uiSourceCode.mimeType() === 'application/wasm') {
             // For WebAssembly locations, we follow the conventions described in
@@ -455,8 +428,11 @@ export class UILocation {
                 linkText += `:0x${this.columnNumber.toString(16)}`;
             }
         }
-        else if (typeof this.lineNumber === 'number') {
+        else {
             linkText += ':' + (this.lineNumber + 1);
+            if (showColumnNumber && typeof this.columnNumber === 'number') {
+                linkText += ':' + (this.columnNumber + 1);
+            }
         }
         return linkText;
     }

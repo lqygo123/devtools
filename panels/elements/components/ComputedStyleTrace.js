@@ -7,30 +7,30 @@ import computedStyleTraceStyles from './computedStyleTrace.css.js';
 const { render, html } = LitHtml;
 export class ComputedStyleTrace extends HTMLElement {
     static litTagName = LitHtml.literal `devtools-computed-style-trace`;
-    shadow = this.attachShadow({ mode: 'open' });
-    selector = '';
-    active = false;
-    onNavigateToSource = () => { };
+    #shadow = this.attachShadow({ mode: 'open' });
+    #selector = '';
+    #active = false;
+    #onNavigateToSource = () => { };
     connectedCallback() {
-        this.shadow.adoptedStyleSheets = [computedStyleTraceStyles];
+        this.#shadow.adoptedStyleSheets = [computedStyleTraceStyles];
     }
     set data(data) {
-        this.selector = data.selector;
-        this.active = data.active;
-        this.onNavigateToSource = data.onNavigateToSource;
-        this.render();
+        this.#selector = data.selector;
+        this.#active = data.active;
+        this.#onNavigateToSource = data.onNavigateToSource;
+        this.#render();
     }
-    render() {
+    #render() {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
         render(html `
-      <div class="computed-style-trace ${this.active ? 'active' : 'inactive'}">
-        <span class="goto" @click=${this.onNavigateToSource}></span>
-        <slot name="trace-value" @click=${this.onNavigateToSource}></slot>
-        <span class="trace-selector">${this.selector}</span>
+      <div class="computed-style-trace ${this.#active ? 'active' : 'inactive'}">
+        <span class="goto" @click=${this.#onNavigateToSource}></span>
+        <slot name="trace-value" @click=${this.#onNavigateToSource}></slot>
+        <span class="trace-selector">${this.#selector}</span>
         <slot name="trace-link"></slot>
       </div>
-    `, this.shadow, {
+    `, this.#shadow, {
             host: this,
         });
         // clang-format on

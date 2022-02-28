@@ -33,19 +33,19 @@ export class WebBundleInfoView extends UI.Widget.VBox {
 }
 export class WebBundleInfoElement extends HTMLElement {
     static litTagName = LitHtml.literal `devtools-web-bundle-info`;
-    shadow = this.attachShadow({ mode: 'open' });
-    webBundleInfo;
-    webBundleName;
+    #shadow = this.attachShadow({ mode: 'open' });
+    #webBundleInfo;
+    #webBundleName;
     constructor(webBundleInfo, webBundleName) {
         super();
-        this.webBundleInfo = webBundleInfo;
-        this.webBundleName = webBundleName;
+        this.#webBundleInfo = webBundleInfo;
+        this.#webBundleName = webBundleName;
     }
     connectedCallback() {
-        this.shadow.adoptedStyleSheets = [webBundleInfoViewStyles];
+        this.#shadow.adoptedStyleSheets = [webBundleInfoViewStyles];
     }
     render() {
-        const rows = this.webBundleInfo.resourceUrls?.map(url => {
+        const rows = this.#webBundleInfo.resourceUrls?.map(url => {
             const mimeType = Common.ResourceType.ResourceType.mimeFromURL(url) || null;
             const resourceType = Common.ResourceType.ResourceType.fromMimeTypeOverride(mimeType) ||
                 Common.ResourceType.ResourceType.fromMimeType(mimeType);
@@ -73,7 +73,7 @@ export class WebBundleInfoElement extends HTMLElement {
         <${IconButton.Icon.Icon.litTagName} class="icon"
           .data=${{ color: '', iconName: 'resourceWebBundle', width: '16px' }}>
         </${IconButton.Icon.Icon.litTagName}>
-        <span>${this.webBundleName}</span>
+        <span>${this.#webBundleName}</span>
         <x-link href="https://web.dev/web-bundles/#explaining-web-bundles">
           <${IconButton.Icon.Icon.litTagName} class="icon"
             .data=${{ color: 'var(--color-text-secondary)', iconName: 'help_outline', width: '16px' }}>
@@ -96,7 +96,7 @@ export class WebBundleInfoElement extends HTMLElement {
             activeSort: null,
         }}>
         </${DataGrid.DataGrid.DataGrid.litTagName}>
-      </div>`, this.shadow);
+      </div>`, this.#shadow, { host: this });
     }
 }
 ComponentHelpers.CustomElements.defineComponent('devtools-web-bundle-info', WebBundleInfoElement);

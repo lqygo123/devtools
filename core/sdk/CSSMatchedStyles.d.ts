@@ -5,16 +5,7 @@ import { CSSKeyframesRule, CSSStyleRule } from './CSSRule.js';
 import { CSSStyleDeclaration } from './CSSStyleDeclaration.js';
 import type { DOMNode } from './DOMModel.js';
 export declare class CSSMatchedStyles {
-    private readonly cssModelInternal;
-    private readonly nodeInternal;
-    private readonly addedStyles;
-    private readonly matchingSelectors;
-    private readonly keyframesInternal;
-    private readonly nodeForStyleInternal;
-    private readonly inheritedStyles;
-    private readonly mainDOMCascade;
-    private readonly pseudoDOMCascades;
-    private readonly styleToDOMCascade;
+    #private;
     constructor(cssModel: CSSModel, node: DOMNode, inlinePayload: Protocol.CSS.CSSStyle | null, attributesPayload: Protocol.CSS.CSSStyle | null, matchedPayload: Protocol.CSS.RuleMatch[], pseudoPayload: Protocol.CSS.PseudoElementMatches[], inheritedPayload: Protocol.CSS.InheritedStyleEntry[], animationsPayload: Protocol.CSS.CSSKeyframesRule[]);
     private buildMainCascade;
     private buildPseudoCascades;
@@ -37,7 +28,7 @@ export declare class CSSMatchedStyles {
     computeCSSVariable(style: CSSStyleDeclaration, variableName: string): string | null;
     computeValue(style: CSSStyleDeclaration, value: string): string | null;
     /**
-     * Same as computeValue, but to be used for `var(--name [,...])` values only
+     * Same as computeValue, but to be used for `var(--#name [,...])` values only
      */
     computeSingleVariableValue(style: CSSStyleDeclaration, cssVariableValue: string): {
         computedValue: string | null;

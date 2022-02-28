@@ -16,7 +16,7 @@ export declare class LiveHeapProfileView extends UI.Widget.VBox {
     createDataGrid(): DataGrid.SortableDataGrid.SortableDataGrid<GridNode>;
     wasShown(): void;
     willHide(): void;
-    settingChanged(value: Common.EventTarget.EventTargetEvent): void;
+    settingChanged(value: Common.EventTarget.EventTargetEvent<boolean>): void;
     poll(): Promise<void>;
     update(isolates: SDK.IsolateManager.Isolate[], profiles: (Protocol.HeapProfiler.SamplingHeapProfile | null)[]): void;
     onKeyDown(event: KeyboardEvent): void;

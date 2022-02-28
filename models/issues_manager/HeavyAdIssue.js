@@ -12,17 +12,17 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('models/issues_manager/HeavyAdIssue.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class HeavyAdIssue extends Issue {
-    issueDetails;
+    #issueDetails;
     constructor(issueDetails, issuesModel) {
         const umaCode = ["HeavyAdIssue" /* HeavyAdIssue */, issueDetails.reason].join('::');
         super({ code: "HeavyAdIssue" /* HeavyAdIssue */, umaCode }, issuesModel);
-        this.issueDetails = issueDetails;
+        this.#issueDetails = issueDetails;
     }
     details() {
-        return this.issueDetails;
+        return this.#issueDetails;
     }
     primaryKey() {
-        return `${"HeavyAdIssue" /* HeavyAdIssue */}-${JSON.stringify(this.issueDetails)}`;
+        return `${"HeavyAdIssue" /* HeavyAdIssue */}-${JSON.stringify(this.#issueDetails)}`;
     }
     getDescription() {
         return {
@@ -39,7 +39,7 @@ export class HeavyAdIssue extends Issue {
         return IssueCategory.HeavyAd;
     }
     getKind() {
-        switch (this.issueDetails.resolution) {
+        switch (this.#issueDetails.resolution) {
             case "HeavyAdBlocked" /* HeavyAdBlocked */:
                 return IssueKind.PageError;
             case "HeavyAdWarning" /* HeavyAdWarning */:

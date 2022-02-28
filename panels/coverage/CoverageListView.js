@@ -126,8 +126,8 @@ export class CoverageListView extends UI.Widget.VBox {
         this.isVisibleFilter = isVisibleFilter;
         this.highlightRegExp = null;
         const columns = [
-            { id: 'url', title: i18nString(UIStrings.url), width: '250px', fixedWidth: false, sortable: true },
-            { id: 'type', title: i18nString(UIStrings.type), width: '45px', fixedWidth: true, sortable: true },
+            { id: 'url', title: i18nString(UIStrings.url), width: '250px', weight: 3, fixedWidth: false, sortable: true },
+            { id: 'type', title: i18nString(UIStrings.type), width: '45px', weight: 1, fixedWidth: true, sortable: true },
             {
                 id: 'size',
                 title: i18nString(UIStrings.totalBytes),
@@ -135,6 +135,7 @@ export class CoverageListView extends UI.Widget.VBox {
                 fixedWidth: true,
                 sortable: true,
                 align: DataGrid.DataGrid.Align.Right,
+                weight: 1,
             },
             {
                 id: 'unusedSize',
@@ -144,8 +145,16 @@ export class CoverageListView extends UI.Widget.VBox {
                 sortable: true,
                 align: DataGrid.DataGrid.Align.Right,
                 sort: DataGrid.DataGrid.Order.Descending,
+                weight: 1,
             },
-            { id: 'bars', title: i18nString(UIStrings.usageVisualization), width: '250px', fixedWidth: false, sortable: true },
+            {
+                id: 'bars',
+                title: i18nString(UIStrings.usageVisualization),
+                width: '250px',
+                fixedWidth: false,
+                sortable: true,
+                weight: 1,
+            },
         ];
         this.dataGrid = new DataGrid.SortableDataGrid.SortableDataGrid({
             displayName: i18nString(UIStrings.codeCoverage),
@@ -223,14 +232,14 @@ export class CoverageListView extends UI.Widget.VBox {
         }
     }
     onOpenedNode() {
-        this.revealSourceForSelectedNode();
+        void this.revealSourceForSelectedNode();
     }
     onKeyDown(event) {
         if (!(event.key === 'Enter')) {
             return;
         }
         event.consume(true);
-        this.revealSourceForSelectedNode();
+        void this.revealSourceForSelectedNode();
     }
     async revealSourceForSelectedNode() {
         const node = this.dataGrid.selectedNode;
@@ -247,7 +256,7 @@ export class CoverageListView extends UI.Widget.VBox {
         if (this.dataGrid.selectedNode !== node) {
             return;
         }
-        Common.Revealer.reveal(sourceCode);
+        void Common.Revealer.reveal(sourceCode);
     }
     sortingChanged() {
         const columnId = this.dataGrid.sortColumnId();

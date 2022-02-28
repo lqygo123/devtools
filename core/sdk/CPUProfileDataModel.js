@@ -62,12 +62,12 @@ export class CPUProfileDataModel extends ProfileTreeModel {
     lines;
     totalHitCount;
     profileHead;
-    idToNode;
+    #idToNode;
     gcNode;
     programNode;
     idleNode;
-    stackStartTimes;
-    stackChildrenDuration;
+    #stackStartTimes;
+    #stackChildrenDuration;
     constructor(profile, target) {
         super(target);
         // @ts-ignore Legacy types
@@ -282,8 +282,8 @@ export class CPUProfileDataModel extends ProfileTreeModel {
         this.profileEndTime = timestamps[timestamps.length - 1];
     }
     buildIdToNodeMap() {
-        this.idToNode = new Map();
-        const idToNode = this.idToNode;
+        this.#idToNode = new Map();
+        const idToNode = this.#idToNode;
         const stack = [this.profileHead];
         while (stack.length) {
             const node = stack.pop();
@@ -322,7 +322,7 @@ export class CPUProfileDataModel extends ProfileTreeModel {
         if (!this.programNode || samplesCount < 3) {
             return;
         }
-        const idToNode = this.idToNode;
+        const idToNode = this.#idToNode;
         const programNodeId = this.programNode.id;
         const gcNodeId = this.gcNode ? this.gcNode.id : -1;
         const idleNodeId = this.idleNode ? this.idleNode.id : -1;
@@ -361,7 +361,7 @@ export class CPUProfileDataModel extends ProfileTreeModel {
         stopTime = stopTime || Infinity;
         const samples = this.samples;
         const timestamps = this.timestamps;
-        const idToNode = this.idToNode;
+        const idToNode = this.#idToNode;
         const gcNode = this.gcNode;
         const samplesCount = samples.length;
         const startIndex = Platform.ArrayUtilities.lowerBound(timestamps, startTime, Platform.ArrayUtilities.DEFAULT_COMPARATOR);
@@ -373,14 +373,14 @@ export class CPUProfileDataModel extends ProfileTreeModel {
         // Extra slots for gc being put on top,
         // and one at the bottom to allow safe stackTop-1 access.
         const stackDepth = this.maxDepth + 3;
-        if (!this.stackStartTimes) {
-            this.stackStartTimes = new Float64Array(stackDepth);
+        if (!this.#stackStartTimes) {
+            this.#stackStartTimes = new Float64Array(stackDepth);
         }
-        const stackStartTimes = this.stackStartTimes;
-        if (!this.stackChildrenDuration) {
-            this.stackChildrenDuration = new Float64Array(stackDepth);
+        const stackStartTimes = this.#stackStartTimes;
+        if (!this.#stackChildrenDuration) {
+            this.#stackChildrenDuration = new Float64Array(stackDepth);
         }
-        const stackChildrenDuration = this.stackChildrenDuration;
+        const stackChildrenDuration = this.#stackChildrenDuration;
         let node;
         let sampleIndex;
         for (sampleIndex = startIndex; sampleIndex < samplesCount; sampleIndex++) {
@@ -459,7 +459,7 @@ export class CPUProfileDataModel extends ProfileTreeModel {
         }
     }
     nodeByIndex(index) {
-        return this.samples && this.idToNode.get(this.samples[index]) || null;
+        return this.samples && this.#idToNode.get(this.samples[index]) || null;
     }
 }
 //# sourceMappingURL=CPUProfileDataModel.js.map

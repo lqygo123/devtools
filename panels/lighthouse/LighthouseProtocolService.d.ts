@@ -1,6 +1,5 @@
-import * as Common from '../../core/common/common.js';
 import type * as ReportRenderer from './LighthouseReporterTypes.js';
-export declare class ProtocolService extends Common.ObjectWrapper.ObjectWrapper {
+export declare class ProtocolService {
     private rawConnection?;
     private lighthouseWorkerPromise?;
     private lighthouseMessageUpdateCallback?;

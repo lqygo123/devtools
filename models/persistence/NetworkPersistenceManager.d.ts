@@ -1,6 +1,7 @@
 import * as Common from '../../core/common/common.js';
+import * as SDK from '../../core/sdk/sdk.js';
 import * as Workspace from '../workspace/workspace.js';
-export declare class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
+export declare class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements SDK.TargetManager.Observer {
     private bindings;
     private readonly originalResponseContentPromises;
     private savingForOverrides;
@@ -16,6 +17,8 @@ export declare class NetworkPersistenceManager extends Common.ObjectWrapper.Obje
     private enabled;
     private eventDescriptors;
     private constructor();
+    targetAdded(): void;
+    targetRemoved(): void;
     static instance(opts?: {
         forceNew: boolean | null;
         workspace: Workspace.Workspace.WorkspaceImpl | null;

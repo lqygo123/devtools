@@ -8,6 +8,7 @@ import type { PageResourceLoadInitiator } from './PageResourceLoader.js';
 import type { ExecutionContext } from './RuntimeModel.js';
 import type { Target } from './Target.js';
 export declare class Script implements TextUtils.ContentProvider.ContentProvider, FrameAssociated {
+    #private;
     debuggerModel: DebuggerModel;
     scriptId: Protocol.Runtime.ScriptId;
     sourceURL: string;
@@ -17,18 +18,11 @@ export declare class Script implements TextUtils.ContentProvider.ContentProvider
     endColumn: number;
     executionContextId: number;
     hash: string;
-    private readonly isContentScriptInternal;
-    private readonly isLiveEditInternal;
     sourceMapURL: string | undefined;
     debugSymbols: Protocol.Debugger.DebugSymbols | null;
     hasSourceURL: boolean;
     contentLength: number;
-    private originalContentProviderInternal;
     originStackTrace: Protocol.Runtime.StackTrace | null;
-    private readonly codeOffsetInternal;
-    private readonly language;
-    private contentPromise;
-    private readonly embedderNameInternal;
     readonly isModule: boolean | null;
     constructor(debuggerModel: DebuggerModel, scriptId: Protocol.Runtime.ScriptId, sourceURL: string, startLine: number, startColumn: number, endLine: number, endColumn: number, executionContextId: number, hash: string, isContentScript: boolean, isLiveEdit: boolean, sourceMapURL: string | undefined, hasSourceURL: boolean, length: number, isModule: boolean | null, originStackTrace: Protocol.Runtime.StackTrace | null, codeOffset: number | null, scriptLanguage: string | null, debugSymbols: Protocol.Debugger.DebugSymbols | null, embedderName: string | null);
     embedderName(): string | null;
@@ -54,7 +48,6 @@ export declare class Script implements TextUtils.ContentProvider.ContentProvider
     toRelativeLocation(location: Location): number[];
     isInlineScript(): boolean;
     isAnonymousScript(): boolean;
-    isInlineScriptWithSourceURL(): boolean;
     setBlackboxedRanges(positions: Protocol.Debugger.ScriptPosition[]): Promise<boolean>;
     containsLocation(lineNumber: number, columnNumber: number): boolean;
     get frameId(): Protocol.Page.FrameId;

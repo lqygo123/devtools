@@ -90,7 +90,7 @@ export class DatabaseTableView extends UI.View.SimpleView {
         return tableName.replace(/\"/g, '""');
     }
     update() {
-        this.database.executeSql('SELECT rowid, * FROM "' + this.escapeTableName(this.tableName) + '"', this.queryFinished.bind(this), this.queryError.bind(this));
+        void this.database.executeSql('SELECT rowid, * FROM "' + this.escapeTableName(this.tableName) + '"', this.queryFinished.bind(this), this.queryError.bind(this));
     }
     // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -156,7 +156,7 @@ export class DatabaseTableView extends UI.View.SimpleView {
         errorMsgElement.textContent = i18nString(UIStrings.anErrorOccurredTryingToreadTheS, { PH1: this.tableName });
         this.element.appendChild(errorMsgElement);
     }
-    refreshButtonClicked(_event) {
+    refreshButtonClicked() {
         this.update();
     }
 }

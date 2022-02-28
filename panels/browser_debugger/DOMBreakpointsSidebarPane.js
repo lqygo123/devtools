@@ -112,22 +112,22 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 let domBreakpointsSidebarPaneInstance;
 export class DOMBreakpointsSidebarPane extends UI.Widget.VBox {
     elementToCheckboxes;
-    emptyElement;
-    breakpoints;
-    list;
-    highlightedBreakpoint;
+    #emptyElement;
+    #breakpoints;
+    #list;
+    #highlightedBreakpoint;
     constructor() {
         super(true);
         this.elementToCheckboxes = new WeakMap();
-        this.emptyElement = this.contentElement.createChild('div', 'gray-info-message');
-        this.emptyElement.textContent = i18nString(UIStrings.noBreakpoints);
-        this.breakpoints = new UI.ListModel.ListModel();
-        this.list = new UI.ListControl.ListControl(this.breakpoints, this, UI.ListControl.ListMode.NonViewport);
-        this.contentElement.appendChild(this.list.element);
-        this.list.element.classList.add('breakpoint-list', 'hidden');
-        UI.ARIAUtils.markAsList(this.list.element);
-        UI.ARIAUtils.setAccessibleName(this.list.element, i18nString(UIStrings.domBreakpointsList));
-        this.emptyElement.tabIndex = -1;
+        this.#emptyElement = this.contentElement.createChild('div', 'gray-info-message');
+        this.#emptyElement.textContent = i18nString(UIStrings.noBreakpoints);
+        this.#breakpoints = new UI.ListModel.ListModel();
+        this.#list = new UI.ListControl.ListControl(this.#breakpoints, this, UI.ListControl.ListMode.NonViewport);
+        this.contentElement.appendChild(this.#list.element);
+        this.#list.element.classList.add('breakpoint-list', 'hidden');
+        UI.ARIAUtils.markAsList(this.#list.element);
+        UI.ARIAUtils.setAccessibleName(this.#list.element, i18nString(UIStrings.domBreakpointsList));
+        this.#emptyElement.tabIndex = -1;
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DOMDebuggerModel.DOMDebuggerModel, SDK.DOMDebuggerModel.Events.DOMBreakpointAdded, this.breakpointAdded, this);
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DOMDebuggerModel.DOMDebuggerModel, SDK.DOMDebuggerModel.Events.DOMBreakpointToggled, this.breakpointToggled, this);
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DOMDebuggerModel.DOMDebuggerModel, SDK.DOMDebuggerModel.Events.DOMBreakpointsRemoved, this.breakpointsRemoved, this);
@@ -137,7 +137,7 @@ export class DOMBreakpointsSidebarPane extends UI.Widget.VBox {
                 this.addBreakpoint(breakpoint);
             }
         }
-        this.highlightedBreakpoint = null;
+        this.#highlightedBreakpoint = null;
         this.update();
     }
     static instance() {
@@ -175,13 +175,14 @@ export class DOMBreakpointsSidebarPane extends UI.Widget.VBox {
         const linkifiedNode = document.createElement('monospace');
         linkifiedNode.style.display = 'block';
         labelElement.appendChild(linkifiedNode);
-        Common.Linkifier.Linkifier.linkify(item.node, { preventKeyboardFocus: true, tooltip: undefined }).then(linkified => {
+        void Common.Linkifier.Linkifier.linkify(item.node, { preventKeyboardFocus: true, tooltip: undefined })
+            .then(linkified => {
             linkifiedNode.appendChild(linkified);
             UI.ARIAUtils.setAccessibleName(checkboxElement, i18nString(UIStrings.sS, { PH1: breakpointTypeText, PH2: linkified.deepTextContent() }));
         });
         labelElement.appendChild(description);
         const checkedStateText = item.enabled ? i18nString(UIStrings.checked) : i18nString(UIStrings.unchecked);
-        if (item === this.highlightedBreakpoint) {
+        if (item === this.#highlightedBreakpoint) {
             element.classList.add('breakpoint-hit');
             UI.ARIAUtils.setDescription(element, i18nString(UIStrings.sBreakpointHit, { PH1: checkedStateText }));
             UI.ARIAUtils.setDescription(checkboxElement, i18nString(UIStrings.breakpointHit));
@@ -189,8 +190,8 @@ export class DOMBreakpointsSidebarPane extends UI.Widget.VBox {
         else {
             UI.ARIAUtils.setDescription(element, checkedStateText);
         }
-        this.emptyElement.classList.add('hidden');
-        this.list.element.classList.remove('hidden');
+        this.#emptyElement.classList.add('hidden');
+        this.#list.element.classList.remove('hidden');
         return element;
     }
     heightForItem(_item) {
@@ -220,7 +221,7 @@ export class DOMBreakpointsSidebarPane extends UI.Widget.VBox {
     breakpointToggled(event) {
         const hadFocus = this.hasFocus();
         const breakpoint = event.data;
-        this.list.refreshItem(breakpoint);
+        this.#list.refreshItem(breakpoint);
         if (hadFocus) {
             this.focus();
         }
@@ -230,21 +231,21 @@ export class DOMBreakpointsSidebarPane extends UI.Widget.VBox {
         const breakpoints = event.data;
         let lastIndex = -1;
         for (const breakpoint of breakpoints) {
-            const index = this.breakpoints.indexOf(breakpoint);
+            const index = this.#breakpoints.indexOf(breakpoint);
             if (index >= 0) {
-                this.breakpoints.remove(index);
+                this.#breakpoints.remove(index);
                 lastIndex = index;
             }
         }
-        if (this.breakpoints.length === 0) {
-            this.emptyElement.classList.remove('hidden');
-            this.setDefaultFocusedElement(this.emptyElement);
-            this.list.element.classList.add('hidden');
+        if (this.#breakpoints.length === 0) {
+            this.#emptyElement.classList.remove('hidden');
+            this.setDefaultFocusedElement(this.#emptyElement);
+            this.#list.element.classList.add('hidden');
         }
         else if (lastIndex >= 0) {
-            const breakpointToSelect = this.breakpoints.at(lastIndex);
+            const breakpointToSelect = this.#breakpoints.at(lastIndex);
             if (breakpointToSelect) {
-                this.list.selectItem(breakpointToSelect);
+                this.#list.selectItem(breakpointToSelect);
             }
         }
         if (hadFocus) {
@@ -252,7 +253,7 @@ export class DOMBreakpointsSidebarPane extends UI.Widget.VBox {
         }
     }
     addBreakpoint(breakpoint) {
-        this.breakpoints.insertWithComparator(breakpoint, (breakpointA, breakpointB) => {
+        this.#breakpoints.insertWithComparator(breakpoint, (breakpointA, breakpointB) => {
             if (breakpointA.type > breakpointB.type) {
                 return -1;
             }
@@ -261,8 +262,8 @@ export class DOMBreakpointsSidebarPane extends UI.Widget.VBox {
             }
             return 0;
         });
-        if (!this.list.selectedItem() || !this.hasFocus()) {
-            this.list.selectItem(this.breakpoints.at(0));
+        if (!this.#list.selectedItem() || !this.hasFocus()) {
+            this.#list.selectItem(this.#breakpoints.at(0));
         }
     }
     contextMenu(breakpoint, event) {
@@ -274,7 +275,7 @@ export class DOMBreakpointsSidebarPane extends UI.Widget.VBox {
         contextMenu.defaultSection().appendItem(i18nString(UIStrings.removeAllDomBreakpoints), () => {
             breakpoint.domDebuggerModel.removeAllDOMBreakpoints();
         });
-        contextMenu.show();
+        void contextMenu.show();
     }
     checkboxClicked(breakpoint, event) {
         breakpoint.domDebuggerModel.toggleDOMBreakpoint(breakpoint, event.target ? event.target.checked : false);
@@ -284,10 +285,10 @@ export class DOMBreakpointsSidebarPane extends UI.Widget.VBox {
     }
     update() {
         const details = UI.Context.Context.instance().flavor(SDK.DebuggerModel.DebuggerPausedDetails);
-        if (this.highlightedBreakpoint) {
-            const oldHighlightedBreakpoint = this.highlightedBreakpoint;
-            this.highlightedBreakpoint = null;
-            this.list.refreshItem(oldHighlightedBreakpoint);
+        if (this.#highlightedBreakpoint) {
+            const oldHighlightedBreakpoint = this.#highlightedBreakpoint;
+            this.#highlightedBreakpoint = null;
+            this.#list.refreshItem(oldHighlightedBreakpoint);
         }
         if (!details || !details.auxData || details.reason !== "DOM" /* DOM */) {
             return;
@@ -302,15 +303,15 @@ export class DOMBreakpointsSidebarPane extends UI.Widget.VBox {
         if (!data) {
             return;
         }
-        for (const breakpoint of this.breakpoints) {
+        for (const breakpoint of this.#breakpoints) {
             if (breakpoint.node === data.node && breakpoint.type === data.type) {
-                this.highlightedBreakpoint = breakpoint;
+                this.#highlightedBreakpoint = breakpoint;
             }
         }
-        if (this.highlightedBreakpoint) {
-            this.list.refreshItem(this.highlightedBreakpoint);
+        if (this.#highlightedBreakpoint) {
+            this.#list.refreshItem(this.#highlightedBreakpoint);
         }
-        UI.ViewManager.ViewManager.instance().showView('sources.domBreakpoints');
+        void UI.ViewManager.ViewManager.instance().showView('sources.domBreakpoints');
     }
     wasShown() {
         super.wasShown();

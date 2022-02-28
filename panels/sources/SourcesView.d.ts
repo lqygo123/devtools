@@ -6,12 +6,14 @@ import type { TabbedEditorContainerDelegate } from './TabbedEditorContainer.js';
 import { TabbedEditorContainer } from './TabbedEditorContainer.js';
 import { UISourceCodeFrame } from './UISourceCodeFrame.js';
 declare const SourcesView_base: (new (...args: any[]) => {
-    "__#1@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<EventTypes, T>>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<Common.EventTarget.EventPayload<EventTypes, T_1>>;
-    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<EventTypes, T_2>>) => void, thisObject?: Object | undefined): void;
+    "__#6@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T]>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>; /**
+    *@description Accessible label for Sources placeholder view actions list
+    */
+    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<EventTypes[T_1]>;
+    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2]>) => void, thisObject?: Object | undefined): void;
     hasEventListeners(eventType: keyof EventTypes): boolean;
-    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<Common.EventTarget.EventPayload<EventTypes, T_3>>): void;
+    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
 }) & typeof UI.Widget.VBox;
 export declare class SourcesView extends SourcesView_base implements TabbedEditorContainerDelegate, UI.SearchableView.Searchable, UI.SearchableView.Replaceable {
     private placeholderOptionArray;
@@ -53,7 +55,10 @@ export declare class SourcesView extends SourcesView_base implements TabbedEdito
     private removeUISourceCodes;
     private projectRemoved;
     private updateScriptViewToolbarItems;
-    showSourceLocation(uiSourceCode: Workspace.UISourceCode.UISourceCode, lineNumber?: number, columnNumber?: number, omitFocus?: boolean, omitHighlight?: boolean): void;
+    showSourceLocation(uiSourceCode: Workspace.UISourceCode.UISourceCode, location?: {
+        lineNumber: number;
+        columnNumber?: number;
+    } | number, omitFocus?: boolean, omitHighlight?: boolean): void;
     private createSourceView;
     private getOrCreateSourceView;
     recycleUISourceCodeFrame(sourceFrame: UISourceCodeFrame, uiSourceCode: Workspace.UISourceCode.UISourceCode): void;
@@ -90,9 +95,6 @@ export declare type EventTypes = {
     [Events.EditorClosed]: EditorClosedEvent;
     [Events.EditorSelected]: Workspace.UISourceCode.UISourceCode;
 };
-/**
- * @interface
- */
 export interface EditorAction {
     getOrCreateButton(sourcesView: SourcesView): UI.Toolbar.ToolbarButton;
 }

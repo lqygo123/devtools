@@ -41,6 +41,7 @@ import { bindCheckbox } from './SettingsUI.js';
 import { Events as TextPromptEvents, TextPrompt } from './TextPrompt.js';
 import { Tooltip } from './Tooltip.js';
 import { CheckboxLabel, LongClickController } from './UIUtils.js';
+import toolbarStyles from './toolbar.css.legacy.js';
 const UIStrings = {
     /**
     *@description Announced screen reader message for ToolbarSettingToggle when the setting is toggled on.
@@ -67,7 +68,8 @@ export class Toolbar {
         this.element.className = className;
         this.element.classList.add('toolbar');
         this.enabled = true;
-        this.shadowRoot = Utils.createShadowRootWithCoreStyles(this.element, { cssFile: 'ui/legacy/toolbar.css', delegatesFocus: undefined });
+        this.shadowRoot =
+            Utils.createShadowRootWithCoreStyles(this.element, { cssFile: toolbarStyles, delegatesFocus: undefined });
         this.contentElement = this.shadowRoot.createChild('div', 'toolbar-shadow');
         this.insertionPoint = this.contentElement.createChild('slot');
     }
@@ -188,13 +190,13 @@ export class Toolbar {
             button.setText(action.title());
         }
         let handler = (_event) => {
-            action.execute();
+            void action.execute();
         };
         if (options.userActionCode) {
             const actionCode = options.userActionCode;
             handler = () => {
                 Host.userMetrics.actionTaken(actionCode);
-                action.execute();
+                void action.execute();
             };
         }
         button.addEventListener(ToolbarButton.Events.Click, handler, action);
@@ -673,7 +675,7 @@ export class ToolbarMenuButton extends ToolbarButton {
             y: this.element.totalOffsetTop() + this.element.offsetHeight,
         });
         this.contextMenuHandler(contextMenu);
-        contextMenu.show();
+        void contextMenu.show();
         this.lastTriggerTime = Date.now();
     }
     clicked(event) {

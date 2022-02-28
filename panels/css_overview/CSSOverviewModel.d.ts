@@ -4,12 +4,12 @@ import type { ContrastIssue } from './CSSOverviewCompletedView.js';
 import type { UnusedDeclaration } from './CSSOverviewUnusedDeclarations.js';
 interface NodeStyleStats {
     elementCount: number;
-    backgroundColors: Map<string, Set<number>>;
-    textColors: Map<string, Set<number>>;
+    backgroundColors: Map<string, Set<Protocol.DOM.BackendNodeId>>;
+    textColors: Map<string, Set<Protocol.DOM.BackendNodeId>>;
     textColorContrastIssues: Map<string, ContrastIssue[]>;
-    fillColors: Map<string, Set<number>>;
-    borderColors: Map<string, Set<number>>;
-    fontInfo: Map<string, Map<string, Map<string, number[]>>>;
+    fillColors: Map<string, Set<Protocol.DOM.BackendNodeId>>;
+    borderColors: Map<string, Set<Protocol.DOM.BackendNodeId>>;
+    fontInfo: Map<string, Map<string, Map<string, Protocol.DOM.BackendNodeId[]>>>;
     unusedDeclarations: Map<string, UnusedDeclaration[]>;
 }
 export interface GlobalStyleStats {
@@ -25,12 +25,8 @@ export interface GlobalStyleStats {
         nonSimple: number;
     };
 }
-export declare class CSSOverviewModel extends SDK.SDKModel.SDKModel {
-    private readonly runtimeAgent;
-    private readonly cssAgent;
-    private readonly domAgent;
-    private readonly domSnapshotAgent;
-    private readonly overlayAgent;
+export declare class CSSOverviewModel extends SDK.SDKModel.SDKModel<void> {
+    #private;
     constructor(target: SDK.Target.Target);
     highlightNode(node: Protocol.DOM.BackendNodeId): void;
     getNodeStyleStats(): Promise<NodeStyleStats>;

@@ -3,12 +3,12 @@ import type { Suggestions } from './SuggestBox.js';
 import type { ToolbarButton } from './Toolbar.js';
 import { HBox } from './Widget.js';
 declare const FilterBar_base: (new (...args: any[]) => {
-    "__#1@#events": Common.ObjectWrapper.ObjectWrapper<FilterBarEventTypes>;
-    addEventListener<T extends FilterBarEvents.Changed>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<FilterBarEventTypes, T>>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<FilterBarEventTypes, T>;
-    once<T_1 extends FilterBarEvents.Changed>(eventType: T_1): Promise<Common.EventTarget.EventPayload<FilterBarEventTypes, T_1>>;
-    removeEventListener<T_2 extends FilterBarEvents.Changed>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<FilterBarEventTypes, T_2>>) => void, thisObject?: Object | undefined): void;
+    "__#6@#events": Common.ObjectWrapper.ObjectWrapper<FilterBarEventTypes>;
+    addEventListener<T extends FilterBarEvents.Changed>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<FilterBarEventTypes[T]>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<FilterBarEventTypes, T>;
+    once<T_1 extends FilterBarEvents.Changed>(eventType: T_1): Promise<FilterBarEventTypes[T_1]>;
+    removeEventListener<T_2 extends FilterBarEvents.Changed>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<FilterBarEventTypes[T_2]>) => void, thisObject?: Object | undefined): void;
     hasEventListeners(eventType: FilterBarEvents.Changed): boolean;
-    dispatchEventToListeners<T_3 extends FilterBarEvents.Changed>(eventType: import("../../core/platform/typescript-utilities.js").NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<Common.EventTarget.EventPayload<FilterBarEventTypes, T_3>>): void;
+    dispatchEventToListeners<T_3 extends FilterBarEvents.Changed>(eventType: import("../../core/platform/typescript-utilities.js").NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<FilterBarEventTypes, T_3>): void;
 }) & typeof HBox;
 export declare class FilterBar extends FilterBar_base {
     private enabled;

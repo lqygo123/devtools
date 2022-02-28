@@ -8,7 +8,9 @@ import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as TextUtils from '../../../../models/text_utils/text_utils.js';
 import * as Diff from '../../../../third_party/diff/diff.js';
+import * as TextPrompt from '../../../../ui/components/text_prompt/text_prompt.js';
 import * as UI from '../../legacy.js';
+import filteredListWidgetStyles from './filteredListWidget.css.js';
 const UIStrings = {
     /**
     * @description Aria label for quick open dialog prompt
@@ -32,9 +34,8 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
     loadTimeout;
     refreshListWithCurrentResult;
     dialog;
-    query;
-    promptElement;
-    prompt;
+    query = '';
+    inputBoxElement;
     hintElement;
     bottomElementsContainer;
     progressElement;
@@ -43,7 +44,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
     list;
     itemElementsContainer;
     notFoundElement;
-    prefix;
+    prefix = '';
     provider;
     queryChangedCallback;
     constructor(provider, promptHistory, queryChangedCallback) {
@@ -56,16 +57,10 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         const listener = this.onKeyDown.bind(this);
         this.contentElement.addEventListener('keydown', listener, true);
         UI.ARIAUtils.markAsCombobox(this.contentElement);
-        this.registerRequiredCSS('ui/legacy/components/quick_open/filteredListWidget.css');
-        this.promptElement = this.contentElement.createChild('div', 'filtered-list-widget-input');
-        UI.ARIAUtils.setAccessibleName(this.promptElement, i18nString(UIStrings.quickOpenPrompt));
-        this.promptElement.setAttribute('spellcheck', 'false');
-        this.promptElement.setAttribute('contenteditable', 'plaintext-only');
-        this.prompt = new UI.TextPrompt.TextPrompt();
-        this.prompt.initialize(() => Promise.resolve([]));
-        const promptProxy = this.prompt.attach(this.promptElement);
-        promptProxy.addEventListener('input', this.onInput.bind(this), false);
-        promptProxy.classList.add('filtered-list-widget-prompt-element');
+        this.inputBoxElement = new TextPrompt.TextPrompt.TextPrompt();
+        this.inputBoxElement.data = { ariaLabel: i18nString(UIStrings.quickOpenPrompt), prefix: '', suggestion: '' };
+        this.inputBoxElement.addEventListener(TextPrompt.TextPrompt.PromptInputEvent.eventName, this.onInput.bind(this), false);
+        this.contentElement.appendChild(this.inputBoxElement);
         this.hintElement = this.contentElement.createChild('div', 'filtered-list-widget-hint');
         this.bottomElementsContainer = this.contentElement.createChild('div', 'vbox');
         this.progressElement = this.bottomElementsContainer.createChild('div', 'filtered-list-widget-progress');
@@ -76,13 +71,13 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         this.itemElementsContainer.classList.add('container');
         this.bottomElementsContainer.appendChild(this.itemElementsContainer);
         this.itemElementsContainer.addEventListener('click', this.onClick.bind(this), false);
+        this.itemElementsContainer.addEventListener('mousemove', this.onMouseMove.bind(this), false);
         UI.ARIAUtils.markAsListBox(this.itemElementsContainer);
-        UI.ARIAUtils.setControls(this.promptElement, this.itemElementsContainer);
-        UI.ARIAUtils.setAutocomplete(this.promptElement, UI.ARIAUtils.AutocompleteInteractionModel.list);
+        UI.ARIAUtils.setControls(this.inputBoxElement, this.itemElementsContainer);
+        UI.ARIAUtils.setAutocomplete(this.inputBoxElement, UI.ARIAUtils.AutocompleteInteractionModel.list);
         this.notFoundElement = this.bottomElementsContainer.createChild('div', 'not-found-text');
         this.notFoundElement.classList.add('hidden');
-        this.setDefaultFocusedElement(this.promptElement);
-        this.prefix = '';
+        this.setDefaultFocusedElement(this.inputBoxElement);
         this.provider = provider;
         this.queryChangedCallback = queryChangedCallback;
     }
@@ -120,6 +115,12 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         }
         return false;
     }
+    setCommandPrefix(commandPrefix) {
+        this.inputBoxElement.setPrefix(commandPrefix);
+    }
+    setCommandSuggestion(suggestion) {
+        this.inputBoxElement.setSuggestion(suggestion);
+    }
     setHintElement(hint) {
         this.hintElement.textContent = hint;
     }
@@ -127,7 +128,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
      * Sets the text prompt's accessible title. By default, it is "Quick open prompt".
      */
     setPromptTitle(title) {
-        UI.ARIAUtils.setAccessibleName(this.promptElement, title);
+        UI.ARIAUtils.setAccessibleName(this.inputBoxElement, title);
     }
     showAsDialog(dialogTitle) {
         if (!dialogTitle) {
@@ -141,7 +142,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         this.dialog.contentElement.style.setProperty('border-radius', '4px');
         this.show(this.dialog.contentElement);
         UI.ARIAUtils.setExpanded(this.contentElement, true);
-        this.dialog.once("hidden" /* Hidden */).then(() => {
+        void this.dialog.once("hidden" /* Hidden */).then(() => {
             this.dispatchEventToListeners("hidden" /* Hidden */);
         });
         // @ts-ignore
@@ -164,7 +165,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         }
     }
     setQuerySelectedRange(startIndex, endIndex) {
-        this.prompt.setSelectedRange(startIndex, endIndex);
+        this.inputBoxElement.setSelectedRange(startIndex, endIndex);
     }
     attachProvider() {
         this.items.replaceAll([]);
@@ -175,13 +176,11 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         }
         this.itemsLoaded(this.provider);
     }
-    value() {
-        return this.prompt.text().trim();
-    }
     cleanValue() {
-        return this.value().substring(this.prefix.length);
+        return this.query.substring(this.prefix.length);
     }
     wasShown() {
+        this.registerCSSFiles([filteredListWidgetStyles]);
         this.attachProvider();
     }
     willHide() {
@@ -200,10 +199,11 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         this.loadTimeout = 0;
         this.refreshListWithCurrentResult = undefined;
     }
-    onEnter(_event) {
+    onEnter(event) {
         if (!this.provider) {
             return;
         }
+        event.preventDefault();
         const selectedIndexInProvider = this.provider.itemCount() ? this.list.selectedItem() : null;
         this.selectItem(selectedIndexInProvider);
         if (this.dialog) {
@@ -249,7 +249,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         if (toElement) {
             toElement.classList.add('selected');
         }
-        UI.ARIAUtils.setActiveDescendant(this.promptElement, toElement);
+        UI.ARIAUtils.setActiveDescendant(this.inputBoxElement, toElement);
     }
     onClick(event) {
         const item = this.list.itemForNode(event.target);
@@ -262,15 +262,22 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
             this.dialog.hide();
         }
     }
+    onMouseMove(event) {
+        const item = this.list.itemForNode(event.target);
+        if (item === null) {
+            return;
+        }
+        this.list.selectItem(item);
+    }
     setQuery(query) {
-        this.prompt.focus();
-        this.prompt.setText(query);
-        this.queryChanged();
-        this.prompt.autoCompleteSoon(true);
+        this.query = query;
+        this.inputBoxElement.focus();
+        this.inputBoxElement.setText(query);
+        void this.queryChanged();
         this.scheduleFilter();
     }
     tabKeyPressed() {
-        const userEnteredText = this.prompt.text();
+        const userEnteredText = this.query;
         let completion;
         for (let i = this.promptHistory.length - 1; i >= 0; i--) {
             if (this.promptHistory[i] !== userEnteredText && this.promptHistory[i].startsWith(userEnteredText)) {
@@ -278,14 +285,20 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
                 break;
             }
         }
-        if (!completion) {
-            return false;
+        // If there is an auto-completion, press 'tab' first time will show the auto-completion, second time will rewrite
+        // the query. Otherwise it will select the next item.
+        if (completion) {
+            const selection = this.inputBoxElement.getComponentSelection();
+            if (selection && selection.toString().trim() !== '') {
+                this.setQuery(completion);
+                return true;
+            }
+            this.inputBoxElement.focus();
+            this.inputBoxElement.setText(completion);
+            this.setQuerySelectedRange(userEnteredText.length, completion.length);
+            return true;
         }
-        this.prompt.focus();
-        this.prompt.setText(completion);
-        this.prompt.setDOMSelection(userEnteredText.length, completion.length);
-        this.scheduleFilter();
-        return true;
+        return this.list.selectNextItem(true, false);
     }
     itemsFilteredForTest() {
         // Sniffed in tests.
@@ -308,7 +321,6 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         this.progressBarElement.style.transform = 'scaleX(0)';
         this.progressBarElement.classList.remove('filtered-widget-progress-fade', 'hidden');
         const query = this.provider.rewriteQuery(this.cleanValue());
-        this.query = query;
         const filterRegex = query ? Platform.StringUtilities.filterRegex(query) : null;
         const filteredItems = [];
         const bestScores = [];
@@ -403,13 +415,14 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
             UI.ARIAUtils.alert(this.notFoundElement.textContent);
         }
     }
-    onInput() {
-        this.queryChanged();
+    onInput(event) {
+        this.query = event.data;
+        void this.queryChanged();
         this.scheduleFilter();
     }
-    queryChanged() {
+    async queryChanged() {
         if (this.queryChangedCallback) {
-            this.queryChangedCallback(this.value());
+            await this.queryChangedCallback(this.query);
         }
         if (this.provider) {
             this.provider.queryChanged(this.cleanValue());
@@ -421,22 +434,26 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
     onKeyDown(keyboardEvent) {
         let handled = false;
         switch (keyboardEvent.key) {
-            case 'Enter':
+            case Platform.KeyboardUtilities.ENTER_KEY:
                 this.onEnter(keyboardEvent);
                 return;
-            case 'Tab':
+            case Platform.KeyboardUtilities.TAB_KEY:
+                if (keyboardEvent.shiftKey) {
+                    handled = this.list.selectPreviousItem(true, false);
+                    break;
+                }
                 handled = this.tabKeyPressed();
                 break;
-            case 'ArrowUp':
+            case "ArrowUp" /* UP */:
                 handled = this.list.selectPreviousItem(true, false);
                 break;
-            case 'ArrowDown':
+            case "ArrowDown" /* DOWN */:
                 handled = this.list.selectNextItem(true, false);
                 break;
-            case 'PageUp':
+            case "PageUp" /* UP */:
                 handled = this.list.selectItemPreviousPage(false);
                 break;
-            case 'PageDown':
+            case "PageDown" /* DOWN */:
                 handled = this.list.selectItemNextPage(false);
                 break;
         }
@@ -451,7 +468,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         this.filterTimer = window.setTimeout(this.filterItems.bind(this), 0);
     }
     selectItem(itemIndex) {
-        this.promptHistory.push(this.value());
+        this.promptHistory.push(this.query);
         if (this.promptHistory.length > 100) {
             this.promptHistory.shift();
         }

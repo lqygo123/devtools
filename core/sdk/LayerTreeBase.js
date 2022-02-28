@@ -16,66 +16,66 @@ export var Layer;
     })(ScrollRectType = Layer.ScrollRectType || (Layer.ScrollRectType = {}));
 })(Layer || (Layer = {}));
 export class StickyPositionConstraint {
-    stickyBoxRectInternal;
-    containingBlockRectInternal;
-    nearestLayerShiftingStickyBoxInternal;
-    nearestLayerShiftingContainingBlockInternal;
+    #stickyBoxRectInternal;
+    #containingBlockRectInternal;
+    #nearestLayerShiftingStickyBoxInternal;
+    #nearestLayerShiftingContainingBlockInternal;
     constructor(layerTree, constraint) {
-        this.stickyBoxRectInternal = constraint.stickyBoxRect;
-        this.containingBlockRectInternal = constraint.containingBlockRect;
-        this.nearestLayerShiftingStickyBoxInternal = null;
+        this.#stickyBoxRectInternal = constraint.stickyBoxRect;
+        this.#containingBlockRectInternal = constraint.containingBlockRect;
+        this.#nearestLayerShiftingStickyBoxInternal = null;
         if (layerTree && constraint.nearestLayerShiftingStickyBox) {
-            this.nearestLayerShiftingStickyBoxInternal = layerTree.layerById(constraint.nearestLayerShiftingStickyBox);
+            this.#nearestLayerShiftingStickyBoxInternal = layerTree.layerById(constraint.nearestLayerShiftingStickyBox);
         }
-        this.nearestLayerShiftingContainingBlockInternal = null;
+        this.#nearestLayerShiftingContainingBlockInternal = null;
         if (layerTree && constraint.nearestLayerShiftingContainingBlock) {
-            this.nearestLayerShiftingContainingBlockInternal =
+            this.#nearestLayerShiftingContainingBlockInternal =
                 layerTree.layerById(constraint.nearestLayerShiftingContainingBlock);
         }
     }
     stickyBoxRect() {
-        return this.stickyBoxRectInternal;
+        return this.#stickyBoxRectInternal;
     }
     containingBlockRect() {
-        return this.containingBlockRectInternal;
+        return this.#containingBlockRectInternal;
     }
     nearestLayerShiftingStickyBox() {
-        return this.nearestLayerShiftingStickyBoxInternal;
+        return this.#nearestLayerShiftingStickyBoxInternal;
     }
     nearestLayerShiftingContainingBlock() {
-        return this.nearestLayerShiftingContainingBlockInternal;
+        return this.#nearestLayerShiftingContainingBlockInternal;
     }
 }
 export class LayerTreeBase {
-    targetInternal;
-    domModel;
+    #targetInternal;
+    #domModel;
     layersById;
-    rootInternal;
-    contentRootInternal;
-    backendNodeIdToNodeInternal;
-    viewportSizeInternal;
+    #rootInternal;
+    #contentRootInternal;
+    #backendNodeIdToNodeInternal;
+    #viewportSizeInternal;
     constructor(target) {
-        this.targetInternal = target;
-        this.domModel = target ? target.model(DOMModel) : null;
+        this.#targetInternal = target;
+        this.#domModel = target ? target.model(DOMModel) : null;
         this.layersById = new Map();
-        this.rootInternal = null;
-        this.contentRootInternal = null;
-        this.backendNodeIdToNodeInternal = new Map();
+        this.#rootInternal = null;
+        this.#contentRootInternal = null;
+        this.#backendNodeIdToNodeInternal = new Map();
     }
     target() {
-        return this.targetInternal;
+        return this.#targetInternal;
     }
     root() {
-        return this.rootInternal;
+        return this.#rootInternal;
     }
     setRoot(root) {
-        this.rootInternal = root;
+        this.#rootInternal = root;
     }
     contentRoot() {
-        return this.contentRootInternal;
+        return this.#contentRootInternal;
     }
     setContentRoot(contentRoot) {
-        this.contentRootInternal = contentRoot;
+        this.#contentRootInternal = contentRoot;
     }
     forEachLayer(callback, root) {
         if (!root) {
@@ -90,28 +90,28 @@ export class LayerTreeBase {
         return this.layersById.get(id) || null;
     }
     async resolveBackendNodeIds(requestedNodeIds) {
-        if (!requestedNodeIds.size || !this.domModel) {
+        if (!requestedNodeIds.size || !this.#domModel) {
             return;
         }
-        const nodesMap = await this.domModel.pushNodesByBackendIdsToFrontend(requestedNodeIds);
+        const nodesMap = await this.#domModel.pushNodesByBackendIdsToFrontend(requestedNodeIds);
         if (!nodesMap) {
             return;
         }
         for (const nodeId of nodesMap.keys()) {
-            this.backendNodeIdToNodeInternal.set(nodeId, nodesMap.get(nodeId) || null);
+            this.#backendNodeIdToNodeInternal.set(nodeId, nodesMap.get(nodeId) || null);
         }
     }
     backendNodeIdToNode() {
-        return this.backendNodeIdToNodeInternal;
+        return this.#backendNodeIdToNodeInternal;
     }
     setViewportSize(viewportSize) {
-        this.viewportSizeInternal = viewportSize;
+        this.#viewportSizeInternal = viewportSize;
     }
     viewportSize() {
-        return this.viewportSizeInternal;
+        return this.#viewportSizeInternal;
     }
     nodeForId(id) {
-        return this.domModel ? this.domModel.nodeForId(id) : null;
+        return this.#domModel ? this.#domModel.nodeForId(id) : null;
     }
 }
 //# sourceMappingURL=LayerTreeBase.js.map

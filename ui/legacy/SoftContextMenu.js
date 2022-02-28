@@ -32,8 +32,9 @@ import * as i18n from '../../core/i18n/i18n.js';
 import * as ARIAUtils from './ARIAUtils.js';
 import { GlassPane } from './GlassPane.js';
 import { Icon } from './Icon.js';
-import * as ThemeSupport from './theme_support/theme_support.js'; // eslint-disable-line rulesdir/es_modules_import
+import * as ThemeSupport from './theme_support/theme_support.js';
 import { createTextChild, ElementFocusRestorer } from './UIUtils.js';
+import softContextMenuStyles from './softContextMenu.css.legacy.js';
 const UIStrings = {
     /**
     *@description Text exposed to screen readers on checked items.
@@ -72,12 +73,14 @@ export class SoftContextMenu {
     hideOnUserGesture;
     activeSubMenuElement;
     subMenu;
-    constructor(items, itemSelectedCallback, parentMenu) {
+    onMenuClosed;
+    constructor(items, itemSelectedCallback, parentMenu, onMenuClosed) {
         this.items = items;
         this.itemSelectedCallback = itemSelectedCallback;
         this.parentMenu = parentMenu;
         this.highlightedMenuItemElement = null;
         this.detailsForElementMap = new WeakMap();
+        this.onMenuClosed = onMenuClosed;
     }
     show(document, anchorBox) {
         if (!this.items.length) {
@@ -86,7 +89,7 @@ export class SoftContextMenu {
         this.document = document;
         this.glassPane = new GlassPane();
         this.glassPane.setPointerEventsBehavior(this.parentMenu ? "PierceGlassPane" /* PierceGlassPane */ : "BlockedByGlassPane" /* BlockedByGlassPane */);
-        this.glassPane.registerRequiredCSS('ui/legacy/softContextMenu.css');
+        this.glassPane.registerRequiredCSS(softContextMenuStyles);
         this.glassPane.setContentAnchorBox(anchorBox);
         this.glassPane.setSizeBehavior("MeasureContent" /* MeasureContent */);
         this.glassPane.setMarginBehavior("NoMargin" /* NoMargin */);
@@ -147,6 +150,7 @@ export class SoftContextMenu {
                 delete this.parentMenu.activeSubMenuElement;
             }
         }
+        this.onMenuClosed?.();
     }
     createMenuItem(item) {
         if (item.type === 'separator') {
@@ -171,7 +175,7 @@ export class SoftContextMenu {
             subItems: undefined,
             subMenuTimer: undefined,
         };
-        if (item.element) {
+        if (item.element && !item.label) {
             const wrapper = menuItemElement.createChild('div', 'soft-context-menu-custom-item');
             wrapper.appendChild(item.element);
             detailsForElement.customElement = item.element;
@@ -182,6 +186,9 @@ export class SoftContextMenu {
             menuItemElement.classList.add('soft-context-menu-disabled');
         }
         createTextChild(menuItemElement, item.label || '');
+        if (item.element) {
+            menuItemElement.appendChild(item.element);
+        }
         menuItemElement.createChild('span', 'soft-context-menu-shortcut').textContent = item.shortcut || '';
         menuItemElement.addEventListener('mousedown', this.menuItemMouseDown.bind(this), false);
         menuItemElement.addEventListener('mouseup', this.menuItemMouseUp.bind(this), false);

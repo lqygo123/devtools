@@ -16,6 +16,7 @@ interface Editor extends HTMLElement {
  * Thin UI.Widget wrapper around style editors to allow using it as a popover.
  */
 export declare class StyleEditorWidget extends UI.Widget.VBox {
+    #private;
     private editor?;
     private pane?;
     private section?;
@@ -25,6 +26,8 @@ export declare class StyleEditorWidget extends UI.Widget.VBox {
     onPropertySelected(event: PropertySelectedEvent): Promise<void>;
     onPropertyDeselected(event: PropertyDeselectedEvent): Promise<void>;
     bindContext(pane: StylesSidebarPane, section: StylePropertiesSection): void;
+    setTriggerKey(value: string): void;
+    getTriggerKey(): string | undefined;
     unbindContext(): void;
     render(): Promise<void>;
     static instance(): StyleEditorWidget;
@@ -33,6 +36,6 @@ export declare class StyleEditorWidget extends UI.Widget.VBox {
     }): void;
     static createTriggerButton(pane: StylesSidebarPane, section: StylePropertiesSection, editorClass: {
         new (): Editor;
-    }, buttonTitle: string): HTMLElement;
+    }, buttonTitle: string, triggerKey: string): HTMLElement;
 }
 export {};

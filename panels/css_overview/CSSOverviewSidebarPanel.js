@@ -25,10 +25,10 @@ export class CSSOverviewSidebarPanel extends Common.ObjectWrapper.eventMixin(UI.
     constructor() {
         super(true);
         this.contentElement.classList.add('overview-sidebar-panel');
-        this.contentElement.addEventListener('click', this.onItemClick.bind(this));
+        this.contentElement.addEventListener('click', this.#onItemClick.bind(this));
         // Clear overview.
         const clearResultsButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.clearOverview), 'largeicon-clear');
-        clearResultsButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.reset, this);
+        clearResultsButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.#reset, this);
         // Toolbar.
         const toolbarElement = this.contentElement.createChild('div', 'overview-toolbar');
         const toolbar = new UI.Toolbar.Toolbar('', toolbarElement);
@@ -39,16 +39,16 @@ export class CSSOverviewSidebarPanel extends Common.ObjectWrapper.eventMixin(UI.
         item.textContent = name;
         item.dataset.id = id;
     }
-    reset() {
+    #reset() {
         this.dispatchEventToListeners("Reset" /* Reset */);
     }
-    deselectAllItems() {
+    #deselectAllItems() {
         const items = this.contentElement.querySelectorAll(`.${CSSOverviewSidebarPanel.ITEM_CLASS_NAME}`);
         items.forEach(item => {
             item.classList.remove(CSSOverviewSidebarPanel.SELECTED);
         });
     }
-    onItemClick(event) {
+    #onItemClick(event) {
         const target = event.composedPath()[0];
         if (!target.classList.contains(CSSOverviewSidebarPanel.ITEM_CLASS_NAME)) {
             return;
@@ -68,7 +68,7 @@ export class CSSOverviewSidebarPanel extends Common.ObjectWrapper.eventMixin(UI.
         if (target.classList.contains(CSSOverviewSidebarPanel.SELECTED)) {
             return;
         }
-        this.deselectAllItems();
+        this.#deselectAllItems();
         target.classList.add(CSSOverviewSidebarPanel.SELECTED);
     }
     wasShown() {

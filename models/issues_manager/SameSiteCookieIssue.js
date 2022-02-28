@@ -31,28 +31,27 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('models/issues_manager/SameSiteCookieIssue.ts', UIStrings);
 const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined, str_);
 export class SameSiteCookieIssue extends Issue {
-    issueDetails;
+    #issueDetails;
     constructor(code, issueDetails, issuesModel) {
         super(code, issuesModel);
-        this.issueDetails = issueDetails;
+        this.#issueDetails = issueDetails;
     }
-    cookieId() {
-        if (this.issueDetails.cookie) {
-            const { domain, path, name } = this.issueDetails.cookie;
+    #cookieId() {
+        if (this.#issueDetails.cookie) {
+            const { domain, path, name } = this.#issueDetails.cookie;
             const cookieId = `${domain};${path};${name}`;
             return cookieId;
         }
-        return this.issueDetails.rawCookieLine ?? 'no-cookie-info';
+        return this.#issueDetails.rawCookieLine ?? 'no-cookie-info';
     }
     primaryKey() {
-        const requestId = this.issueDetails.request ? this.issueDetails.request.requestId : 'no-request';
-        return `${this.code()}-(${this.cookieId()})-(${requestId})`;
+        const requestId = this.#issueDetails.request ? this.#issueDetails.request.requestId : 'no-request';
+        return `${this.code()}-(${this.#cookieId()})-(${requestId})`;
     }
     /**
      * Returns an array of issues from a given SameSiteCookieIssueDetails.
      */
     static createIssuesFromSameSiteDetails(sameSiteDetails, issuesModel) {
-        /** @type {!Array<!Issue>} */
         const issues = [];
         // Exclusion reasons have priority. It means a cookie was blocked. Create an issue
         // for every exclusion reason but ignore warning reasons if the cookie was blocked.
@@ -131,20 +130,20 @@ export class SameSiteCookieIssue extends Issue {
         return ["SameSiteCookieIssue" /* SameSiteCookieIssue */, reason, operation].join('::');
     }
     cookies() {
-        if (this.issueDetails.cookie) {
-            return [this.issueDetails.cookie];
+        if (this.#issueDetails.cookie) {
+            return [this.#issueDetails.cookie];
         }
         return [];
     }
     rawCookieLines() {
-        if (this.issueDetails.rawCookieLine) {
-            return [this.issueDetails.rawCookieLine];
+        if (this.#issueDetails.rawCookieLine) {
+            return [this.#issueDetails.rawCookieLine];
         }
         return [];
     }
     requests() {
-        if (this.issueDetails.request) {
-            return [this.issueDetails.request];
+        if (this.#issueDetails.request) {
+            return [this.#issueDetails.request];
         }
         return [];
     }
@@ -160,10 +159,10 @@ export class SameSiteCookieIssue extends Issue {
     }
     isCausedByThirdParty() {
         const topFrame = SDK.FrameManager.FrameManager.instance().getTopFrame();
-        return isCausedByThirdParty(topFrame, this.issueDetails.cookieUrl);
+        return isCausedByThirdParty(topFrame, this.#issueDetails.cookieUrl);
     }
     getKind() {
-        if (this.issueDetails.cookieExclusionReasons?.length > 0) {
+        if (this.#issueDetails.cookieExclusionReasons?.length > 0) {
             return IssueKind.PageError;
         }
         return IssueKind.BreakingChange;

@@ -6,6 +6,18 @@ import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 const UIStrings = {
     /**
+     *@description The kind of an issue (plural) (Issues are categorized into kinds).
+     */
+    improvements: 'Improvements',
+    /**
+     *@description The kind of an issue (plural) (Issues are categorized into kinds).
+     */
+    pageErrors: 'Page Errors',
+    /**
+     *@description The kind of an issue (plural) (Issues are categorized into kinds).
+     */
+    breakingChanges: 'Breaking Changes',
+    /**
      *@description A description for a kind of issue we display in the issues tab.
      */
     pageErrorIssue: 'A page error issue: the page is not working correctly',
@@ -24,6 +36,7 @@ const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export var IssueCategory;
 (function (IssueCategory) {
     IssueCategory["CrossOriginEmbedderPolicy"] = "CrossOriginEmbedderPolicy";
+    IssueCategory["Generic"] = "Generic";
     IssueCategory["MixedContent"] = "MixedContent";
     IssueCategory["SameSiteCookie"] = "SameSiteCookie";
     IssueCategory["HeavyAd"] = "HeavyAd";
@@ -56,6 +69,16 @@ export var IssueKind;
      */
     IssueKind["Improvement"] = "Improvement";
 })(IssueKind || (IssueKind = {}));
+export function getIssueKindName(issueKind) {
+    switch (issueKind) {
+        case IssueKind.BreakingChange:
+            return i18nString(UIStrings.breakingChanges);
+        case IssueKind.Improvement:
+            return i18nString(UIStrings.improvements);
+        case IssueKind.PageError:
+            return i18nString(UIStrings.pageErrors);
+    }
+}
 export function getIssueKindDescription(issueKind) {
     switch (issueKind) {
         case IssueKind.PageError:
@@ -83,19 +106,19 @@ export function getShowThirdPartyIssuesSetting() {
     return Common.Settings.Settings.instance().createSetting('showThirdPartyIssues', false);
 }
 export class Issue {
-    issueCode;
-    issuesModel;
+    #issueCode;
+    #issuesModel;
     issueId = undefined;
-    hidden;
+    #hidden;
     constructor(code, issuesModel = null, issueId) {
-        this.issueCode = typeof code === 'object' ? code.code : code;
-        this.issuesModel = issuesModel;
+        this.#issueCode = typeof code === 'object' ? code.code : code;
+        this.#issuesModel = issuesModel;
         this.issueId = issueId;
         Host.userMetrics.issueCreated(typeof code === 'string' ? code : code.umaCode);
-        this.hidden = false;
+        this.#hidden = false;
     }
     code() {
-        return this.issueCode;
+        return this.#issueCode;
     }
     getBlockedByResponseDetails() {
         return [];
@@ -127,7 +150,7 @@ export class Issue {
      * The model might be unavailable or belong to a target that has already been disposed.
      */
     model() {
-        return this.issuesModel;
+        return this.#issuesModel;
     }
     isCausedByThirdParty() {
         return false;
@@ -136,10 +159,10 @@ export class Issue {
         return this.issueId;
     }
     isHidden() {
-        return this.hidden;
+        return this.#hidden;
     }
     setHidden(hidden) {
-        this.hidden = hidden;
+        this.#hidden = hidden;
     }
 }
 export function toZeroBasedLocation(location) {

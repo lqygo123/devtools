@@ -40,14 +40,21 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
         this.activeInternal = false;
         this.enabled = false;
         this.workspace.addEventListener(Workspace.Workspace.Events.ProjectAdded, event => {
-            this.onProjectAdded(event.data);
+            void this.onProjectAdded(event.data);
         });
         this.workspace.addEventListener(Workspace.Workspace.Events.ProjectRemoved, event => {
-            this.onProjectRemoved(event.data);
+            void this.onProjectRemoved(event.data);
         });
         PersistenceImpl.instance().addNetworkInterceptor(this.canHandleNetworkUISourceCode.bind(this));
         this.eventDescriptors = [];
-        this.enabledChanged();
+        void this.enabledChanged();
+        SDK.TargetManager.TargetManager.instance().observeTargets(this);
+    }
+    targetAdded() {
+        void this.updateActiveProject();
+    }
+    targetRemoved() {
+        void this.updateActiveProject();
     }
     static instance(opts = { forceNew: null, workspace: null }) {
         const { forceNew, workspace } = opts;
@@ -81,13 +88,13 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
         if (this.enabled) {
             this.eventDescriptors = [
                 Workspace.Workspace.WorkspaceImpl.instance().addEventListener(Workspace.Workspace.Events.UISourceCodeRenamed, event => {
-                    this.uiSourceCodeRenamedListener(event);
+                    void this.uiSourceCodeRenamedListener(event);
                 }),
                 Workspace.Workspace.WorkspaceImpl.instance().addEventListener(Workspace.Workspace.Events.UISourceCodeAdded, event => {
-                    this.uiSourceCodeAdded(event);
+                    void this.uiSourceCodeAdded(event);
                 }),
                 Workspace.Workspace.WorkspaceImpl.instance().addEventListener(Workspace.Workspace.Events.UISourceCodeRemoved, event => {
-                    this.uiSourceCodeRemovedListener(event);
+                    void this.uiSourceCodeRemovedListener(event);
                 }),
                 Workspace.Workspace.WorkspaceImpl.instance().addEventListener(Workspace.Workspace.Events.WorkingCopyCommitted, event => this.onUISourceCodeWorkingCopyCommitted(event.data.uiSourceCode)),
             ];
@@ -221,7 +228,7 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
         PersistenceImpl.instance().syncContent(uiSourceCodeOfTruth, content || '', encoded);
     }
     onUISourceCodeWorkingCopyCommitted(uiSourceCode) {
-        this.saveUISourceCodeForOverrides(uiSourceCode);
+        void this.saveUISourceCodeForOverrides(uiSourceCode);
     }
     canSaveUISourceCodeForOverrides(uiSourceCode) {
         return this.activeInternal && uiSourceCode.project().type() === Workspace.Workspace.projectTypes.Network &&
@@ -288,7 +295,7 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
         }
     }
     updateInterceptionPatterns() {
-        this.updateInterceptionThrottler.schedule(innerUpdateInterceptionPatterns.bind(this));
+        void this.updateInterceptionThrottler.schedule(innerUpdateInterceptionPatterns.bind(this));
         function innerUpdateInterceptionPatterns() {
             if (!this.activeInternal || !this.projectInternal) {
                 return SDK.NetworkManager.MultitargetNetworkManager.instance().setInterceptionHandlerForPatterns([], this.interceptionHandlerBound);
@@ -396,7 +403,7 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
         }));
         const blob = await project.requestFileBlob(fileSystemUISourceCode);
         if (blob) {
-            interceptedRequest.continueRequestWithContent(new Blob([blob], { type: mimeType }));
+            void interceptedRequest.continueRequestWithContent(new Blob([blob], { type: mimeType }));
         }
     }
 }

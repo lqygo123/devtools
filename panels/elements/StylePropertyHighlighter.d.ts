@@ -16,5 +16,6 @@ export declare class StylePropertyHighlighter {
      * return the first tree element and corresponding section for which the callback returns a truthy value.
      */
     private findTreeElementAndSection;
+    private findTreeElementFromSection;
     private scrollAndHighlightTreeElement;
 }

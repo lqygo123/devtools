@@ -11,7 +11,6 @@ import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import cssOverviewCompletedViewStyles from './cssOverviewCompletedView.css.js';
-import { Events as CSSOverViewControllerEvents } from './CSSOverviewController.js';
 import { CSSOverviewSidebarPanel } from './CSSOverviewSidebarPanel.js';
 const UIStrings = {
     /**
@@ -175,97 +174,97 @@ function getBorderString(color) {
     return `1px solid hsl(${h}deg ${s}% ${l}%)`;
 }
 export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
-    controller;
-    formatter;
-    mainContainer;
-    resultsContainer;
-    elementContainer;
-    sideBar;
-    cssModel;
-    domModel;
-    domAgent;
-    linkifier;
-    viewMap;
-    data;
-    fragment;
-    constructor(controller, target) {
+    #controller;
+    #formatter;
+    #mainContainer;
+    #resultsContainer;
+    #elementContainer;
+    #sideBar;
+    #cssModel;
+    #domModel;
+    #linkifier;
+    #viewMap;
+    #data;
+    #fragment;
+    constructor(controller) {
         super('css_overview_completed_view');
-        this.controller = controller;
-        this.formatter = new Intl.NumberFormat('en-US');
-        this.mainContainer = new UI.SplitWidget.SplitWidget(true, true);
-        this.resultsContainer = new UI.Widget.VBox();
-        this.elementContainer = new DetailsView();
+        this.#controller = controller;
+        this.#formatter = new Intl.NumberFormat('en-US');
+        this.#mainContainer = new UI.SplitWidget.SplitWidget(true, true);
+        this.#resultsContainer = new UI.Widget.VBox();
+        this.#elementContainer = new DetailsView();
         // If closing the last tab, collapse the sidebar.
-        this.elementContainer.addEventListener("TabClosed" /* TabClosed */, evt => {
+        this.#elementContainer.addEventListener("TabClosed" /* TabClosed */, evt => {
             if (evt.data === 0) {
-                this.mainContainer.setSidebarMinimized(true);
+                this.#mainContainer.setSidebarMinimized(true);
             }
         });
         // Dupe the styles into the main container because of the shadow root will prevent outer styles.
-        this.mainContainer.setMainWidget(this.resultsContainer);
-        this.mainContainer.setSidebarWidget(this.elementContainer);
-        this.mainContainer.setVertical(false);
-        this.mainContainer.setSecondIsSidebar(true);
-        this.mainContainer.setSidebarMinimized(true);
-        this.sideBar = new CSSOverviewSidebarPanel();
-        this.splitWidget().setSidebarWidget(this.sideBar);
-        this.splitWidget().setMainWidget(this.mainContainer);
+        this.#mainContainer.setMainWidget(this.#resultsContainer);
+        this.#mainContainer.setSidebarWidget(this.#elementContainer);
+        this.#mainContainer.setVertical(false);
+        this.#mainContainer.setSecondIsSidebar(true);
+        this.#mainContainer.setSidebarMinimized(true);
+        this.#sideBar = new CSSOverviewSidebarPanel();
+        this.splitWidget().setSidebarWidget(this.#sideBar);
+        this.splitWidget().setMainWidget(this.#mainContainer);
+        this.#linkifier = new Components.Linkifier.Linkifier(/* maxLinkLength */ 20, /* useLinkDecorator */ true);
+        this.#viewMap = new Map();
+        this.#sideBar.addItem(i18nString(UIStrings.overviewSummary), 'summary');
+        this.#sideBar.addItem(i18nString(UIStrings.colors), 'colors');
+        this.#sideBar.addItem(i18nString(UIStrings.fontInfo), 'font-info');
+        this.#sideBar.addItem(i18nString(UIStrings.unusedDeclarations), 'unused-declarations');
+        this.#sideBar.addItem(i18nString(UIStrings.mediaQueries), 'media-queries');
+        this.#sideBar.select('summary');
+        this.#sideBar.addEventListener("ItemSelected" /* ItemSelected */, this.#sideBarItemSelected, this);
+        this.#sideBar.addEventListener("Reset" /* Reset */, this.#sideBarReset, this);
+        this.#controller.addEventListener("Reset" /* Reset */, this.#reset, this);
+        this.#controller.addEventListener("PopulateNodes" /* PopulateNodes */, this.#createElementsView, this);
+        this.#resultsContainer.element.addEventListener('click', this.#onClick.bind(this));
+        this.#data = null;
+    }
+    wasShown() {
+        super.wasShown();
+        this.#mainContainer.registerCSSFiles([cssOverviewCompletedViewStyles]);
+        this.registerCSSFiles([cssOverviewCompletedViewStyles]);
+        // TODO(paullewis): update the links in the panels in case source has been .
+    }
+    initializeModels(target) {
         const cssModel = target.model(SDK.CSSModel.CSSModel);
         const domModel = target.model(SDK.DOMModel.DOMModel);
         if (!cssModel || !domModel) {
             throw new Error('Target must provide CSS and DOM models');
         }
-        this.cssModel = cssModel;
-        this.domModel = domModel;
-        this.domAgent = target.domAgent();
-        this.linkifier = new Components.Linkifier.Linkifier(/* maxLinkLength */ 20, /* useLinkDecorator */ true);
-        this.viewMap = new Map();
-        this.sideBar.addItem(i18nString(UIStrings.overviewSummary), 'summary');
-        this.sideBar.addItem(i18nString(UIStrings.colors), 'colors');
-        this.sideBar.addItem(i18nString(UIStrings.fontInfo), 'font-info');
-        this.sideBar.addItem(i18nString(UIStrings.unusedDeclarations), 'unused-declarations');
-        this.sideBar.addItem(i18nString(UIStrings.mediaQueries), 'media-queries');
-        this.sideBar.select('summary');
-        this.sideBar.addEventListener("ItemSelected" /* ItemSelected */, this.sideBarItemSelected, this);
-        this.sideBar.addEventListener("Reset" /* Reset */, this.sideBarReset, this);
-        this.controller.addEventListener(CSSOverViewControllerEvents.Reset, this.reset, this);
-        this.controller.addEventListener(CSSOverViewControllerEvents.PopulateNodes, this.createElementsView, this);
-        this.resultsContainer.element.addEventListener('click', this.onClick.bind(this));
-        this.data = null;
+        this.#cssModel = cssModel;
+        this.#domModel = domModel;
     }
-    wasShown() {
-        super.wasShown();
-        this.mainContainer.registerCSSFiles([cssOverviewCompletedViewStyles]);
-        this.registerCSSFiles([cssOverviewCompletedViewStyles]);
-        // TODO(paullewis): update the links in the panels in case source has been .
-    }
-    sideBarItemSelected(event) {
+    #sideBarItemSelected(event) {
         const { data } = event;
-        const section = this.fragment.$(data);
+        const section = this.#fragment.$(data);
         if (!section) {
             return;
         }
         section.scrollIntoView();
     }
-    sideBarReset() {
-        this.controller.dispatchEventToListeners(CSSOverViewControllerEvents.Reset);
+    #sideBarReset() {
+        this.#controller.dispatchEventToListeners("Reset" /* Reset */);
     }
-    reset() {
-        this.resultsContainer.element.removeChildren();
-        this.mainContainer.setSidebarMinimized(true);
-        this.elementContainer.closeTabs();
-        this.viewMap = new Map();
+    #reset() {
+        this.#resultsContainer.element.removeChildren();
+        this.#mainContainer.setSidebarMinimized(true);
+        this.#elementContainer.closeTabs();
+        this.#viewMap = new Map();
         CSSOverviewCompletedView.pushedNodes.clear();
-        this.sideBar.select('summary');
+        this.#sideBar.select('summary');
     }
-    onClick(evt) {
+    #onClick(evt) {
         if (!evt.target) {
             return;
         }
         const target = evt.target;
         const dataset = target.dataset;
         const type = dataset.type;
-        if (!type || !this.data) {
+        if (!type || !this.#data) {
             return;
         }
         let payload;
@@ -277,7 +276,7 @@ export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
                     return;
                 }
                 // Remap the Set to an object that is the same shape as the unused declarations.
-                const nodes = this.data.textColorContrastIssues.get(key) || [];
+                const nodes = this.#data.textColorContrastIssues.get(key) || [];
                 payload = { type, key, nodes, section };
                 break;
             }
@@ -290,16 +289,16 @@ export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
                 let nodes;
                 switch (section) {
                     case 'text':
-                        nodes = this.data.textColors.get(color);
+                        nodes = this.#data.textColors.get(color);
                         break;
                     case 'background':
-                        nodes = this.data.backgroundColors.get(color);
+                        nodes = this.#data.backgroundColors.get(color);
                         break;
                     case 'fill':
-                        nodes = this.data.fillColors.get(color);
+                        nodes = this.#data.fillColors.get(color);
                         break;
                     case 'border':
-                        nodes = this.data.borderColors.get(color);
+                        nodes = this.#data.borderColors.get(color);
                         break;
                 }
                 if (!nodes) {
@@ -315,7 +314,7 @@ export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
                 if (!declaration) {
                     return;
                 }
-                const nodes = this.data.unusedDeclarations.get(declaration);
+                const nodes = this.#data.unusedDeclarations.get(declaration);
                 if (!nodes) {
                     return;
                 }
@@ -327,7 +326,7 @@ export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
                 if (!text) {
                     return;
                 }
-                const nodes = this.data.mediaQueries.get(text);
+                const nodes = this.#data.mediaQueries.get(text);
                 if (!nodes) {
                     return;
                 }
@@ -343,7 +342,7 @@ export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
                 if (!value) {
                     return;
                 }
-                const fontFamilyInfo = this.data.fontInfo.get(fontFamily);
+                const fontFamilyInfo = this.#data.fontInfo.get(fontFamily);
                 if (!fontFamilyInfo) {
                     return;
                 }
@@ -364,31 +363,21 @@ export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
                 return;
         }
         evt.consume();
-        this.controller.dispatchEventToListeners(CSSOverViewControllerEvents.PopulateNodes, payload);
-        this.mainContainer.setSidebarMinimized(false);
+        this.#controller.dispatchEventToListeners("PopulateNodes" /* PopulateNodes */, { payload });
+        this.#mainContainer.setSidebarMinimized(false);
     }
-    onMouseOver(evt) {
-        // Traverse the event path on the grid to find the nearest element with a backend node ID attached. Use
-        // that for the highlighting.
-        const node = evt.composedPath().find(el => el.dataset && el.dataset.backendNodeId);
-        if (!node) {
-            return;
-        }
-        const backendNodeId = Number(node.dataset.backendNodeId);
-        this.controller.dispatchEventToListeners(CSSOverViewControllerEvents.RequestNodeHighlight, backendNodeId);
-    }
-    async render(data) {
+    async #render(data) {
         if (!data || !('backgroundColors' in data) || !('textColors' in data)) {
             return;
         }
-        this.data = data;
-        const { elementCount, backgroundColors, textColors, textColorContrastIssues, fillColors, borderColors, globalStyleStats, mediaQueries, unusedDeclarations, fontInfo, } = this.data;
+        this.#data = data;
+        const { elementCount, backgroundColors, textColors, textColorContrastIssues, fillColors, borderColors, globalStyleStats, mediaQueries, unusedDeclarations, fontInfo, } = this.#data;
         // Convert rgb values from the computed styles to either undefined or HEX(A) strings.
-        const sortedBackgroundColors = this.sortColorsByLuminance(backgroundColors);
-        const sortedTextColors = this.sortColorsByLuminance(textColors);
-        const sortedFillColors = this.sortColorsByLuminance(fillColors);
-        const sortedBorderColors = this.sortColorsByLuminance(borderColors);
-        this.fragment = UI.Fragment.Fragment.build `
+        const sortedBackgroundColors = this.#sortColorsByLuminance(backgroundColors);
+        const sortedTextColors = this.#sortColorsByLuminance(textColors);
+        const sortedFillColors = this.#sortColorsByLuminance(fillColors);
+        const sortedBorderColors = this.#sortColorsByLuminance(borderColors);
+        this.#fragment = UI.Fragment.Fragment.build `
     <div class="vbox overview-completed-view">
       <div $="summary" class="results-section horizontally-padded summary">
         <h1>${i18nString(UIStrings.overviewSummary)}</h1>
@@ -396,47 +385,47 @@ export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
         <ul>
           <li>
             <div class="label">${i18nString(UIStrings.elements)}</div>
-            <div class="value">${this.formatter.format(elementCount)}</div>
+            <div class="value">${this.#formatter.format(elementCount)}</div>
           </li>
           <li>
             <div class="label">${i18nString(UIStrings.externalStylesheets)}</div>
-            <div class="value">${this.formatter.format(globalStyleStats.externalSheets)}</div>
+            <div class="value">${this.#formatter.format(globalStyleStats.externalSheets)}</div>
           </li>
           <li>
             <div class="label">${i18nString(UIStrings.inlineStyleElements)}</div>
-            <div class="value">${this.formatter.format(globalStyleStats.inlineStyles)}</div>
+            <div class="value">${this.#formatter.format(globalStyleStats.inlineStyles)}</div>
           </li>
           <li>
             <div class="label">${i18nString(UIStrings.styleRules)}</div>
-            <div class="value">${this.formatter.format(globalStyleStats.styleRules)}</div>
+            <div class="value">${this.#formatter.format(globalStyleStats.styleRules)}</div>
           </li>
           <li>
             <div class="label">${i18nString(UIStrings.mediaQueries)}</div>
-            <div class="value">${this.formatter.format(mediaQueries.size)}</div>
+            <div class="value">${this.#formatter.format(mediaQueries.size)}</div>
           </li>
           <li>
             <div class="label">${i18nString(UIStrings.typeSelectors)}</div>
-            <div class="value">${this.formatter.format(globalStyleStats.stats.type)}</div>
+            <div class="value">${this.#formatter.format(globalStyleStats.stats.type)}</div>
           </li>
           <li>
             <div class="label">${i18nString(UIStrings.idSelectors)}</div>
-            <div class="value">${this.formatter.format(globalStyleStats.stats.id)}</div>
+            <div class="value">${this.#formatter.format(globalStyleStats.stats.id)}</div>
           </li>
           <li>
             <div class="label">${i18nString(UIStrings.classSelectors)}</div>
-            <div class="value">${this.formatter.format(globalStyleStats.stats.class)}</div>
+            <div class="value">${this.#formatter.format(globalStyleStats.stats.class)}</div>
           </li>
           <li>
             <div class="label">${i18nString(UIStrings.universalSelectors)}</div>
-            <div class="value">${this.formatter.format(globalStyleStats.stats.universal)}</div>
+            <div class="value">${this.#formatter.format(globalStyleStats.stats.universal)}</div>
           </li>
           <li>
             <div class="label">${i18nString(UIStrings.attributeSelectors)}</div>
-            <div class="value">${this.formatter.format(globalStyleStats.stats.attribute)}</div>
+            <div class="value">${this.#formatter.format(globalStyleStats.stats.attribute)}</div>
           </li>
           <li>
             <div class="label">${i18nString(UIStrings.nonsimpleSelectors)}</div>
-            <div class="value">${this.formatter.format(globalStyleStats.stats.nonSimple)}</div>
+            <div class="value">${this.#formatter.format(globalStyleStats.stats.nonSimple)}</div>
           </li>
         </ul>
       </div>
@@ -447,106 +436,109 @@ export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
             PH1: sortedBackgroundColors.length,
         })}</h2>
         <ul>
-          ${sortedBackgroundColors.map(this.colorsToFragment.bind(this, 'background'))}
+          ${sortedBackgroundColors.map(this.#colorsToFragment.bind(this, 'background'))}
         </ul>
 
         <h2>${i18nString(UIStrings.textColorsS, {
             PH1: sortedTextColors.length,
         })}</h2>
         <ul>
-          ${sortedTextColors.map(this.colorsToFragment.bind(this, 'text'))}
+          ${sortedTextColors.map(this.#colorsToFragment.bind(this, 'text'))}
         </ul>
 
-        ${textColorContrastIssues.size > 0 ? this.contrastIssuesToFragment(textColorContrastIssues) : ''}
+        ${textColorContrastIssues.size > 0 ? this.#contrastIssuesToFragment(textColorContrastIssues) : ''}
 
         <h2>${i18nString(UIStrings.fillColorsS, {
             PH1: sortedFillColors.length,
         })}</h2>
         <ul>
-          ${sortedFillColors.map(this.colorsToFragment.bind(this, 'fill'))}
+          ${sortedFillColors.map(this.#colorsToFragment.bind(this, 'fill'))}
         </ul>
 
         <h2>${i18nString(UIStrings.borderColorsS, {
             PH1: sortedBorderColors.length,
         })}</h2>
         <ul>
-          ${sortedBorderColors.map(this.colorsToFragment.bind(this, 'border'))}
+          ${sortedBorderColors.map(this.#colorsToFragment.bind(this, 'border'))}
         </ul>
       </div>
 
       <div $="font-info" class="results-section font-info">
         <h1>${i18nString(UIStrings.fontInfo)}</h1>
-        ${fontInfo.size > 0 ? this.fontInfoToFragment(fontInfo) :
+        ${fontInfo.size > 0 ? this.#fontInfoToFragment(fontInfo) :
             UI.Fragment.Fragment.build `<div>${i18nString(UIStrings.thereAreNoFonts)}</div>`}
       </div>
 
       <div $="unused-declarations" class="results-section unused-declarations">
         <h1>${i18nString(UIStrings.unusedDeclarations)}</h1>
-        ${unusedDeclarations.size > 0 ? this.groupToFragment(unusedDeclarations, 'unused-declarations', 'declaration') :
+        ${unusedDeclarations.size > 0 ? this.#groupToFragment(unusedDeclarations, 'unused-declarations', 'declaration') :
             UI.Fragment.Fragment.build `<div class="horizontally-padded">${i18nString(UIStrings.thereAreNoUnusedDeclarations)}</div>`}
       </div>
 
       <div $="media-queries" class="results-section media-queries">
         <h1>${i18nString(UIStrings.mediaQueries)}</h1>
-        ${mediaQueries.size > 0 ? this.groupToFragment(mediaQueries, 'media-queries', 'text') :
+        ${mediaQueries.size > 0 ? this.#groupToFragment(mediaQueries, 'media-queries', 'text') :
             UI.Fragment.Fragment.build `<div class="horizontally-padded">${i18nString(UIStrings.thereAreNoMediaQueries)}</div>`}
       </div>
     </div>`;
-        this.resultsContainer.element.appendChild(this.fragment.element());
+        this.#resultsContainer.element.appendChild(this.#fragment.element());
     }
-    createElementsView(evt) {
-        const { type, nodes } = evt.data;
+    #createElementsView(evt) {
+        const { payload } = evt.data;
         let id = '';
         let tabTitle = '';
-        switch (type) {
+        switch (payload.type) {
             case 'contrast': {
-                const { section, key } = evt.data;
+                const { section, key } = payload;
                 id = `${section}-${key}`;
                 tabTitle = i18nString(UIStrings.contrastIssues);
                 break;
             }
             case 'color': {
-                const { section, color } = evt.data;
+                const { section, color } = payload;
                 id = `${section}-${color}`;
                 tabTitle = `${color.toUpperCase()} (${section})`;
                 break;
             }
             case 'unused-declarations': {
-                const { declaration } = evt.data;
+                const { declaration } = payload;
                 id = `${declaration}`;
                 tabTitle = `${declaration}`;
                 break;
             }
             case 'media-queries': {
-                const { text } = evt.data;
+                const { text } = payload;
                 id = `${text}`;
                 tabTitle = `${text}`;
                 break;
             }
             case 'font-info': {
-                const { name } = evt.data;
+                const { name } = payload;
                 id = `${name}`;
                 tabTitle = `${name}`;
                 break;
             }
         }
-        let view = this.viewMap.get(id);
+        let view = this.#viewMap.get(id);
         if (!view) {
-            view = new ElementDetailsView(this.controller, this.domModel, this.cssModel, this.linkifier);
-            view.populateNodes(nodes);
-            this.viewMap.set(id, view);
+            if (!this.#domModel || !this.#cssModel) {
+                throw new Error('Unable to initialize CSS Overview, missing models');
+            }
+            view = new ElementDetailsView(this.#controller, this.#domModel, this.#cssModel, this.#linkifier);
+            void view.populateNodes(payload.nodes);
+            this.#viewMap.set(id, view);
         }
-        this.elementContainer.appendTab(id, tabTitle, view, true);
+        this.#elementContainer.appendTab(id, tabTitle, view, true);
     }
-    fontInfoToFragment(fontInfo) {
+    #fontInfoToFragment(fontInfo) {
         const fonts = Array.from(fontInfo.entries());
         return UI.Fragment.Fragment.build `
   ${fonts.map(([font, fontMetrics]) => {
-            return UI.Fragment.Fragment.build `<section class="font-family"><h2>${font}</h2> ${this.fontMetricsToFragment(font, fontMetrics)}</section>`;
+            return UI.Fragment.Fragment.build `<section class="font-family"><h2>${font}</h2> ${this.#fontMetricsToFragment(font, fontMetrics)}</section>`;
         })}
   `;
     }
-    fontMetricsToFragment(font, fontMetrics) {
+    #fontMetricsToFragment(font, fontMetrics) {
         const fontMetricInfo = Array.from(fontMetrics.entries());
         return UI.Fragment.Fragment.build `
   <div class="font-metric">
@@ -555,12 +547,12 @@ export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
             return UI.Fragment.Fragment.build `
   <div>
   <h3>${label}</h3>
-  ${this.groupToFragment(values, 'font-info', 'value', sanitizedPath)}
+  ${this.#groupToFragment(values, 'font-info', 'value', sanitizedPath)}
   </div>`;
         })}
   </div>`;
     }
-    groupToFragment(items, type, dataLabel, path = '') {
+    #groupToFragment(items, type, dataLabel, path = '') {
         // Sort by number of items descending.
         const values = Array.from(items.entries()).sort((d1, d2) => {
             const v1Nodes = d1[1];
@@ -584,17 +576,17 @@ export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
         })}
     </ul>`;
     }
-    contrastIssuesToFragment(issues) {
+    #contrastIssuesToFragment(issues) {
         return UI.Fragment.Fragment.build `
   <h2>${i18nString(UIStrings.contrastIssuesS, {
             PH1: issues.size,
         })}</h2>
   <ul>
-  ${[...issues.entries()].map(([key, value]) => this.contrastIssueToFragment(key, value))}
+  ${[...issues.entries()].map(([key, value]) => this.#contrastIssueToFragment(key, value))}
   </ul>
   `;
     }
-    contrastIssueToFragment(key, issues) {
+    #contrastIssueToFragment(key, issues) {
         console.assert(issues.length > 0);
         let minContrastIssue = issues[0];
         for (const issue of issues) {
@@ -658,7 +650,7 @@ export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
         block.style.border = getBorderString(minContrastIssue.backgroundColor);
         return blockFragment;
     }
-    colorsToFragment(section, color) {
+    #colorsToFragment(section, color) {
         const blockFragment = UI.Fragment.Fragment.build `<li>
       <button data-type="color" data-color="${color}" data-section="${section}" class="block" $="color"></button>
       <div class="block-title">${color}</div>
@@ -672,7 +664,7 @@ export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
         block.style.border = getBorderString(borderColor);
         return blockFragment;
     }
-    sortColorsByLuminance(srcColors) {
+    #sortColorsByLuminance(srcColors) {
         return Array.from(srcColors.keys()).sort((colA, colB) => {
             const colorA = Common.Color.Color.parse(colA);
             const colorB = Common.Color.Color.parse(colB);
@@ -683,45 +675,45 @@ export class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
         });
     }
     setOverviewData(data) {
-        this.render(data);
+        void this.#render(data);
     }
     // eslint-disable-next-line @typescript-eslint/naming-convention
     static pushedNodes = new Set();
 }
 export class DetailsView extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
-    tabbedPane;
+    #tabbedPane;
     constructor() {
         super();
-        this.tabbedPane = new UI.TabbedPane.TabbedPane();
-        this.tabbedPane.show(this.element);
-        this.tabbedPane.addEventListener(UI.TabbedPane.Events.TabClosed, () => {
-            this.dispatchEventToListeners("TabClosed" /* TabClosed */, this.tabbedPane.tabIds().length);
+        this.#tabbedPane = new UI.TabbedPane.TabbedPane();
+        this.#tabbedPane.show(this.element);
+        this.#tabbedPane.addEventListener(UI.TabbedPane.Events.TabClosed, () => {
+            this.dispatchEventToListeners("TabClosed" /* TabClosed */, this.#tabbedPane.tabIds().length);
         });
     }
     appendTab(id, tabTitle, view, isCloseable) {
-        if (!this.tabbedPane.hasTab(id)) {
-            this.tabbedPane.appendTab(id, tabTitle, view, undefined, undefined, isCloseable);
+        if (!this.#tabbedPane.hasTab(id)) {
+            this.#tabbedPane.appendTab(id, tabTitle, view, undefined, undefined, isCloseable);
         }
-        this.tabbedPane.selectTab(id);
+        this.#tabbedPane.selectTab(id);
     }
     closeTabs() {
-        this.tabbedPane.closeTabs(this.tabbedPane.tabIds());
+        this.#tabbedPane.closeTabs(this.#tabbedPane.tabIds());
     }
 }
 export class ElementDetailsView extends UI.Widget.Widget {
-    controller;
-    domModel;
-    cssModel;
-    linkifier;
-    elementGridColumns;
-    elementGrid;
+    #controller;
+    #domModel;
+    #cssModel;
+    #linkifier;
+    #elementGridColumns;
+    #elementGrid;
     constructor(controller, domModel, cssModel, linkifier) {
         super();
-        this.controller = controller;
-        this.domModel = domModel;
-        this.cssModel = cssModel;
-        this.linkifier = linkifier;
-        this.elementGridColumns = [
+        this.#controller = controller;
+        this.#domModel = domModel;
+        this.#cssModel = cssModel;
+        this.#linkifier = linkifier;
+        this.#elementGridColumns = [
             {
                 id: 'nodeId',
                 title: i18nString(UIStrings.element),
@@ -795,28 +787,28 @@ export class ElementDetailsView extends UI.Widget.Widget {
                 defaultWeight: undefined,
             },
         ];
-        this.elementGrid = new DataGrid.SortableDataGrid.SortableDataGrid({
+        this.#elementGrid = new DataGrid.SortableDataGrid.SortableDataGrid({
             displayName: i18nString(UIStrings.cssOverviewElements),
-            columns: this.elementGridColumns,
+            columns: this.#elementGridColumns,
             editCallback: undefined,
             deleteCallback: undefined,
             refreshCallback: undefined,
         });
-        this.elementGrid.element.classList.add('element-grid');
-        this.elementGrid.element.addEventListener('mouseover', this.onMouseOver.bind(this));
-        this.elementGrid.setStriped(true);
-        this.elementGrid.addEventListener(DataGrid.DataGrid.Events.SortingChanged, this.sortMediaQueryDataGrid.bind(this));
-        this.element.appendChild(this.elementGrid.element);
+        this.#elementGrid.element.classList.add('element-grid');
+        this.#elementGrid.element.addEventListener('mouseover', this.#onMouseOver.bind(this));
+        this.#elementGrid.setStriped(true);
+        this.#elementGrid.addEventListener(DataGrid.DataGrid.Events.SortingChanged, this.#sortMediaQueryDataGrid.bind(this));
+        this.#elementGrid.asWidget().show(this.element);
     }
-    sortMediaQueryDataGrid() {
-        const sortColumnId = this.elementGrid.sortColumnId();
+    #sortMediaQueryDataGrid() {
+        const sortColumnId = this.#elementGrid.sortColumnId();
         if (!sortColumnId) {
             return;
         }
         const comparator = DataGrid.SortableDataGrid.SortableDataGrid.StringComparator.bind(null, sortColumnId);
-        this.elementGrid.sortNodes(comparator, !this.elementGrid.isSortOrderAscending());
+        this.#elementGrid.sortNodes(comparator, !this.#elementGrid.isSortOrderAscending());
     }
-    onMouseOver(evt) {
+    #onMouseOver(evt) {
         // Traverse the event path on the grid to find the nearest element with a backend node ID attached. Use
         // that for the highlighting.
         const node = evt.composedPath().find(el => el.dataset && el.dataset.backendNodeId);
@@ -824,68 +816,75 @@ export class ElementDetailsView extends UI.Widget.Widget {
             return;
         }
         const backendNodeId = Number(node.dataset.backendNodeId);
-        this.controller.dispatchEventToListeners(CSSOverViewControllerEvents.RequestNodeHighlight, backendNodeId);
+        this.#controller.dispatchEventToListeners("RequestNodeHighlight" /* RequestNodeHighlight */, backendNodeId);
     }
     async populateNodes(data) {
-        this.elementGrid.rootNode().removeChildren();
+        this.#elementGrid.rootNode().removeChildren();
         if (!data.length) {
             return;
         }
         const [firstItem] = data;
         const visibility = new Set();
-        firstItem.nodeId && visibility.add('nodeId');
-        firstItem.declaration && visibility.add('declaration');
-        firstItem.sourceURL && visibility.add('sourceURL');
-        firstItem.contrastRatio && visibility.add('contrastRatio');
+        'nodeId' in firstItem && firstItem.nodeId && visibility.add('nodeId');
+        'declaration' in firstItem && firstItem.declaration && visibility.add('declaration');
+        'sourceURL' in firstItem && firstItem.sourceURL && visibility.add('sourceURL');
+        'contrastRatio' in firstItem && firstItem.contrastRatio && visibility.add('contrastRatio');
         let relatedNodesMap;
-        if (visibility.has('nodeId')) {
+        if ('nodeId' in firstItem && visibility.has('nodeId')) {
             // Grab the nodes from the frontend, but only those that have not been
             // retrieved already.
-            const nodeIds = (data.reduce((prev, curr) => {
-                if (CSSOverviewCompletedView.pushedNodes.has(curr.nodeId)) {
+            const nodeIds = data.reduce((prev, curr) => {
+                const nodeId = curr.nodeId;
+                if (CSSOverviewCompletedView.pushedNodes.has(nodeId)) {
                     return prev;
                 }
-                CSSOverviewCompletedView.pushedNodes.add(curr.nodeId);
-                return prev.add(curr.nodeId);
-            }, new Set()));
-            relatedNodesMap = await this.domModel.pushNodesByBackendIdsToFrontend(nodeIds);
+                CSSOverviewCompletedView.pushedNodes.add(nodeId);
+                return prev.add(nodeId);
+            }, new Set());
+            relatedNodesMap = await this.#domModel.pushNodesByBackendIdsToFrontend(nodeIds);
         }
         for (const item of data) {
-            if (visibility.has('nodeId')) {
+            let frontendNode;
+            if ('nodeId' in item && visibility.has('nodeId')) {
                 if (!relatedNodesMap) {
                     continue;
                 }
-                const frontendNode = relatedNodesMap.get(item.nodeId);
+                frontendNode = relatedNodesMap.get(item.nodeId);
                 if (!frontendNode) {
                     continue;
                 }
-                item.node = frontendNode;
             }
-            const node = new ElementNode(item, this.linkifier, this.cssModel);
+            const node = new ElementNode(item, frontendNode, this.#linkifier, this.#cssModel);
             node.selectable = false;
-            this.elementGrid.insertChild(node);
+            this.#elementGrid.insertChild(node);
         }
-        this.elementGrid.setColumnsVisiblity(visibility);
-        this.elementGrid.renderInline();
-        this.elementGrid.wasShown();
+        this.#elementGrid.setColumnsVisiblity(visibility);
+        this.#elementGrid.renderInline();
+        this.#elementGrid.wasShown();
     }
 }
 export class ElementNode extends DataGrid.SortableDataGrid.SortableDataGridNode {
-    linkifier;
-    cssModel;
-    constructor(data, linkifier, cssModel) {
-        super(data, data.hasChildren);
-        this.linkifier = linkifier;
-        this.cssModel = cssModel;
+    #linkifier;
+    #cssModel;
+    #frontendNode;
+    constructor(data, frontendNode, linkifier, cssModel) {
+        super(data);
+        this.#frontendNode = frontendNode;
+        this.#linkifier = linkifier;
+        this.#cssModel = cssModel;
     }
     createCell(columnId) {
         // Nodes.
+        const frontendNode = this.#frontendNode;
         if (columnId === 'nodeId') {
             const cell = this.createTD(columnId);
             cell.textContent = '...';
-            Common.Linkifier.Linkifier.linkify(this.data.node).then(link => {
+            if (!frontendNode) {
+                throw new Error('Node entry is missing a related frontend node.');
+            }
+            void Common.Linkifier.Linkifier.linkify(frontendNode).then(link => {
                 cell.textContent = '';
-                link.dataset.backendNodeId = this.data.node.backendNodeId();
+                link.dataset.backendNodeId = frontendNode.backendNodeId().toString();
                 cell.appendChild(link);
                 const button = document.createElement('button');
                 button.classList.add('show-element');
@@ -900,7 +899,7 @@ export class ElementNode extends DataGrid.SortableDataGrid.SortableDataGridNode 
         if (columnId === 'sourceURL') {
             const cell = this.createTD(columnId);
             if (this.data.range) {
-                const link = this.linkifyRuleLocation(this.cssModel, this.linkifier, this.data.styleSheetId, TextUtils.TextRange.TextRange.fromObject(this.data.range));
+                const link = this.#linkifyRuleLocation(this.#cssModel, this.#linkifier, this.data.styleSheetId, TextUtils.TextRange.TextRange.fromObject(this.data.range));
                 if (!link || link.textContent === '') {
                     cell.textContent = '(unable to link)';
                 }
@@ -960,7 +959,7 @@ export class ElementNode extends DataGrid.SortableDataGrid.SortableDataGridNode 
         }
         return super.createCell(columnId);
     }
-    linkifyRuleLocation(cssModel, linkifier, styleSheetId, ruleLocation) {
+    #linkifyRuleLocation(cssModel, linkifier, styleSheetId, ruleLocation) {
         const styleSheetHeader = cssModel.styleSheetHeaderForId(styleSheetId);
         if (!styleSheetHeader) {
             return;

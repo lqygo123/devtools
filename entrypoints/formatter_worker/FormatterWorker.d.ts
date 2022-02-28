@@ -1,5 +1,4 @@
-import type * as Formatter from '../../models/formatter/formatter.js';
-import * as Acorn from '../../third_party/acorn/acorn.js';
+import type { FormatResult } from './FormatterActions.js';
 export interface Chunk {
     chunk: any[];
     isLastChunk: boolean;
@@ -12,16 +11,5 @@ export declare function javaScriptIdentifiers(content: string): {
     name: (string | undefined);
     offset: number;
 }[];
-export declare function format(mimeType: string, text: string, indentString?: string): Formatter.FormatterWorkerPool.FormatResult;
-export declare function findLastFunctionCall(content: string): {
-    baseExpression: string;
-    receiver: string;
-    argumentIndex: number;
-    functionName: string;
-} | null;
+export declare function format(mimeType: string, text: string, indentString?: string): FormatResult;
 export declare function argumentsList(content: string): string[];
-export declare function findLastExpression(content: string): string | null;
-export declare function _lastCompleteExpression(content: string, suffix: string, types: Set<string>): {
-    baseNode: Acorn.ESTree.Node;
-    baseExpression: string;
-} | null;

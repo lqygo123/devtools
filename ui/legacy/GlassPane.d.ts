@@ -1,8 +1,7 @@
-import * as Common from '../../core/common/common.js';
 import type { Size } from './Geometry.js';
 import type { WidgetElement } from './Widget.js';
 import { Widget } from './Widget.js';
-export declare class GlassPane extends Common.ObjectWrapper.ObjectWrapper {
+export declare class GlassPane {
     private readonly widgetInternal;
     element: WidgetElement;
     contentElement: HTMLDivElement;
@@ -18,7 +17,10 @@ export declare class GlassPane extends Common.ObjectWrapper.ObjectWrapper {
     private marginBehavior;
     constructor();
     isShowing(): boolean;
-    registerRequiredCSS(cssFile: string): void;
+    registerRequiredCSS(cssFile: {
+        cssContent: string;
+    }): void;
+    registerCSSFiles(cssFiles: CSSStyleSheet[]): void;
     setDefaultFocusedElement(element: Element | null): void;
     setDimmed(dimmed: boolean): void;
     setPointerEventsBehavior(pointerEventsBehavior: PointerEventsBehavior): void;

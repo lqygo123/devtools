@@ -83,71 +83,71 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/network/components/RequestTrustTokensView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class RequestTrustTokensView extends UI.Widget.VBox {
-    reportView = new RequestTrustTokensReport();
-    request;
+    #reportView = new RequestTrustTokensReport();
+    #request;
     constructor(request) {
         super();
-        this.request = request;
-        this.contentElement.appendChild(this.reportView);
+        this.#request = request;
+        this.contentElement.appendChild(this.#reportView);
     }
     wasShown() {
-        this.request.addEventListener(SDK.NetworkRequest.Events.TrustTokenResultAdded, this.refreshReportView, this);
-        this.refreshReportView();
+        this.#request.addEventListener(SDK.NetworkRequest.Events.TrustTokenResultAdded, this.#refreshReportView, this);
+        this.#refreshReportView();
     }
     willHide() {
-        this.request.removeEventListener(SDK.NetworkRequest.Events.TrustTokenResultAdded, this.refreshReportView, this);
+        this.#request.removeEventListener(SDK.NetworkRequest.Events.TrustTokenResultAdded, this.#refreshReportView, this);
     }
-    refreshReportView() {
-        this.reportView.data = {
-            params: this.request.trustTokenParams(),
-            result: this.request.trustTokenOperationDoneEvent(),
+    #refreshReportView() {
+        this.#reportView.data = {
+            params: this.#request.trustTokenParams(),
+            result: this.#request.trustTokenOperationDoneEvent(),
         };
     }
 }
 export class RequestTrustTokensReport extends HTMLElement {
     static litTagName = LitHtml.literal `devtools-trust-token-report`;
-    shadow = this.attachShadow({ mode: 'open' });
-    trustTokenData;
+    #shadow = this.attachShadow({ mode: 'open' });
+    #trustTokenData;
     set data(data) {
-        this.trustTokenData = data;
-        this.render();
+        this.#trustTokenData = data;
+        this.#render();
     }
     connectedCallback() {
-        this.shadow.adoptedStyleSheets = [requestTrustTokensViewStyles];
+        this.#shadow.adoptedStyleSheets = [requestTrustTokensViewStyles];
     }
-    render() {
-        if (!this.trustTokenData) {
+    #render() {
+        if (!this.#trustTokenData) {
             throw new Error('Trying to render a Trust Token report without providing data');
         }
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
         LitHtml.render(LitHtml.html `<${ReportView.ReportView.Report.litTagName}>
-        ${this.renderParameterSection()}
-        ${this.renderResultSection()}
+        ${this.#renderParameterSection()}
+        ${this.#renderResultSection()}
       </${ReportView.ReportView.Report.litTagName}>
-    `, this.shadow, { host: this });
+    `, this.#shadow, { host: this });
         // clang-format on
     }
-    renderParameterSection() {
-        if (!this.trustTokenData || !this.trustTokenData.params) {
+    #renderParameterSection() {
+        if (!this.#trustTokenData || !this.#trustTokenData.params) {
             return LitHtml.nothing;
         }
         return LitHtml.html `
       <${ReportView.ReportView.ReportSectionHeader.litTagName}>${i18nString(UIStrings.parameters)}</${ReportView.ReportView.ReportSectionHeader.litTagName}>
-      ${renderRowWithCodeValue(i18nString(UIStrings.type), this.trustTokenData.params.type.toString())}
-      ${this.renderRefreshPolicy(this.trustTokenData.params)}
-      ${this.renderIssuers(this.trustTokenData.params)}
-      ${this.renderIssuerAndTopLevelOriginFromResult()}
+      ${renderRowWithCodeValue(i18nString(UIStrings.type), this.#trustTokenData.params.type.toString())}
+      ${this.#renderRefreshPolicy(this.#trustTokenData.params)}
+      ${this.#renderIssuers(this.#trustTokenData.params)}
+      ${this.#renderIssuerAndTopLevelOriginFromResult()}
       <${ReportView.ReportView.ReportSectionDivider.litTagName}></${ReportView.ReportView.ReportSectionDivider.litTagName}>
     `;
     }
-    renderRefreshPolicy(params) {
+    #renderRefreshPolicy(params) {
         if (params.type !== "Redemption" /* Redemption */) {
             return LitHtml.nothing;
         }
         return renderRowWithCodeValue(i18nString(UIStrings.refreshPolicy), params.refreshPolicy.toString());
     }
-    renderIssuers(params) {
+    #renderIssuers(params) {
         if (!params.issuers || params.issuers.length === 0) {
             return LitHtml.nothing;
         }
@@ -163,16 +163,16 @@ export class RequestTrustTokensReport extends HTMLElement {
     // The issuer and top level origin are technically parameters but reported in the
     // result structure due to the timing when they are calculated in the backend.
     // Nonetheless, we show them as part of the parameter section.
-    renderIssuerAndTopLevelOriginFromResult() {
-        if (!this.trustTokenData || !this.trustTokenData.result) {
+    #renderIssuerAndTopLevelOriginFromResult() {
+        if (!this.#trustTokenData || !this.#trustTokenData.result) {
             return LitHtml.nothing;
         }
         return LitHtml.html `
-      ${renderSimpleRowIfValuePresent(i18nString(UIStrings.topLevelOrigin), this.trustTokenData.result.topLevelOrigin)}
-      ${renderSimpleRowIfValuePresent(i18nString(UIStrings.issuer), this.trustTokenData.result.issuerOrigin)}`;
+      ${renderSimpleRowIfValuePresent(i18nString(UIStrings.topLevelOrigin), this.#trustTokenData.result.topLevelOrigin)}
+      ${renderSimpleRowIfValuePresent(i18nString(UIStrings.issuer), this.#trustTokenData.result.issuerOrigin)}`;
     }
-    renderResultSection() {
-        if (!this.trustTokenData || !this.trustTokenData.result) {
+    #renderResultSection() {
+        if (!this.#trustTokenData || !this.#trustTokenData.result) {
             return LitHtml.nothing;
         }
         return LitHtml.html `
@@ -181,17 +181,17 @@ export class RequestTrustTokensReport extends HTMLElement {
       <${ReportView.ReportView.ReportValue.litTagName}>
         <span>
           <${IconButton.Icon.Icon.litTagName} class="status-icon"
-            .data=${getIconForStatusCode(this.trustTokenData.result.status)}>
+            .data=${getIconForStatusCode(this.#trustTokenData.result.status)}>
           </${IconButton.Icon.Icon.litTagName}>
-          <strong>${getSimplifiedStatusTextForStatusCode(this.trustTokenData.result.status)}</strong>
-          ${getDetailedTextForStatusCode(this.trustTokenData.result.status)}
+          <strong>${getSimplifiedStatusTextForStatusCode(this.#trustTokenData.result.status)}</strong>
+          ${getDetailedTextForStatusCode(this.#trustTokenData.result.status)}
         </span>
       </${ReportView.ReportView.ReportValue.litTagName}>
-      ${this.renderIssuedTokenCount(this.trustTokenData.result)}
+      ${this.#renderIssuedTokenCount(this.#trustTokenData.result)}
       <${ReportView.ReportView.ReportSectionDivider.litTagName}></${ReportView.ReportView.ReportSectionDivider.litTagName}>
       `;
     }
-    renderIssuedTokenCount(result) {
+    #renderIssuedTokenCount(result) {
         if (result.type !== "Issuance" /* Issuance */) {
             return LitHtml.nothing;
         }

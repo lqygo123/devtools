@@ -192,7 +192,7 @@ export class ScreencastView extends UI.Widget.VBox {
         // Note: startScreencast width and height are expected to be integers so must be floored.
         this.screenCaptureModel.startScreencast("jpeg" /* Jpeg */, 80, Math.floor(Math.min(maxImageDimension, dimensions.width)), Math.floor(Math.min(maxImageDimension, dimensions.height)), undefined, this.screencastFrame.bind(this), this.screencastVisibilityChanged.bind(this));
         for (const emulationModel of SDK.TargetManager.TargetManager.instance().models(SDK.EmulationModel.EmulationModel)) {
-            emulationModel.overrideEmulateTouch(true);
+            void emulationModel.overrideEmulateTouch(true);
         }
         if (this.overlayModel) {
             this.overlayModel.setHighlighter(this);
@@ -205,7 +205,7 @@ export class ScreencastView extends UI.Widget.VBox {
         this.isCasting = false;
         this.screenCaptureModel.stopScreencast();
         for (const emulationModel of SDK.TargetManager.TargetManager.instance().models(SDK.EmulationModel.EmulationModel)) {
-            emulationModel.overrideEmulateTouch(false);
+            void emulationModel.overrideEmulateTouch(false);
         }
         if (this.overlayModel) {
             this.overlayModel.setHighlighter(null);
@@ -229,7 +229,7 @@ export class ScreencastView extends UI.Widget.VBox {
             this.viewportElement.style.width = metadata.deviceWidth * this.screenZoom + bordersSize + 'px';
             this.viewportElement.style.height = metadata.deviceHeight * this.screenZoom + bordersSize + 'px';
             const data = this.highlightNode ? { node: this.highlightNode, selectorList: undefined } : { clear: true };
-            this.updateHighlightInOverlayAndRepaint(data, this.highlightConfig);
+            void this.updateHighlightInOverlayAndRepaint(data, this.highlightConfig);
         };
         this.imageElement.src = 'data:image/jpg;base64,' + base64Data;
     }
@@ -240,7 +240,7 @@ export class ScreencastView extends UI.Widget.VBox {
         this.targetInactive = !visible;
         this.updateGlasspane();
     }
-    onSuspendStateChange(_event) {
+    onSuspendStateChange() {
         if (SDK.TargetManager.TargetManager.instance().allTargetsSuspended()) {
             this.stopCasting();
         }
@@ -286,7 +286,7 @@ export class ScreencastView extends UI.Widget.VBox {
             return;
         }
         if (event.type === 'mousemove') {
-            this.updateHighlightInOverlayAndRepaint({ node, selectorList: undefined }, this.inspectModeConfig);
+            void this.updateHighlightInOverlayAndRepaint({ node, selectorList: undefined }, this.inspectModeConfig);
             this.domModel.overlayModel().nodeHighlightRequested({ nodeId: node.id });
         }
         else if (event.type === 'click') {
@@ -333,7 +333,7 @@ export class ScreencastView extends UI.Widget.VBox {
         this.deferredCasting = window.setTimeout(this.startCasting.bind(this), 100);
     }
     highlightInOverlay(data, config) {
-        this.updateHighlightInOverlayAndRepaint(data, config);
+        void this.updateHighlightInOverlayAndRepaint(data, config);
     }
     async updateHighlightInOverlayAndRepaint(data, config) {
         let node = null;
@@ -360,7 +360,7 @@ export class ScreencastView extends UI.Widget.VBox {
             return;
         }
         this.node = node;
-        node.boxModel().then(model => {
+        void node.boxModel().then(model => {
             if (!model || !this.pageScaleFactor) {
                 this.repaint();
                 return;
@@ -579,7 +579,7 @@ export class ScreencastView extends UI.Widget.VBox {
             this.navigationForward.addEventListener('click', this.navigateToHistoryEntry.bind(this, 1), false);
             this.navigationReload.addEventListener('click', this.navigateReload.bind(this), false);
             this.navigationUrl.addEventListener('keyup', this.navigationUrlKeyUp.bind(this), true);
-            this.requestNavigationHistory();
+            void this.requestNavigationHistory();
             this.resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.MainFrameNavigated, this.requestNavigationHistoryEvent, this);
             this.resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.CachedResourcesLoaded, this.requestNavigationHistoryEvent, this);
         }
@@ -593,7 +593,7 @@ export class ScreencastView extends UI.Widget.VBox {
             return;
         }
         this.resourceTreeModel.navigateToHistoryEntry(this.historyEntries[newIndex]);
-        this.requestNavigationHistory();
+        void this.requestNavigationHistory();
     }
     navigateReload() {
         if (!this.resourceTreeModel) {
@@ -617,12 +617,12 @@ export class ScreencastView extends UI.Widget.VBox {
         // encodeURI ensures an encoded URL is always passed to the backend
         // This allows the input field to support both encoded and decoded URLs
         if (this.resourceTreeModel) {
-            this.resourceTreeModel.navigate(encodeURI(decodeURI(url)));
+            void this.resourceTreeModel.navigate(encodeURI(decodeURI(url)));
         }
         this.canvasElement.focus();
     }
     requestNavigationHistoryEvent() {
-        this.requestNavigationHistory();
+        void this.requestNavigationHistory();
     }
     async requestNavigationHistory() {
         const history = this.resourceTreeModel ? await this.resourceTreeModel.navigationHistory() : null;
@@ -682,7 +682,7 @@ export class ProgressTracker {
     onLoad() {
         this.requestIds = null;
         this.updateProgress(1); // Display 100% progress on load, hide it in 0.5s.
-        setTimeout(() => {
+        window.setTimeout(() => {
             if (!this.navigationProgressVisible()) {
                 this.displayProgress(0);
             }
@@ -714,7 +714,7 @@ export class ProgressTracker {
             return;
         }
         ++this.finishedRequests;
-        setTimeout(() => {
+        window.setTimeout(() => {
             this.updateProgress(this.finishedRequests / this.startedRequests * 0.9); // Finished requests drive the progress up to 90%.
         }, 500); // Delay to give the new requests time to start. This makes the progress smoother.
     }

@@ -234,7 +234,7 @@ export class NetworkPanel extends UI.Panel.Panel {
         splitWidget.enableShowModeSaving();
         splitWidget.show(this.element);
         this.sidebarLocation = UI.ViewManager.ViewManager.instance().createTabbedLocation(async () => {
-            UI.ViewManager.ViewManager.instance().showView('network');
+            void UI.ViewManager.ViewManager.instance().showView('network');
             splitWidget.showBoth();
         }, 'network-sidebar', true);
         const tabbedPane = this.sidebarLocation.tabbedPane();
@@ -326,7 +326,7 @@ export class NetworkPanel extends UI.Panel.Panel {
         const endTime = Math.min(this.calculator.maximumBoundary(), event.data.endTime / 1000);
         this.networkLogView.setWindow(startTime, endTime);
     }
-    async searchToggleClick(_event) {
+    async searchToggleClick() {
         const action = UI.ActionRegistry.ActionRegistry.instance().action('network.search');
         if (action) {
             await action.execute();
@@ -349,8 +349,8 @@ export class NetworkPanel extends UI.Panel.Panel {
         this.panelToolbar.appendToolbarItem(this.filterBar.filterButton());
         updateSidebarToggle();
         splitWidget.addEventListener(UI.SplitWidget.Events.ShowModeChanged, updateSidebarToggle);
-        searchToggle.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, event => {
-            this.searchToggleClick(event);
+        searchToggle.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, () => {
+            void this.searchToggleClick();
         });
         this.panelToolbar.appendToolbarItem(searchToggle);
         this.panelToolbar.appendSeparator();
@@ -368,7 +368,7 @@ export class NetworkPanel extends UI.Panel.Panel {
         };
         const networkConditionsButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.moreNetworkConditions), networkConditionsIcon);
         networkConditionsButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, () => {
-            UI.ViewManager.ViewManager.instance().showView('network.config');
+            void UI.ViewManager.ViewManager.instance().showView('network.config');
         }, this);
         this.panelToolbar.appendToolbarItem(networkConditionsButton);
         this.rightToolbar.appendToolbarItem(new UI.Toolbar.ToolbarItem(this.progressBarContainer));
@@ -388,7 +388,7 @@ export class NetworkPanel extends UI.Panel.Panel {
         this.panelToolbar.appendToolbarItem(importHarButton);
         const exportHarButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.exportHar), 'largeicon-download');
         exportHarButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, _event => {
-            this.networkLogView.exportAll();
+            void this.networkLogView.exportAll();
         }, this);
         this.panelToolbar.appendToolbarItem(exportHarButton);
     }
@@ -533,7 +533,7 @@ export class NetworkPanel extends UI.Panel.Panel {
     handleFilterChanged() {
         this.hideRequestPanel();
     }
-    onRowSizeChanged(_event) {
+    onRowSizeChanged() {
         this.updateUI();
     }
     onRequestSelected(event) {
@@ -543,9 +543,9 @@ export class NetworkPanel extends UI.Panel.Panel {
         this.updateNetworkItemView();
     }
     onRequestActivated(event) {
-        const eventData = event.data;
-        if (eventData.showPanel) {
-            this.showRequestPanel(eventData.tab, /* takeFocus */ eventData.takeFocus);
+        const { showPanel, tab, takeFocus } = event.data;
+        if (showPanel) {
+            this.showRequestPanel(tab, takeFocus);
         }
         else {
             this.hideRequestPanel();
@@ -603,7 +603,7 @@ export class NetworkPanel extends UI.Panel.Panel {
     }
     appendApplicableItems(event, contextMenu, target) {
         function reveal(request) {
-            UI.ViewManager.ViewManager.instance()
+            void UI.ViewManager.ViewManager.instance()
                 .showView('network')
                 .then(this.networkLogView.resetFilter.bind(this.networkLogView))
                 .then(this.revealAndHighlightRequest.bind(this, request));
@@ -785,7 +785,7 @@ export class FilmStripRecorder {
             this.tracingModel.dispose();
         }
         this.tracingModel = new SDK.TracingModel.TracingModel(new Bindings.TempFile.TempFileBackingStorage());
-        this.tracingManager.start(this, '-*,disabled-by-default-devtools.screenshot', '');
+        void this.tracingManager.start(this, '-*,disabled-by-default-devtools.screenshot', '');
         Host.userMetrics.actionTaken(Host.UserMetrics.Action.FilmStripStartedRecording);
     }
     isRecording() {
@@ -838,7 +838,7 @@ export class ActionDelegate {
                     if (selection.rangeCount) {
                         queryCandidate = selection.toString().replace(/\r?\n.*/, '');
                     }
-                    SearchNetworkView.openSearch(queryCandidate);
+                    void SearchNetworkView.openSearch(queryCandidate);
                     return true;
                 }
             }
@@ -884,7 +884,7 @@ export class SearchNetworkView extends Search.SearchView.SearchView {
     static async openSearch(query, searchImmediately) {
         await UI.ViewManager.ViewManager.instance().showView('network.search-network-tab');
         const searchView = SearchNetworkView.instance();
-        searchView.toggle(query, Boolean(searchImmediately));
+        void searchView.toggle(query, Boolean(searchImmediately));
         return searchView;
     }
     createScope() {

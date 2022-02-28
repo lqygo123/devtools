@@ -62,49 +62,49 @@ export const DefaultAdornerSettings = Object.values(RegisteredAdorners).map(getR
     isEnabled: enabledByDefault,
 }));
 export class AdornerManager {
-    adornerSettings = new Map();
-    settingStore;
+    #adornerSettings = new Map();
+    #settingStore;
     constructor(settingStore) {
-        this.settingStore = settingStore;
-        this.syncSettings();
+        this.#settingStore = settingStore;
+        this.#syncSettings();
     }
     updateSettings(settings) {
-        this.adornerSettings = settings;
-        this.persistCurrentSettings();
+        this.#adornerSettings = settings;
+        this.#persistCurrentSettings();
     }
     getSettings() {
-        return this.adornerSettings;
+        return this.#adornerSettings;
     }
     isAdornerEnabled(adornerText) {
-        return this.adornerSettings.get(adornerText) || false;
+        return this.#adornerSettings.get(adornerText) || false;
     }
-    persistCurrentSettings() {
+    #persistCurrentSettings() {
         const settingList = [];
-        for (const [adorner, isEnabled] of this.adornerSettings) {
+        for (const [adorner, isEnabled] of this.#adornerSettings) {
             settingList.push({ adorner, isEnabled });
         }
-        this.settingStore.set(settingList);
+        this.#settingStore.set(settingList);
     }
-    loadSettings() {
-        const settingList = this.settingStore.get();
+    #loadSettings() {
+        const settingList = this.#settingStore.get();
         for (const setting of settingList) {
-            this.adornerSettings.set(setting.adorner, setting.isEnabled);
+            this.#adornerSettings.set(setting.adorner, setting.isEnabled);
         }
     }
-    syncSettings() {
-        this.loadSettings();
+    #syncSettings() {
+        this.#loadSettings();
         // Prune outdated adorners and add new ones to the persistence.
-        const outdatedAdorners = new Set(this.adornerSettings.keys());
+        const outdatedAdorners = new Set(this.#adornerSettings.keys());
         for (const { adorner, isEnabled } of DefaultAdornerSettings) {
             outdatedAdorners.delete(adorner);
-            if (!this.adornerSettings.has(adorner)) {
-                this.adornerSettings.set(adorner, isEnabled);
+            if (!this.#adornerSettings.has(adorner)) {
+                this.#adornerSettings.set(adorner, isEnabled);
             }
         }
         for (const outdatedAdorner of outdatedAdorners) {
-            this.adornerSettings.delete(outdatedAdorner);
+            this.#adornerSettings.delete(outdatedAdorner);
         }
-        this.persistCurrentSettings();
+        this.#persistCurrentSettings();
     }
 }
 const OrderedAdornerCategories = [

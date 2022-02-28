@@ -232,7 +232,7 @@ export class ServiceWorkersView extends UI.Widget.VBox {
                 if (isOpen) {
                     const networkLocation = UI.ViewManager.ViewManager.instance().locationNameForViewId('network');
                     UI.ViewManager.ViewManager.instance().showViewInLocation('network', networkLocation, false);
-                    Common.Revealer.reveal(NetworkForward.UIFilter.UIRequestFilter.filters([]));
+                    void Common.Revealer.reveal(NetworkForward.UIFilter.UIRequestFilter.filters([]));
                     const currentTime = Date.now();
                     const timeDifference = currentTime - openedAt;
                     if (timeDifference < 2000) {
@@ -485,10 +485,10 @@ export class Section {
     }
     scheduleUpdate() {
         if (throttleDisabledForDebugging) {
-            this.update();
+            void this.update();
             return;
         }
-        this.throttler.schedule(this.update.bind(this));
+        void this.throttler.schedule(this.update.bind(this));
     }
     targetForVersionId(versionId) {
         const version = this.manager.findVersion(versionId);
@@ -514,7 +514,7 @@ export class Section {
             if (info) {
                 this.updateClientInfo(clientLabelText, info);
             }
-            this.manager.target()
+            void this.manager.target()
                 .targetAgent()
                 .invoke_getTargetInfo({ targetId: client })
                 .then(this.onClientInfo.bind(this, clientLabelText));
@@ -616,21 +616,21 @@ export class Section {
         parent.appendChild(button);
         return button;
     }
-    unregisterButtonClicked(_event) {
+    unregisterButtonClicked() {
         this.manager.deleteRegistration(this.registration.id);
     }
     createUpdateCycleField() {
         this.updateCycleField = this.wrapWidget(this.section.appendField(i18nString(UIStrings.updateCycle)));
         this.updateCycleField.appendChild(this.updateCycleView.tableElement);
     }
-    updateButtonClicked(_event) {
-        this.manager.updateRegistration(this.registration.id);
+    updateButtonClicked() {
+        void this.manager.updateRegistration(this.registration.id);
     }
-    networkRequestsClicked(_event) {
+    networkRequestsClicked() {
         const applicationTabLocation = UI.ViewManager.ViewManager.instance().locationNameForViewId('resources');
         const networkTabLocation = applicationTabLocation === 'drawer-view' ? 'panel' : 'drawer-view';
         UI.ViewManager.ViewManager.instance().showViewInLocation('network', networkTabLocation);
-        Common.Revealer.reveal(NetworkForward.UIFilter.UIRequestFilter.filters([
+        void Common.Revealer.reveal(NetworkForward.UIFilter.UIRequestFilter.filters([
             {
                 filterType: NetworkForward.UIFilter.FilterType.Is,
                 filterValue: NetworkForward.UIFilter.IsFilterType.ServiceWorkerIntercepted,
@@ -651,7 +651,7 @@ export class Section {
         }
         if (lastRequest) {
             const requestLocation = NetworkForward.UIRequestLocation.UIRequestLocation.tab(lastRequest, NetworkForward.UIRequestLocation.UIRequestTabs.Timing, { clearFilter: false });
-            Common.Revealer.reveal(requestLocation);
+            void Common.Revealer.reveal(requestLocation);
         }
         this.manager.serviceWorkerNetworkRequestsPanelStatus = {
             isOpen: true,
@@ -661,15 +661,15 @@ export class Section {
     }
     push(data) {
         this.pushNotificationDataSetting.set(data);
-        this.manager.deliverPushMessage(this.registration.id, data);
+        void this.manager.deliverPushMessage(this.registration.id, data);
     }
     sync(tag) {
         this.syncTagNameSetting.set(tag);
-        this.manager.dispatchSyncEvent(this.registration.id, tag, true);
+        void this.manager.dispatchSyncEvent(this.registration.id, tag, true);
     }
     periodicSync(tag) {
         this.periodicSyncTagNameSetting.set(tag);
-        this.manager.dispatchPeriodicSyncEvent(this.registration.id, tag);
+        void this.manager.dispatchPeriodicSyncEvent(this.registration.id, tag);
     }
     onClientInfo(element, targetInfoResponse) {
         const targetInfo = targetInfoResponse.targetInfo;
@@ -691,19 +691,19 @@ export class Section {
         this.createLink(element, i18nString(UIStrings.focus), this.activateTarget.bind(this, targetInfo.targetId), 'service-worker-client-focus-link');
     }
     activateTarget(targetId) {
-        this.manager.target().targetAgent().invoke_activateTarget({ targetId });
+        void this.manager.target().targetAgent().invoke_activateTarget({ targetId });
     }
     startButtonClicked() {
-        this.manager.startWorker(this.registration.scopeURL);
+        void this.manager.startWorker(this.registration.scopeURL);
     }
     skipButtonClicked() {
-        this.manager.skipWaiting(this.registration.scopeURL);
+        void this.manager.skipWaiting(this.registration.scopeURL);
     }
     stopButtonClicked(versionId) {
-        this.manager.stopWorker(versionId);
+        void this.manager.stopWorker(versionId);
     }
     inspectButtonClicked(versionId) {
-        this.manager.inspectWorker(versionId);
+        void this.manager.inspectWorker(versionId);
     }
     wrapWidget(container) {
         const shadowRoot = UI.Utils.createShadowRootWithCoreStyles(container, {

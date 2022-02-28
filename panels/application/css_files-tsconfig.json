@@ -9,6 +9,7 @@
         "cookieItemsView.css.js",
         "frameDetailsReportView.css.js",
         "indexedDBViews.css.js",
+        "reportingApiReportsView.css.js",
         "resourcesPanel.css.js",
         "resourcesSidebar.css.js",
         "serviceWorkerCacheViews.css.js",

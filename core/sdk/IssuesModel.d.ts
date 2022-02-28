@@ -9,8 +9,7 @@ import { SDKModel } from './SDKModel.js';
  * wants to preserve issues for targets (e.g. iframes) that are already gone as well.
  */
 export declare class IssuesModel extends SDKModel<EventTypes> implements ProtocolProxyApi.AuditsDispatcher {
-    private disposed;
-    private enabled;
+    #private;
     constructor(target: Target);
     private ensureEnabled;
     issueAdded(issueAddedEvent: Protocol.Audits.IssueAddedEvent): void;

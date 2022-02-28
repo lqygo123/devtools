@@ -46,7 +46,7 @@ export class FileSystemWorkspaceBinding {
             this.isolatedFileSystemManager.addEventListener(Events.FileSystemFilesChanged, this.fileSystemFilesChanged, this),
         ];
         this.boundFileSystems = new Map();
-        this.isolatedFileSystemManager.waitForFileSystems().then(this.onFileSystemsLoaded.bind(this));
+        void this.isolatedFileSystemManager.waitForFileSystems().then(this.onFileSystemsLoaded.bind(this));
     }
     static projectId(fileSystemPath) {
         return fileSystemPath;
@@ -267,7 +267,7 @@ export class FileSystem extends Workspace.Workspace.ProjectStore {
                 this.addFile(filePaths[i]);
             }
             if (to < filePaths.length) {
-                setTimeout(reportFileChunk.bind(this, to), 100);
+                window.setTimeout(reportFileChunk.bind(this, to), 100);
             }
         }
     }
@@ -308,7 +308,7 @@ export class FileSystem extends Workspace.Workspace.ProjectStore {
     }
     deleteFile(uiSourceCode) {
         const relativePath = this.filePathForUISourceCode(uiSourceCode);
-        this.fileSystemInternal.deleteFile(relativePath).then(success => {
+        void this.fileSystemInternal.deleteFile(relativePath).then(success => {
             if (success) {
                 this.removeUISourceCode(uiSourceCode.url());
             }
@@ -335,7 +335,7 @@ export class FileSystem extends Workspace.Workspace.ProjectStore {
             return;
         }
         sourceCodeToMetadataMap.delete(uiSourceCode);
-        uiSourceCode.checkContentUpdated();
+        void uiSourceCode.checkContentUpdated();
     }
     tooltipForURL(url) {
         return this.fileSystemInternal.tooltipForURL(url);

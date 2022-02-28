@@ -6,11 +6,10 @@ export declare class ChangesView extends UI.Widget.VBox {
     private readonly workspaceDiff;
     readonly changesSidebar: ChangesSidebar;
     private selectedUISourceCode;
-    private diffRows;
-    private maxLineDigits;
-    private readonly editor;
+    private readonly diffContainer;
     private readonly toolbar;
     private readonly diffStats;
+    private readonly diffView;
     private constructor();
     static instance(opts?: {
         forceNew: boolean | null;
@@ -23,27 +22,10 @@ export declare class ChangesView extends UI.Widget.VBox {
     private refreshDiff;
     private hideDiff;
     private renderDiffRows;
-    private lineFormatter;
-}
-export declare const enum RowType {
-    Deletion = "deletion",
-    Addition = "addition",
-    Equal = "equal",
-    Spacer = "spacer"
 }
 export declare class DiffUILocationRevealer implements Common.Revealer.Revealer {
     static instance(opts?: {
         forceNew: boolean;
     }): DiffUILocationRevealer;
     reveal(diffUILocation: Object, omitFocus?: boolean | undefined): Promise<void>;
-}
-export interface Token {
-    text: string;
-    className: string;
-}
-export interface Row {
-    baselineLineNumber: number;
-    currentLineNumber: number;
-    tokens: Token[];
-    type: RowType;
 }

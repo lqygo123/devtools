@@ -25,12 +25,7 @@ export interface PageResource {
  * resources were loaded, and whether there was a load error.
  */
 export declare class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
-    private currentlyLoading;
-    private readonly maxConcurrentLoads;
-    private readonly pageResources;
-    private queuedLoads;
-    private readonly loadOverride;
-    private readonly loadTimeout;
+    #private;
     constructor(loadOverride: ((arg0: string) => Promise<{
         success: boolean;
         content: string;

@@ -18,9 +18,19 @@ function getIssueCode(details) {
             return details.frame !== undefined ? "AttributionReportingIssue::AttributionUntrustworthyFrameOrigin" /* AttributionUntrustworthyFrameOrigin */ :
                 "AttributionReportingIssue::AttributionUntrustworthyOrigin" /* AttributionUntrustworthyOrigin */;
         case "AttributionTriggerDataTooLarge" /* AttributionTriggerDataTooLarge */:
-            return "AttrubtionReportingIssue::AttributionTriggerDataTooLarge" /* AttributionTriggerDataTooLarge */;
+            return "AttributionReportingIssue::AttributionTriggerDataTooLarge" /* AttributionTriggerDataTooLarge */;
         case "AttributionEventSourceTriggerDataTooLarge" /* AttributionEventSourceTriggerDataTooLarge */:
-            return "AttrubtionReportingIssue::AttributionEventSourceTriggerDataTooLarge" /* AttributionEventSourceTriggerDataTooLarge */;
+            return "AttributionReportingIssue::AttributionEventSourceTriggerDataTooLarge" /* AttributionEventSourceTriggerDataTooLarge */;
+        case "InvalidAttributionSourceExpiry" /* InvalidAttributionSourceExpiry */:
+            return "AttributionReportingIssue::InvalidAttributionSourceExpiry" /* InvalidAttributionSourceExpiry */;
+        case "InvalidAttributionSourcePriority" /* InvalidAttributionSourcePriority */:
+            return "AttributionReportingIssue::InvalidAttributionSourcePriority" /* InvalidAttributionSourcePriority */;
+        case "InvalidEventSourceTriggerData" /* InvalidEventSourceTriggerData */:
+            return "AttributionReportingIssue::InvalidEventSourceTriggerData" /* InvalidEventSourceTriggerData */;
+        case "InvalidTriggerPriority" /* InvalidTriggerPriority */:
+            return "AttributionReportingIssue::InvalidTriggerPriority" /* InvalidTriggerPriority */;
+        case "InvalidTriggerDedupKey" /* InvalidTriggerDedupKey */:
+            return "AttributionReportingIssue::InvalidTriggerDedupKey" /* InvalidTriggerDedupKey */;
     }
 }
 export class AttributionReportingIssue extends Issue {
@@ -42,7 +52,10 @@ export class AttributionReportingIssue extends Issue {
             case "AttributionReportingIssue::InvalidAttributionSourceEventId" /* InvalidAttributionSourceEventId */:
                 return {
                     file: 'arInvalidAttributionSourceEventId.md',
-                    links: [],
+                    links: [{
+                            link: 'https://developer.chrome.com/docs/privacy-sandbox/attribution-reporting-event-guide/#html-attribute-attributionsourceeventid-required',
+                            linkTitle: 'attributionsourceeventid attribute',
+                        }],
                 };
             case "AttributionReportingIssue::InvalidAttributionData" /* InvalidAttributionData */:
                 return {
@@ -62,7 +75,16 @@ export class AttributionReportingIssue extends Issue {
             case "AttributionReportingIssue::AttributionSourceUntrustworthyOrigin" /* AttributionSourceUntrustworthyOrigin */:
                 return {
                     file: 'arAttributionSourceUntrustworthyOrigin.md',
-                    links: [],
+                    links: [
+                        {
+                            link: 'https://developer.chrome.com/docs/privacy-sandbox/attribution-reporting-event-guide/#html-attribute-attributiondestination-required',
+                            linkTitle: 'attributiondestination attribute',
+                        },
+                        {
+                            link: 'https://developer.chrome.com/docs/privacy-sandbox/attribution-reporting-event-guide/#html-attribute-attributionreportto',
+                            linkTitle: 'attributionreportto attribute',
+                        },
+                    ],
                 };
             case "AttributionReportingIssue::AttributionUntrustworthyFrameOrigin" /* AttributionUntrustworthyFrameOrigin */:
                 return {
@@ -74,15 +96,52 @@ export class AttributionReportingIssue extends Issue {
                     file: 'arAttributionUntrustworthyOrigin.md',
                     links: [],
                 };
-            case "AttrubtionReportingIssue::AttributionTriggerDataTooLarge" /* AttributionTriggerDataTooLarge */:
+            case "AttributionReportingIssue::AttributionTriggerDataTooLarge" /* AttributionTriggerDataTooLarge */:
                 return {
                     file: 'arAttributionTriggerDataTooLarge.md',
                     links: [],
                 };
-            case "AttrubtionReportingIssue::AttributionEventSourceTriggerDataTooLarge" /* AttributionEventSourceTriggerDataTooLarge */:
+            case "AttributionReportingIssue::AttributionEventSourceTriggerDataTooLarge" /* AttributionEventSourceTriggerDataTooLarge */:
                 return {
                     file: 'arAttributionEventSourceTriggerDataTooLarge.md',
                     links: [],
+                };
+            case "AttributionReportingIssue::InvalidAttributionSourceExpiry" /* InvalidAttributionSourceExpiry */:
+                return {
+                    file: 'arInvalidAttributionSourceExpiry.md',
+                    links: [{
+                            link: 'https://developer.chrome.com/docs/privacy-sandbox/attribution-reporting-event-guide/#html-attribute-attributionexpiry',
+                            linkTitle: 'attributionexpiry attribute',
+                        }],
+                };
+            case "AttributionReportingIssue::InvalidAttributionSourcePriority" /* InvalidAttributionSourcePriority */:
+                return {
+                    file: 'arInvalidAttributionSourcePriority.md',
+                    links: [{
+                            link: 'https://developer.chrome.com/docs/privacy-sandbox/attribution-reporting-event-guide/#html-attribute-attributionsourcepriority',
+                            linkTitle: 'attributionsourcepriority attribute',
+                        }],
+                };
+            case "AttributionReportingIssue::InvalidEventSourceTriggerData" /* InvalidEventSourceTriggerData */:
+                return {
+                    file: 'arInvalidEventSourceTriggerData.md',
+                    links: [],
+                };
+            case "AttributionReportingIssue::InvalidTriggerPriority" /* InvalidTriggerPriority */:
+                return {
+                    file: 'arInvalidTriggerPriority.md',
+                    links: [{
+                            link: 'https://developer.chrome.com/docs/privacy-sandbox/attribution-reporting-event-guide/#prioritize-specific-conversions',
+                            linkTitle: 'Prioritizing specific conversions',
+                        }],
+                };
+            case "AttributionReportingIssue::InvalidTriggerDedupKey" /* InvalidTriggerDedupKey */:
+                return {
+                    file: 'arInvalidTriggerDedupKey.md',
+                    links: [{
+                            link: 'https://developer.chrome.com/docs/privacy-sandbox/attribution-reporting-event-guide/#deduplicate-reports',
+                            linkTitle: 'Deduplicating reports',
+                        }],
                 };
         }
     }

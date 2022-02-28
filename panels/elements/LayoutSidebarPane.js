@@ -17,8 +17,8 @@ const nodeToLayoutElement = (node) => {
         domClasses: className ? className.split(/\s+/).filter(s => Boolean(s)) : undefined,
         enabled: false,
         reveal: () => {
-            ElementsPanel.instance().revealAndSelectNode(node, true, true);
-            node.scrollIntoView();
+            void ElementsPanel.instance().revealAndSelectNode(node, true, true);
+            void node.scrollIntoView();
         },
         highlight: () => {
             node.highlight();

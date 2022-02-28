@@ -53,15 +53,14 @@ export class FileManager extends Common.ObjectWrapper.ObjectWrapper {
         return result;
     }
     savedURL(event) {
-        const url = event.data.url;
+        const { url, fileSystemPath } = event.data;
         const callback = this.saveCallbacks.get(url);
         this.saveCallbacks.delete(url);
         if (callback) {
-            callback({ fileSystemPath: event.data.fileSystemPath });
+            callback({ fileSystemPath });
         }
     }
-    canceledSavedURL(event) {
-        const url = event.data;
+    canceledSavedURL({ data: url }) {
         const callback = this.saveCallbacks.get(url);
         this.saveCallbacks.delete(url);
         if (callback) {
@@ -74,8 +73,7 @@ export class FileManager extends Common.ObjectWrapper.ObjectWrapper {
     close(url) {
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.close(url);
     }
-    appendedToURL(event) {
-        const url = event.data;
+    appendedToURL({ data: url }) {
         this.dispatchEventToListeners(Events.AppendedToURL, url);
     }
 }

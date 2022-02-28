@@ -1,5 +1,5 @@
 import * as SDK from '../../core/sdk/sdk.js';
-export declare class InputModel extends SDK.SDKModel.SDKModel {
+export declare class InputModel extends SDK.SDKModel.SDKModel<void> {
     private readonly inputAgent;
     private activeTouchOffsetTop;
     private activeTouchParams;

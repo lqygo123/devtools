@@ -97,7 +97,6 @@ export class ServiceWorkerUpdateCycleView {
                 }
                 state = state.previousState;
             }
-            /** @type {Array <ServiceWorkerUpdateRange>} */
             const ranges = [];
             addNormalizedRanges(ranges, version.id, beginInstallTime, endInstallTime, beginActivateTime, endActivateTime, currentStatus);
             return ranges;
@@ -142,7 +141,6 @@ export class ServiceWorkerUpdateCycleView {
         this.selectedRowIndex = -1;
         this.removeRows();
         this.createTimingTableHead();
-        /** @type {!Array<ServiceWorkerUpdateRange>} */
         const timeRangeArray = timeRanges;
         if (timeRangeArray.length === 0) {
             return;

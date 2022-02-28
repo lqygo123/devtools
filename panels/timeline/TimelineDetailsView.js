@@ -188,7 +188,7 @@ export class TimelineDetailsView extends UI.Widget.VBox {
         switch (this.selection.type()) {
             case TimelineSelection.Type.TraceEvent: {
                 const event = this.selection.object();
-                TimelineUIUtils.buildTraceEventDetails(event, this.model.timelineModel(), this.detailsLinkifier, true)
+                void TimelineUIUtils.buildTraceEventDetails(event, this.model.timelineModel(), this.detailsLinkifier, true)
                     .then(fragment => this.appendDetailsTabsForTraceEventAndShowDetails(event, fragment));
                 break;
             }
@@ -207,7 +207,7 @@ export class TimelineDetailsView extends UI.Widget.VBox {
             }
             case TimelineSelection.Type.NetworkRequest: {
                 const request = this.selection.object();
-                TimelineUIUtils.buildNetworkRequestDetails(request, this.model.timelineModel(), this.detailsLinkifier)
+                void TimelineUIUtils.buildNetworkRequestDetails(request, this.model.timelineModel(), this.detailsLinkifier)
                     .then(this.setContent.bind(this));
                 break;
             }

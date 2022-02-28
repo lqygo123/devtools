@@ -74,7 +74,7 @@ export class CSSAngleEditor extends HTMLElement {
             return;
         }
         event.preventDefault();
-        this.mousemoveThrottler.schedule(() => {
+        void this.mousemoveThrottler.schedule(() => {
             this.updateAngleFromMousePosition(event.pageX, event.pageY, event.shiftKey);
             return Promise.resolve();
         });

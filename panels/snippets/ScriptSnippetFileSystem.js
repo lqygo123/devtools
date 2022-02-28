@@ -32,6 +32,7 @@ export class SnippetFileSystem extends Persistence.PlatformFileSystem.PlatformFi
     lastSnippetIdentifierSetting;
     snippetsSetting;
     constructor() {
+        // TODO(crbug.com/1253323): Cast to UrlString will be removed when migration to branded types is complete.
         super('snippet://', 'snippets');
         this.lastSnippetIdentifierSetting =
             Common.Settings.Settings.instance().createSetting('scriptSnippets_lastIdentifier', 0);

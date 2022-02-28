@@ -26,7 +26,7 @@ export declare class TreeOutline extends Common.ObjectWrapper.ObjectWrapper<Even
     showSelectionOnKeyboardFocus: boolean;
     private focusable;
     element: HTMLElement;
-    useLightSelectionColorInternal: boolean;
+    private useLightSelectionColor;
     private treeElementToScrollIntoView;
     private centerUponScrollIntoView;
     constructor();
@@ -45,7 +45,8 @@ export declare class TreeOutline extends Common.ObjectWrapper.ObjectWrapper<Even
     setFocusable(focusable: boolean): void;
     updateFocusable(): void;
     focus(): void;
-    useLightSelectionColor(): void;
+    setUseLightSelectionColor(flag: boolean): void;
+    getUseLightSelectionColor(): boolean;
     bindTreeElement(element: TreeElement): void;
     unbindTreeElement(element: TreeElement): void;
     selectPrevious(): boolean;
@@ -63,7 +64,9 @@ export declare class TreeOutlineInShadow extends TreeOutline {
     private readonly disclosureElement;
     renderSelection: boolean;
     constructor();
-    registerRequiredCSS(cssFile: string): void;
+    registerRequiredCSS(cssFile: {
+        cssContent: string;
+    }): void;
     registerCSSFiles(cssFiles: CSSStyleSheet[]): void;
     hideOverflow(): void;
     makeDense(): void;
@@ -126,6 +129,7 @@ export declare class TreeElement {
     set tooltip(x: string);
     isExpandable(): boolean;
     setExpandable(expandable: boolean): void;
+    isCollapsible(): boolean;
     setCollapsible(collapsible: boolean): void;
     get hidden(): boolean;
     set hidden(x: boolean);

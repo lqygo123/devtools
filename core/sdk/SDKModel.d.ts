@@ -7,7 +7,7 @@ export interface RegistrationInfo {
 }
 declare const registeredModels: Map<new (arg1: Target) => SDKModel, RegistrationInfo>;
 export declare class SDKModel<Events = any> extends Common.ObjectWrapper.ObjectWrapper<Events> {
-    private readonly targetInternal;
+    #private;
     constructor(target: Target);
     target(): Target;
     /**

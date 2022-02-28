@@ -33,7 +33,7 @@ export class ElementsSidebarPane extends UI.Widget.VBox {
         if (this.updateWhenVisible) {
             return;
         }
-        this.updateThrottler.schedule(innerUpdate.bind(this));
+        void this.updateThrottler.schedule(innerUpdate.bind(this));
         function innerUpdate() {
             return this.isShowing() ? this.doUpdate() : Promise.resolve();
         }

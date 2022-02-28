@@ -1,10 +1,8 @@
 // Copyright 2021 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-// TODO(crbug.com/1228674) Remove defaults for generic type parameters once
-//                         all event emitters and sinks have been migrated.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class ObjectWrapper {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     listeners;
     addEventListener(eventType, listener, thisObject) {
         if (!this.listeners) {
@@ -49,6 +47,11 @@ export class ObjectWrapper {
         if (!listeners) {
             return;
         }
+        // `eventData` is typed as `Events[T] | undefined`:
+        //   - `undefined` when `Events[T]` is void.
+        //   - `Events[T]` otherwise.
+        // We cast it to `Events[T]` which is the correct type in all instances, as
+        // `void` will be cast and used as `undefined`.
         const event = { data: eventData };
         // Work on a snapshot of the current listeners, callbacks might remove/add
         // new listeners.

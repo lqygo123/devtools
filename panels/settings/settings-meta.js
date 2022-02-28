@@ -53,8 +53,6 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 let loadedSettingsModule;
 async function loadSettingsModule() {
     if (!loadedSettingsModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/settings');
         loadedSettingsModule = await import('./settings.js');
     }
     return loadedSettingsModule;

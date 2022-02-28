@@ -34,7 +34,7 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as HeapSnapshotModel from '../../models/heap_snapshot_model/heap_snapshot_model.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { HeapSnapshotRetainmentDataGridEvents } from './HeapSnapshotDataGrids.js';
+import { HeapSnapshotSortableDataGridEvents } from './HeapSnapshotDataGrids.js';
 const UIStrings = {
     /**
     *@description Generic text with two placeholders separated by a comma
@@ -84,7 +84,9 @@ const UIStrings = {
 };
 const str_ = i18n.i18n.registerUIStrings('panels/profiler/HeapSnapshotGridNodes.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-export class HeapSnapshotGridNode extends DataGrid.DataGrid.DataGridNode {
+class HeapSnapshotGridNodeBase extends DataGrid.DataGrid.DataGridNode {
+}
+export class HeapSnapshotGridNode extends Common.ObjectWrapper.eventMixin(HeapSnapshotGridNodeBase) {
     dataGridInternal;
     instanceCount;
     savedChildren;
@@ -209,7 +211,7 @@ export class HeapSnapshotGridNode extends DataGrid.DataGrid.DataGridNode {
             return;
         }
         this.populated = true;
-        this.provider().sortAndRewind(this.comparator()).then(() => this.populateChildren());
+        void this.provider().sortAndRewind(this.comparator()).then(() => this.populateChildren());
     }
     expandWithoutPopulate() {
         // Make sure default populate won't take action.
@@ -234,7 +236,7 @@ export class HeapSnapshotGridNode extends DataGrid.DataGrid.DataGridNode {
                     return;
                 }
                 const end = Math.min(firstNotSerializedPosition + this.dataGridInternal.defaultPopulateCount(), toPosition);
-                this.provider()
+                void this.provider()
                     .serializeItemsRange(firstNotSerializedPosition, end)
                     .then(itemsRange => childrenRetrieved.call(this, itemsRange, toPosition));
                 firstNotSerializedPosition = end;
@@ -378,7 +380,7 @@ export class HeapSnapshotGridNode extends DataGrid.DataGrid.DataGridNode {
         await this.populateChildren(0, instanceCount);
         for (const child of this.allChildren()) {
             if (child.expanded) {
-                child.sort();
+                void child.sort();
             }
         }
         this.dataGridInternal.recursiveSortingLeave();
@@ -502,7 +504,7 @@ export class HeapSnapshotGenericObjectNode extends HeapSnapshotGridNode {
         if (this.detachedDOMTreeNode) {
             div.appendChild(UI.Fragment.html `<span class="heap-object-tag" title="${i18nString(UIStrings.detachedFromDomTree)}">✀</span>`);
         }
-        this.appendSourceLocation(div);
+        void this.appendSourceLocation(div);
         const cell = fragment.element();
         if (this.depth) {
             cell.style.setProperty('padding-left', (this.depth * this.dataGrid.indentWidth) + 'px');
@@ -592,7 +594,7 @@ export class HeapSnapshotObjectNode extends HeapSnapshotGenericObjectNode {
         this.parentObjectNode = parentObjectNode;
         this.cycledWithAncestorGridNode = this.findAncestorWithSameSnapshotNodeId();
         if (!this.cycledWithAncestorGridNode) {
-            this.updateHasChildren();
+            void this.updateHasChildren();
         }
         const data = this.data;
         data['count'] = '';
@@ -695,7 +697,8 @@ export class HeapSnapshotRetainingObjectNode extends HeapSnapshotObjectNode {
     }
     expandRetainersChain(maxExpandLevels) {
         if (!this.populated) {
-            this.once(HeapSnapshotGridNode.Events.PopulateComplete).then(() => this.expandRetainersChain(maxExpandLevels));
+            void this.once(HeapSnapshotGridNode.Events.PopulateComplete)
+                .then(() => this.expandRetainersChain(maxExpandLevels));
             this.populate();
             return;
         }
@@ -707,7 +710,7 @@ export class HeapSnapshotRetainingObjectNode extends HeapSnapshotObjectNode {
                 return;
             }
         }
-        this.dataGridInternal.dispatchEventToListeners(HeapSnapshotRetainmentDataGridEvents.ExpandRetainersComplete);
+        this.dataGridInternal.dispatchEventToListeners(HeapSnapshotSortableDataGridEvents.ExpandRetainersComplete);
     }
 }
 export class HeapSnapshotInstanceNode extends HeapSnapshotGenericObjectNode {
@@ -717,7 +720,7 @@ export class HeapSnapshotInstanceNode extends HeapSnapshotGenericObjectNode {
         super(dataGrid, node);
         this.baseSnapshotOrSnapshot = snapshot;
         this.isDeletedNode = isDeletedNode;
-        this.updateHasChildren();
+        void this.updateHasChildren();
         const data = this.data;
         data['count'] = '';
         data['countDelta'] = '';
@@ -1030,7 +1033,7 @@ export class AllocationGridNode extends HeapSnapshotGridNode {
         if (this.populated) {
             return;
         }
-        this.doPopulate();
+        void this.doPopulate();
     }
     async doPopulate() {
         this.populated = true;

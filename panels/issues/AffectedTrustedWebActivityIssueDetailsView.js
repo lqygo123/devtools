@@ -32,7 +32,7 @@ export class AffectedTrustedWebActivityIssueDetailsView extends AffectedResource
     getResourceNameWithCount(count) {
         return i18nString(UIStrings.nResources, { n: count });
     }
-    appendDetail(twaIssue) {
+    #appendDetail(twaIssue) {
         const element = document.createElement('tr');
         element.classList.add('affected-resource-row');
         const details = twaIssue.details();
@@ -50,7 +50,7 @@ export class AffectedTrustedWebActivityIssueDetailsView extends AffectedResource
         }
         this.affectedResources.appendChild(element);
     }
-    appendDetails(twaIssues) {
+    #appendDetails(twaIssues) {
         const header = document.createElement('tr');
         if (this.issue.code() === IssuesManager.TrustedWebActivityIssue.httpViolationCode) {
             this.appendColumnTitle(header, i18nString(UIStrings.statusCode));
@@ -67,14 +67,14 @@ export class AffectedTrustedWebActivityIssueDetailsView extends AffectedResource
         this.affectedResources.appendChild(header);
         let count = 0;
         for (const twaIssue of twaIssues) {
-            this.appendDetail(twaIssue);
+            this.#appendDetail(twaIssue);
             count++;
         }
         this.updateAffectedResourceCount(count);
     }
     update() {
         this.clear();
-        this.appendDetails(this.issue.getTrustedWebActivityIssues());
+        this.#appendDetails(this.issue.getTrustedWebActivityIssues());
     }
 }
 //# sourceMappingURL=AffectedTrustedWebActivityIssueDetailsView.js.map

@@ -5,14 +5,14 @@ import * as Host from '../host/host.js';
 import { Capability } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export class LogModel extends SDKModel {
-    logAgent;
+    #logAgent;
     constructor(target) {
         super(target);
         target.registerLogDispatcher(this);
-        this.logAgent = target.logAgent();
-        this.logAgent.invoke_enable();
+        this.#logAgent = target.logAgent();
+        void this.#logAgent.invoke_enable();
         if (!Host.InspectorFrontendHost.isUnderTest()) {
-            this.logAgent.invoke_startViolationsReport({
+            void this.#logAgent.invoke_startViolationsReport({
                 config: [
                     { name: "longTask" /* LongTask */, threshold: 200 },
                     { name: "longLayout" /* LongLayout */, threshold: 30 },
@@ -29,7 +29,7 @@ export class LogModel extends SDKModel {
         this.dispatchEventToListeners(Events.EntryAdded, { logModel: this, entry });
     }
     requestClear() {
-        this.logAgent.invoke_clear();
+        void this.#logAgent.invoke_clear();
     }
 }
 // TODO(crbug.com/1167717): Make this a const enum again

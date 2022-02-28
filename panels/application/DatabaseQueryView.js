@@ -181,7 +181,7 @@ export class DatabaseQueryView extends Common.ObjectWrapper.eventMixin(UI.Widget
     }
     promptKeyDown(event) {
         if (event.key === 'Enter') {
-            this.enterKeyPressed(event);
+            void this.enterKeyPressed(event);
             return;
         }
     }
@@ -197,7 +197,7 @@ export class DatabaseQueryView extends Common.ObjectWrapper.eventMixin(UI.Widget
             // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const result = await new Promise((resolve, reject) => {
-                this.database.executeSql(query, (columnNames, values) => resolve({ columnNames, values }), errorText => reject(errorText));
+                void this.database.executeSql(query, (columnNames, values) => resolve({ columnNames, values }), errorText => reject(errorText));
             });
             this.queryFinished(query, result.columnNames, result.values);
         }

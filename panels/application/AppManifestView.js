@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
+import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import appManifestViewStyles from './appManifestView.css.js';
 import * as SDK from '../../core/sdk/sdk.js';
@@ -47,18 +48,35 @@ const UIStrings = {
     */
     shortName: 'Short name',
     /**
-    *@description Label in the App Manifest View for the App Id
+    *@description Label in the App Manifest View for the Computed App Id
     */
-    appId: 'App Id',
+    computedAppId: 'Computed App Id',
     /**
     *@description Popup-text explaining what the App Id is used for.
     */
     appIdExplainer: 'This is used by the browser to know whether the manifest should be updating an existing application, or whether it refers to a new web app that can be installed.',
     /**
-    *@description Explanation why it is advisable to specify an 'id' field in the manifest.
-    *@example {https://example.com/} PH1
+    *@description Text which is a hyperlink to more documentation
     */
-    appIdNote: 'Note: \'id\' is not specified in the manifest, \'start_url\' is used instead. To specify an App Id that matches the current identity, set the \'id\' field to \'\'{PH1}\'\'.',
+    learnMore: 'Learn more',
+    /**
+    *@description Explanation why it is advisable to specify an 'id' field in the manifest.
+    *@example {Note:} PH1
+    *@example {id} PH2
+    *@example {start_url} PH3
+    *@example {id} PH4
+    *@example {/index.html} PH5
+    *@example {(button for copying suggested value into clipboard)} PH6
+    */
+    appIdNote: '{PH1} {PH2} is not specified in the manifest, {PH3} is used instead. To specify an App Id that matches the current identity, set the {PH4} field to {PH5} {PH6}.',
+    /**
+    *@description Label for reminding the user of something important. Is shown in bold and followed by the actual note to show the user.
+    */
+    note: 'Note:',
+    /**
+    *@description Tooltip text that appears when hovering over a button which copies the previous text to the clipboard.
+    */
+    copyToClipboard: 'Copy to clipboard',
     /**
     *@description Text for the description of something
     */
@@ -75,6 +93,14 @@ const UIStrings = {
     *@description Text in App Manifest View of the Application panel
     */
     backgroundColor: 'Background color',
+    /**
+    *@description Text in App Manifest View of the Application panel
+    */
+    darkThemeColor: 'Dark theme color',
+    /**
+    *@description Text in App Manifest View of the Application panel
+    */
+    darkBackgroundColor: 'Dark background color',
     /**
     *@description Text for the orientation of something
     */
@@ -356,6 +382,10 @@ export class AppManifestView extends UI.Widget.VBox {
     startURLField;
     themeColorSwatch;
     backgroundColorSwatch;
+    darkThemeColorField;
+    darkThemeColorSwatch;
+    darkBackgroundColorField;
+    darkBackgroundColorSwatch;
     orientationField;
     displayField;
     newNoteUrlField;
@@ -396,6 +426,12 @@ export class AppManifestView extends UI.Widget.VBox {
         const backgroundColorField = this.presentationSection.appendField(i18nString(UIStrings.backgroundColor));
         this.backgroundColorSwatch = new InlineEditor.ColorSwatch.ColorSwatch();
         backgroundColorField.appendChild(this.backgroundColorSwatch);
+        this.darkThemeColorField = this.presentationSection.appendField(i18nString(UIStrings.darkThemeColor));
+        this.darkThemeColorSwatch = new InlineEditor.ColorSwatch.ColorSwatch();
+        this.darkThemeColorField.appendChild(this.darkThemeColorSwatch);
+        this.darkBackgroundColorField = this.presentationSection.appendField(i18nString(UIStrings.darkBackgroundColor));
+        this.darkBackgroundColorSwatch = new InlineEditor.ColorSwatch.ColorSwatch();
+        this.darkBackgroundColorField.appendChild(this.darkBackgroundColorSwatch);
         this.orientationField = this.presentationSection.appendField(i18nString(UIStrings.orientation));
         this.displayField = this.presentationSection.appendField(i18nString(UIStrings.display));
         this.newNoteUrlField = this.presentationSection.appendField(i18nString(UIStrings.newNoteUrl));
@@ -413,13 +449,13 @@ export class AppManifestView extends UI.Widget.VBox {
         if (!this.resourceTreeModel || !this.serviceWorkerManager) {
             return;
         }
-        this.updateManifest(true);
+        void this.updateManifest(true);
         this.registeredListeners = [
             this.resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.DOMContentLoaded, () => {
-                this.updateManifest(true);
+                void this.updateManifest(true);
             }),
             this.serviceWorkerManager.addEventListener(SDK.ServiceWorkerManager.Events.RegistrationUpdated, () => {
-                this.updateManifest(false);
+                void this.updateManifest(false);
             }),
         ];
     }
@@ -444,9 +480,11 @@ export class AppManifestView extends UI.Widget.VBox {
             this.resourceTreeModel.getManifestIcons(),
             this.resourceTreeModel.getAppId(),
         ]);
-        this.throttler.schedule(() => this.renderManifest(url, data, errors, installabilityErrors, manifestIcons, appId), immediately);
+        void this.throttler.schedule(() => this.renderManifest(url, data, errors, installabilityErrors, manifestIcons, appId), immediately);
     }
-    async renderManifest(url, data, errors, installabilityErrors, manifestIcons, appId) {
+    async renderManifest(url, data, errors, installabilityErrors, manifestIcons, appIdResponse) {
+        const appId = appIdResponse?.appId || null;
+        const recommendedId = appIdResponse?.recommendedId || null;
         if (!data && !errors.length) {
             this.emptyView.showWidget();
             this.reportView.hideWidget();
@@ -478,27 +516,42 @@ export class AppManifestView extends UI.Widget.VBox {
             warnings.push(i18nString(UIStrings.descriptionMayBeTruncated));
         }
         const startURL = stringProperty('start_url');
-        if (appId && startURL) {
-            const appIdField = this.identitySection.appendField(i18nString(UIStrings.appId));
+        if (appId && recommendedId) {
+            const appIdField = this.identitySection.appendField(i18nString(UIStrings.computedAppId));
             UI.ARIAUtils.setAccessibleName(appIdField, 'App Id');
             appIdField.textContent = appId;
-            if (!stringProperty('id')) {
-                const exclamationIcon = new IconButton.Icon.Icon();
-                exclamationIcon.data = {
-                    iconName: 'exclamation_mark_circle_icon',
-                    color: 'var(--color-text-secondary)',
-                    width: '16px',
-                    height: '16px',
-                };
-                exclamationIcon.classList.add('inline-icon');
-                exclamationIcon.title = i18nString(UIStrings.appIdNote, { PH1: startURL });
-                appIdField.appendChild(exclamationIcon);
-            }
             const helpIcon = new IconButton.Icon.Icon();
             helpIcon.data = { iconName: 'help_outline', color: 'var(--color-text-secondary)', width: '16px', height: '16px' };
             helpIcon.classList.add('inline-icon');
             helpIcon.title = i18nString(UIStrings.appIdExplainer);
             appIdField.appendChild(helpIcon);
+            appIdField.appendChild(UI.XLink.XLink.create('https://developer.chrome.com/blog/pwa-manifest-id/', i18nString(UIStrings.learnMore), 'learn-more'));
+            if (!stringProperty('id')) {
+                const suggestedIdNote = appIdField.createChild('div', 'multiline-value');
+                const noteSpan = document.createElement('b');
+                noteSpan.textContent = i18nString(UIStrings.note);
+                const idSpan = document.createElement('code');
+                idSpan.textContent = 'id';
+                const idSpan2 = document.createElement('code');
+                idSpan2.textContent = 'id';
+                const startUrlSpan = document.createElement('code');
+                startUrlSpan.textContent = 'start_url';
+                const suggestedIdSpan = document.createElement('code');
+                suggestedIdSpan.textContent = recommendedId;
+                const copyButton = new IconButton.IconButton.IconButton();
+                copyButton.title = i18nString(UIStrings.copyToClipboard);
+                copyButton.data = {
+                    groups: [{ iconName: 'copy_icon', iconHeight: '12px', iconWidth: '12px', text: '' }],
+                    clickHandler: () => {
+                        Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(recommendedId);
+                    },
+                    compact: true,
+                };
+                suggestedIdNote.appendChild(i18n.i18n.getFormatLocalizedString(str_, UIStrings.appIdNote, { PH1: noteSpan, PH2: idSpan, PH3: startUrlSpan, PH4: idSpan2, PH5: suggestedIdSpan, PH6: copyButton }));
+            }
+        }
+        else {
+            this.identitySection.removeField(i18nString(UIStrings.computedAppId));
         }
         this.startURLField.removeChildren();
         if (startURL) {
@@ -516,6 +569,26 @@ export class AppManifestView extends UI.Widget.VBox {
         const backgroundColor = Common.Color.Color.parse(stringProperty('background_color') || 'white') || Common.Color.Color.parse('white');
         if (backgroundColor) {
             this.backgroundColorSwatch.renderColor(backgroundColor, true);
+        }
+        const userPreferences = parsedManifest['user_preferences'] || {};
+        const colorSchemeDark = userPreferences['color_scheme_dark'] || {};
+        const darkThemeColorString = colorSchemeDark['theme_color'];
+        const hasDarkThemeColor = typeof darkThemeColorString === 'string';
+        this.darkThemeColorField.parentElement?.classList.toggle('hidden', !hasDarkThemeColor);
+        if (hasDarkThemeColor) {
+            const darkThemeColor = Common.Color.Color.parse(darkThemeColorString);
+            if (darkThemeColor) {
+                this.darkThemeColorSwatch.renderColor(darkThemeColor, true);
+            }
+        }
+        const darkBackgroundColorString = colorSchemeDark['background_color'];
+        const hasDarkBackgroundColor = typeof darkBackgroundColorString === 'string';
+        this.darkBackgroundColorField.parentElement?.classList.toggle('hidden', !hasDarkBackgroundColor);
+        if (hasDarkBackgroundColor) {
+            const darkBackgroundColor = Common.Color.Color.parse(darkBackgroundColorString);
+            if (darkBackgroundColor) {
+                this.darkBackgroundColorSwatch.renderColor(darkBackgroundColor, true);
+            }
         }
         this.orientationField.textContent = stringProperty('orientation');
         const displayType = stringProperty('display');

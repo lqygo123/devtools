@@ -39,6 +39,7 @@ import { ToolbarSettingToggle } from './Toolbar.js';
 import { Tooltip } from './Tooltip.js';
 import { CheckboxLabel, createTextChild } from './UIUtils.js';
 import { HBox } from './Widget.js';
+import filterStyles from './filter.css.legacy.js';
 const UIStrings = {
     /**
     *@description Text to filter result items
@@ -73,7 +74,7 @@ export class FilterBar extends Common.ObjectWrapper.eventMixin(HBox) {
     showingWidget;
     constructor(name, visibleByDefault) {
         super();
-        this.registerRequiredCSS('ui/legacy/filter.css');
+        this.registerRequiredCSS(filterStyles);
         this.enabled = true;
         this.element.classList.add('filter-bar');
         this.stateSetting =
@@ -105,7 +106,7 @@ export class FilterBar extends Common.ObjectWrapper.eventMixin(HBox) {
     showOnce() {
         this.stateSetting.set(true);
     }
-    filterChanged(_event) {
+    filterChanged() {
         this.updateFilterButton();
         this.dispatchEventToListeners("Changed" /* Changed */);
     }

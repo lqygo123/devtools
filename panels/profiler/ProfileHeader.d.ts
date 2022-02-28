@@ -41,7 +41,7 @@ export declare type EventTypes = {
     [Events.ProfileReceived]: void;
     [Events.ProfileTitleChanged]: ProfileHeader;
 };
-export declare abstract class ProfileType extends Common.ObjectWrapper.ObjectWrapper {
+export declare class ProfileType extends Common.ObjectWrapper.ObjectWrapper<ProfileEventTypes> {
     readonly idInternal: string;
     readonly nameInternal: string;
     profiles: ProfileHeader[];
@@ -66,7 +66,7 @@ export declare abstract class ProfileType extends Common.ObjectWrapper.ObjectWra
     setCustomContentEnabled(_enable: boolean): void;
     getProfile(uid: number): ProfileHeader | null;
     loadFromFile(file: File): Promise<Error | DOMError | null>;
-    abstract createProfileLoadedFromFile(title: string): ProfileHeader;
+    createProfileLoadedFromFile(_title: string): ProfileHeader;
     addProfile(profile: ProfileHeader): void;
     removeProfile(profile: ProfileHeader): void;
     clearTempStorage(): void;
@@ -82,6 +82,12 @@ export declare enum ProfileEvents {
     RemoveProfileHeader = "remove-profile-header",
     ViewUpdated = "view-updated"
 }
+export declare type ProfileEventTypes = {
+    [ProfileEvents.AddProfileHeader]: ProfileHeader;
+    [ProfileEvents.ProfileComplete]: ProfileHeader;
+    [ProfileEvents.RemoveProfileHeader]: ProfileHeader;
+    [ProfileEvents.ViewUpdated]: void;
+};
 export interface DataDisplayDelegate {
     showProfile(profile: ProfileHeader | null): UI.Widget.Widget | null;
     showObject(snapshotObjectId: string, perspectiveName: string): void;

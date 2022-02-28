@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as i18n from '../../core/i18n/i18n.js';
-import * as Root from '../../core/root/root.js';
 import * as UI from '../../ui/legacy/legacy.js';
 const UIStrings = {
     /**
@@ -31,8 +30,6 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 let loadedCoverageModule;
 async function loadCoverageModule() {
     if (!loadedCoverageModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/coverage');
         loadedCoverageModule = await import('./coverage.js');
     }
     return loadedCoverageModule;

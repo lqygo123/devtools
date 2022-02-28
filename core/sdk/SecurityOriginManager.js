@@ -4,48 +4,48 @@
 import { Capability } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export class SecurityOriginManager extends SDKModel {
-    mainSecurityOriginInternal;
-    unreachableMainSecurityOriginInternal;
-    securityOriginsInternal;
+    #mainSecurityOriginInternal;
+    #unreachableMainSecurityOriginInternal;
+    #securityOriginsInternal;
     constructor(target) {
         super(target);
         // if a URL is unreachable, the browser will jump to an error page at
-        // 'chrome-error://chromewebdata/', and |this.mainSecurityOriginInternal| stores
+        // 'chrome-error://chromewebdata/', and |this.#mainSecurityOriginInternal| stores
         // its origin. In this situation, the original unreachable URL's security
-        // origin will be stored in |this.unreachableMainSecurityOriginInternal|.
-        this.mainSecurityOriginInternal = '';
-        this.unreachableMainSecurityOriginInternal = '';
-        this.securityOriginsInternal = new Set();
+        // origin will be stored in |this.#unreachableMainSecurityOriginInternal|.
+        this.#mainSecurityOriginInternal = '';
+        this.#unreachableMainSecurityOriginInternal = '';
+        this.#securityOriginsInternal = new Set();
     }
     updateSecurityOrigins(securityOrigins) {
-        const oldOrigins = this.securityOriginsInternal;
-        this.securityOriginsInternal = securityOrigins;
+        const oldOrigins = this.#securityOriginsInternal;
+        this.#securityOriginsInternal = securityOrigins;
         for (const origin of oldOrigins) {
-            if (!this.securityOriginsInternal.has(origin)) {
+            if (!this.#securityOriginsInternal.has(origin)) {
                 this.dispatchEventToListeners(Events.SecurityOriginRemoved, origin);
             }
         }
-        for (const origin of this.securityOriginsInternal) {
+        for (const origin of this.#securityOriginsInternal) {
             if (!oldOrigins.has(origin)) {
                 this.dispatchEventToListeners(Events.SecurityOriginAdded, origin);
             }
         }
     }
     securityOrigins() {
-        return [...this.securityOriginsInternal];
+        return [...this.#securityOriginsInternal];
     }
     mainSecurityOrigin() {
-        return this.mainSecurityOriginInternal;
+        return this.#mainSecurityOriginInternal;
     }
     unreachableMainSecurityOrigin() {
-        return this.unreachableMainSecurityOriginInternal;
+        return this.#unreachableMainSecurityOriginInternal;
     }
     setMainSecurityOrigin(securityOrigin, unreachableSecurityOrigin) {
-        this.mainSecurityOriginInternal = securityOrigin;
-        this.unreachableMainSecurityOriginInternal = unreachableSecurityOrigin || null;
+        this.#mainSecurityOriginInternal = securityOrigin;
+        this.#unreachableMainSecurityOriginInternal = unreachableSecurityOrigin || null;
         this.dispatchEventToListeners(Events.MainSecurityOriginChanged, {
-            mainSecurityOrigin: this.mainSecurityOriginInternal,
-            unreachableMainSecurityOrigin: this.unreachableMainSecurityOriginInternal,
+            mainSecurityOrigin: this.#mainSecurityOriginInternal,
+            unreachableMainSecurityOrigin: this.#unreachableMainSecurityOriginInternal,
         });
     }
 }

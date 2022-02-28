@@ -6,6 +6,7 @@ import * as i18n from '../../core/i18n/i18n.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import * as ThemeSupport from '../../ui/legacy/theme_support/theme_support.js';
 import { NetworkRequestNode } from './NetworkDataGridNode.js';
 import { NetworkManageCustomHeadersView } from './NetworkManageCustomHeadersView.js';
 import { NetworkWaterfallColumn } from './NetworkWaterfallColumn.js';
@@ -179,10 +180,13 @@ export class NetworkLogViewColumns {
         this.lastWheelTime = 0;
         this.setupDataGrid();
         this.setupWaterfall();
+        ThemeSupport.ThemeSupport.instance().addEventListener(ThemeSupport.ThemeChangeEvent.eventName, () => {
+            this.scheduleRefresh();
+        });
     }
     static convertToDataGridDescriptor(columnConfig) {
         const title = columnConfig.title instanceof Function ? columnConfig.title() : columnConfig.title;
-        return /** @type {!DataGrid.DataGrid.ColumnDescriptor} */ {
+        return {
             id: columnConfig.id,
             title,
             sortable: columnConfig.sortable,
@@ -286,7 +290,7 @@ export class NetworkLogViewColumns {
             }
             const contextMenu = new UI.ContextMenu.ContextMenu(event);
             this.networkLogView.handleContextMenuForRequest(contextMenu, request);
-            contextMenu.show();
+            void contextMenu.show();
         }
     }
     onMouseWheel(shouldConsume, ev) {

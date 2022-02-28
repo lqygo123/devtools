@@ -23,7 +23,8 @@ export declare enum SettingCategory {
     EMULATION = "EMULATION",
     MEMORY = "MEMORY",
     EXTENSIONS = "EXTENSIONS",
-    ADORNER = "ADORNER"
+    ADORNER = "ADORNER",
+    SYNC = "SYNC"
 }
 export declare function getLocalizedSettingsCategory(category: SettingCategory): string | Platform.UIString.LocalizedString;
 export declare enum SettingType {

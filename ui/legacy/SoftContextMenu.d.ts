@@ -11,7 +11,8 @@ export declare class SoftContextMenu {
     private hideOnUserGesture?;
     private activeSubMenuElement?;
     private subMenu?;
-    constructor(items: SoftContextMenuDescriptor[], itemSelectedCallback: (arg0: number) => void, parentMenu?: SoftContextMenu);
+    private onMenuClosed?;
+    constructor(items: SoftContextMenuDescriptor[], itemSelectedCallback: (arg0: number) => void, parentMenu?: SoftContextMenu, onMenuClosed?: () => void);
     show(document: Document, anchorBox: AnchorBox): void;
     discard(): void;
     private createMenuItem;

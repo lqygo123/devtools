@@ -1,12 +1,11 @@
 // Copyright 2020 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import * as ApplicationComponents from './components/components.js';
 import { ApplicationPanelTreeElement, ExpandableApplicationPanelTreeElement } from './ApplicationPanelTreeElement.js';
-import { BackForwardCacheView } from './BackForwardCacheView.js';
 import { ServiceWorkerCacheView } from './ServiceWorkerCacheViews.js';
 const UIStrings = {
     /**
@@ -16,7 +15,7 @@ const UIStrings = {
     /**
     *@description Text in Application Panel Sidebar of the Application panel
     */
-    backForwardCache: 'Back-forward Cache',
+    backForwardCache: 'Back/forward cache',
     /**
     *@description A context menu item in the Application Panel Sidebar of the Application panel
     */
@@ -28,23 +27,6 @@ const UIStrings = {
 };
 const str_ = i18n.i18n.registerUIStrings('panels/application/ApplicationPanelCacheSection.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-export class ApplicationCacheManifestTreeElement extends ApplicationPanelTreeElement {
-    manifestURL;
-    constructor(resourcesPanel, manifestURL) {
-        const title = new Common.ParsedURL.ParsedURL(manifestURL).displayName;
-        super(resourcesPanel, title, false);
-        this.tooltip = manifestURL;
-        this.manifestURL = manifestURL;
-    }
-    get itemURL() {
-        return 'appcache://' + this.manifestURL;
-    }
-    onselect(selectedByUser) {
-        super.onselect(selectedByUser);
-        this.resourcesPanel.showCategoryView(this.manifestURL, null);
-        return false;
-    }
-}
 export class ServiceWorkerCacheTreeElement extends ExpandableApplicationPanelTreeElement {
     swCacheModel;
     swCacheTreeElements;
@@ -74,7 +56,7 @@ export class ServiceWorkerCacheTreeElement extends ExpandableApplicationPanelTre
     handleContextMenuEvent(event) {
         const contextMenu = new UI.ContextMenu.ContextMenu(event);
         contextMenu.defaultSection().appendItem(i18nString(UIStrings.refreshCaches), this.refreshCaches.bind(this));
-        contextMenu.show();
+        void contextMenu.show();
     }
     refreshCaches() {
         if (this.swCacheModel) {
@@ -117,7 +99,6 @@ export class SWCacheTreeElement extends ApplicationPanelTreeElement {
         super(resourcesPanel, cache.cacheName + ' - ' + cache.securityOrigin, false);
         this.model = model;
         this.cache = cache;
-        /** @type {?} */
         this.view = null;
         const icon = UI.Icon.Icon.create('mediumicon-table', 'resource-tree-item');
         this.setLeadingIcons([icon]);
@@ -133,10 +114,10 @@ export class SWCacheTreeElement extends ApplicationPanelTreeElement {
     handleContextMenuEvent(event) {
         const contextMenu = new UI.ContextMenu.ContextMenu(event);
         contextMenu.defaultSection().appendItem(i18nString(UIStrings.delete), this.clearCache.bind(this));
-        contextMenu.show();
+        void contextMenu.show();
     }
     clearCache() {
-        this.model.deleteCache(this.cache);
+        void this.model.deleteCache(this.cache);
     }
     update(cache) {
         this.cache = cache;
@@ -156,34 +137,6 @@ export class SWCacheTreeElement extends ApplicationPanelTreeElement {
         return this.cache.equals(cache) && this.model === model;
     }
 }
-export class ApplicationCacheFrameTreeElement extends ApplicationPanelTreeElement {
-    sidebar;
-    frameId;
-    manifestURL;
-    constructor(sidebar, frame, manifestURL) {
-        super(sidebar.panel, '', false);
-        this.sidebar = sidebar;
-        this.frameId = frame.id;
-        this.manifestURL = manifestURL;
-        this.refreshTitles(frame);
-        const icon = UI.Icon.Icon.create('mediumicon-frame-top', 'navigator-folder-tree-item');
-        this.setLeadingIcons([icon]);
-    }
-    get itemURL() {
-        return 'appcache://' + this.manifestURL + '/' + encodeURI(this.titleAsText());
-    }
-    refreshTitles(frame) {
-        this.title = frame.displayName();
-    }
-    frameNavigated(frame) {
-        this.refreshTitles(frame);
-    }
-    onselect(selectedByUser) {
-        super.onselect(selectedByUser);
-        this.sidebar.showApplicationCache(this.frameId);
-        return false;
-    }
-}
 export class BackForwardCacheTreeElement extends ApplicationPanelTreeElement {
     view;
     constructor(resourcesPanel) {
@@ -197,7 +150,7 @@ export class BackForwardCacheTreeElement extends ApplicationPanelTreeElement {
     onselect(selectedByUser) {
         super.onselect(selectedByUser);
         if (!this.view) {
-            this.view = new BackForwardCacheView();
+            this.view = new ApplicationComponents.BackForwardCacheView.BackForwardCacheViewWrapper();
         }
         this.showView(this.view);
         return false;

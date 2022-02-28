@@ -12,6 +12,7 @@ export declare class CookiesTable extends UI.Widget.VBox {
     private cookieDomain;
     private cookieToBlockedReasons;
     constructor(renderInline?: boolean, saveCallback?: ((arg0: SDK.Cookie.Cookie, arg1: SDK.Cookie.Cookie | null) => Promise<boolean>), refreshCallback?: (() => void), selectedCallback?: (() => void), deleteCallback?: ((arg0: SDK.Cookie.Cookie, arg1: () => void) => void));
+    wasShown(): void;
     setCookies(cookies: SDK.Cookie.Cookie[], cookieToBlockedReasons?: ReadonlyMap<SDK.Cookie.Cookie, SDK.CookieModel.BlockedReason[]>): void;
     setCookieFolders(cookieFolders: {
         folderName: string | null;

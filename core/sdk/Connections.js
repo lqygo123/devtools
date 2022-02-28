@@ -8,16 +8,16 @@ import * as Root from '../root/root.js';
 import { TargetManager } from './TargetManager.js';
 export class MainConnection {
     onMessage;
-    onDisconnect;
-    messageBuffer;
-    messageSize;
-    eventListeners;
+    #onDisconnect;
+    #messageBuffer;
+    #messageSize;
+    #eventListeners;
     constructor() {
         this.onMessage = null;
-        this.onDisconnect = null;
-        this.messageBuffer = '';
-        this.messageSize = 0;
-        this.eventListeners = [
+        this.#onDisconnect = null;
+        this.#messageBuffer = '';
+        this.#messageSize = 0;
+        this.#eventListeners = [
             Host.InspectorFrontendHost.InspectorFrontendHostInstance.events.addEventListener(Host.InspectorFrontendHostAPI.Events.DispatchMessage, this.dispatchMessage, this),
             Host.InspectorFrontendHost.InspectorFrontendHostInstance.events.addEventListener(Host.InspectorFrontendHostAPI.Events.DispatchMessageChunk, this.dispatchMessageChunk, this),
         ];
@@ -26,7 +26,7 @@ export class MainConnection {
         this.onMessage = onMessage;
     }
     setOnDisconnect(onDisconnect) {
-        this.onDisconnect = onDisconnect;
+        this.#onDisconnect = onDisconnect;
     }
     sendRawMessage(message) {
         if (this.onMessage) {
@@ -39,23 +39,22 @@ export class MainConnection {
         }
     }
     dispatchMessageChunk(event) {
-        const messageChunk = event.data['messageChunk'];
-        const messageSize = event.data['messageSize'];
+        const { messageChunk, messageSize } = event.data;
         if (messageSize) {
-            this.messageBuffer = '';
-            this.messageSize = messageSize;
+            this.#messageBuffer = '';
+            this.#messageSize = messageSize;
         }
-        this.messageBuffer += messageChunk;
-        if (this.messageBuffer.length === this.messageSize && this.onMessage) {
-            this.onMessage.call(null, this.messageBuffer);
-            this.messageBuffer = '';
-            this.messageSize = 0;
+        this.#messageBuffer += messageChunk;
+        if (this.#messageBuffer.length === this.#messageSize && this.onMessage) {
+            this.onMessage.call(null, this.#messageBuffer);
+            this.#messageBuffer = '';
+            this.#messageSize = 0;
         }
     }
     async disconnect() {
-        const onDisconnect = this.onDisconnect;
-        Common.EventTarget.removeEventListeners(this.eventListeners);
-        this.onDisconnect = null;
+        const onDisconnect = this.#onDisconnect;
+        Common.EventTarget.removeEventListeners(this.#eventListeners);
+        this.#onDisconnect = null;
         this.onMessage = null;
         if (onDisconnect) {
             onDisconnect.call(null, 'force disconnect');
@@ -63,87 +62,87 @@ export class MainConnection {
     }
 }
 export class WebSocketConnection {
-    socket;
+    #socket;
     onMessage;
-    onDisconnect;
-    onWebSocketDisconnect;
-    connected;
-    messages;
+    #onDisconnect;
+    #onWebSocketDisconnect;
+    #connected;
+    #messages;
     constructor(url, onWebSocketDisconnect) {
-      this.socket = new WebSocket(url);
-        this.socket.onerror = this.onError.bind(this);
-        this.socket.onopen = this.onOpen.bind(this);
-      this.socket.onmessage = (messageEvent) => {
+        this.#socket = new WebSocket(url);
+        this.#socket.onerror = this.onError.bind(this);
+        this.#socket.onopen = this.onOpen.bind(this);
+        this.#socket.onmessage = (messageEvent) => {
             if (this.onMessage) {
                 this.onMessage.call(null, messageEvent.data);
             }
         };
-        this.socket.onclose = this.onClose.bind(this);
+        this.#socket.onclose = this.onClose.bind(this);
         this.onMessage = null;
-        this.onDisconnect = null;
-        this.onWebSocketDisconnect = onWebSocketDisconnect;
-        this.connected = false;
-        this.messages = [];
+        this.#onDisconnect = null;
+        this.#onWebSocketDisconnect = onWebSocketDisconnect;
+        this.#connected = false;
+        this.#messages = [];
     }
     setOnMessage(onMessage) {
         this.onMessage = onMessage;
     }
     setOnDisconnect(onDisconnect) {
-        this.onDisconnect = onDisconnect;
+        this.#onDisconnect = onDisconnect;
     }
     onError() {
-        if (this.onWebSocketDisconnect) {
-            this.onWebSocketDisconnect.call(null);
+        if (this.#onWebSocketDisconnect) {
+            this.#onWebSocketDisconnect.call(null);
         }
-        if (this.onDisconnect) {
+        if (this.#onDisconnect) {
             // This is called if error occurred while connecting.
-            this.onDisconnect.call(null, 'connection failed');
+            this.#onDisconnect.call(null, 'connection failed');
         }
         this.close();
     }
     onOpen() {
-        this.connected = true;
-        if (this.socket) {
-            this.socket.onerror = console.error;
-            for (const message of this.messages) {
-                this.socket.send(message);
+        this.#connected = true;
+        if (this.#socket) {
+            this.#socket.onerror = console.error;
+            for (const message of this.#messages) {
+                this.#socket.send(message);
             }
         }
-        this.messages = [];
+        this.#messages = [];
     }
     onClose() {
-        if (this.onWebSocketDisconnect) {
-            this.onWebSocketDisconnect.call(null);
+        if (this.#onWebSocketDisconnect) {
+            this.#onWebSocketDisconnect.call(null);
         }
-        if (this.onDisconnect) {
-            this.onDisconnect.call(null, 'websocket closed');
+        if (this.#onDisconnect) {
+            this.#onDisconnect.call(null, 'websocket closed');
         }
         this.close();
     }
     close(callback) {
-        if (this.socket) {
-            this.socket.onerror = null;
-            this.socket.onopen = null;
-            this.socket.onclose = callback || null;
-            this.socket.onmessage = null;
-            this.socket.close();
-            this.socket = null;
+        if (this.#socket) {
+            this.#socket.onerror = null;
+            this.#socket.onopen = null;
+            this.#socket.onclose = callback || null;
+            this.#socket.onmessage = null;
+            this.#socket.close();
+            this.#socket = null;
         }
-        this.onWebSocketDisconnect = null;
+        this.#onWebSocketDisconnect = null;
     }
-  sendRawMessage(message) {
-        if (this.connected && this.socket) {
-            this.socket.send(message);
+    sendRawMessage(message) {
+        if (this.#connected && this.#socket) {
+            this.#socket.send(message);
         }
         else {
-            this.messages.push(message);
+            this.#messages.push(message);
         }
     }
-  disconnect() {
+    disconnect() {
         return new Promise(fulfill => {
             this.close(() => {
-                if (this.onDisconnect) {
-                    this.onDisconnect.call(null, 'force disconnect');
+                if (this.#onDisconnect) {
+                    this.#onDisconnect.call(null, 'force disconnect');
                 }
                 fulfill();
             });
@@ -152,19 +151,19 @@ export class WebSocketConnection {
 }
 export class StubConnection {
     onMessage;
-    onDisconnect;
+    #onDisconnect;
     constructor() {
         this.onMessage = null;
-        this.onDisconnect = null;
+        this.#onDisconnect = null;
     }
     setOnMessage(onMessage) {
         this.onMessage = onMessage;
     }
     setOnDisconnect(onDisconnect) {
-        this.onDisconnect = onDisconnect;
+        this.#onDisconnect = onDisconnect;
     }
     sendRawMessage(message) {
-        setTimeout(this.respondWithError.bind(this, message), 0);
+        window.setTimeout(this.respondWithError.bind(this, message), 0);
     }
     respondWithError(message) {
         const messageObject = JSON.parse(message);
@@ -178,49 +177,49 @@ export class StubConnection {
         }
     }
     async disconnect() {
-        if (this.onDisconnect) {
-            this.onDisconnect.call(null, 'force disconnect');
+        if (this.#onDisconnect) {
+            this.#onDisconnect.call(null, 'force disconnect');
         }
-        this.onDisconnect = null;
+        this.#onDisconnect = null;
         this.onMessage = null;
     }
 }
 export class ParallelConnection {
-    connection;
-    sessionId;
+    #connection;
+    #sessionId;
     onMessage;
-    onDisconnect;
+    #onDisconnect;
     constructor(connection, sessionId) {
-        this.connection = connection;
-        this.sessionId = sessionId;
+        this.#connection = connection;
+        this.#sessionId = sessionId;
         this.onMessage = null;
-        this.onDisconnect = null;
+        this.#onDisconnect = null;
     }
     setOnMessage(onMessage) {
         this.onMessage = onMessage;
     }
     setOnDisconnect(onDisconnect) {
-        this.onDisconnect = onDisconnect;
+        this.#onDisconnect = onDisconnect;
     }
     getOnDisconnect() {
-        return this.onDisconnect;
+        return this.#onDisconnect;
     }
     sendRawMessage(message) {
         const messageObject = JSON.parse(message);
         // If the message isn't for a specific session, it must be for the root session.
         if (!messageObject.sessionId) {
-            messageObject.sessionId = this.sessionId;
+            messageObject.sessionId = this.#sessionId;
         }
-        this.connection.sendRawMessage(JSON.stringify(messageObject));
+        this.#connection.sendRawMessage(JSON.stringify(messageObject));
     }
     getSessionId() {
-        return this.sessionId;
+        return this.#sessionId;
     }
     async disconnect() {
-        if (this.onDisconnect) {
-            this.onDisconnect.call(null, 'force disconnect');
+        if (this.#onDisconnect) {
+            this.#onDisconnect.call(null, 'force disconnect');
         }
-        this.onDisconnect = null;
+        this.#onDisconnect = null;
         this.onMessage = null;
     }
 }
@@ -233,10 +232,10 @@ export async function initMainConnection(createMainTarget, websocketConnectionLo
         if (target) {
             const router = target.router();
             if (router) {
-                router.connection().disconnect();
+                void router.connection().disconnect();
             }
         }
-        createMainTarget();
+        void createMainTarget();
     });
 }
 function createMainConnection(websocketConnectionLost) {

@@ -4,6 +4,7 @@
 import * as i18n from '../../../core/i18n/i18n.js';
 import * as LitHtml from '../../lit-html/lit-html.js';
 import * as ComponentHelpers from '../helpers/helpers.js';
+import * as Input from '../input/input.js';
 import { valueTypeToLocalizedString } from './ValueInterpreterDisplayUtils.js';
 import valueInterpreterSettingsStyles from './valueInterpreterSettings.css.js';
 const { render, html } = LitHtml;
@@ -37,16 +38,16 @@ export class TypeToggleEvent extends Event {
 }
 export class ValueInterpreterSettings extends HTMLElement {
     static litTagName = LitHtml.literal `devtools-linear-memory-inspector-interpreter-settings`;
-    shadow = this.attachShadow({ mode: 'open' });
-    valueTypes = new Set();
+    #shadow = this.attachShadow({ mode: 'open' });
+    #valueTypes = new Set();
     connectedCallback() {
-        this.shadow.adoptedStyleSheets = [valueInterpreterSettingsStyles];
+        this.#shadow.adoptedStyleSheets = [Input.checkboxStyles, valueInterpreterSettingsStyles];
     }
     set data(data) {
-        this.valueTypes = data.valueTypes;
-        this.render();
+        this.#valueTypes = data.valueTypes;
+        this.#render();
     }
-    render() {
+    #render() {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
         render(html `
@@ -55,14 +56,14 @@ export class ValueInterpreterSettings extends HTMLElement {
             return html `
           <div class="value-types-selection">
             <span class="group">${valueTypeGroupToLocalizedString(group)}</span>
-            ${this.plotTypeSelections(group)}
+            ${this.#plotTypeSelections(group)}
           </div>
         `;
         })}
       </div>
-      `, this.shadow, { host: this });
+      `, this.#shadow, { host: this });
     }
-    plotTypeSelections(group) {
+    #plotTypeSelections(group) {
         const types = GROUP_TO_TYPES.get(group);
         if (!types) {
             throw new Error(`Unknown group ${group}`);
@@ -71,13 +72,13 @@ export class ValueInterpreterSettings extends HTMLElement {
       ${types.map(type => {
             return html `
           <label class="type-label" title=${valueTypeToLocalizedString(type)}>
-            <input data-input="true" type="checkbox" .checked=${this.valueTypes.has(type)} @change=${(e) => this.onTypeToggle(type, e)}>
+            <input data-input="true" type="checkbox" .checked=${this.#valueTypes.has(type)} @change=${(e) => this.#onTypeToggle(type, e)}>
             <span data-title="true">${valueTypeToLocalizedString(type)}</span>
           </label>
      `;
         })}`;
     }
-    onTypeToggle(type, event) {
+    #onTypeToggle(type, event) {
         const checkbox = event.target;
         this.dispatchEvent(new TypeToggleEvent(type, checkbox.checked));
     }

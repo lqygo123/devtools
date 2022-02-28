@@ -163,6 +163,9 @@ export class ProfileType extends Common.ObjectWrapper.ObjectWrapper {
         this.addProfile(profile);
         return profile.loadFromFile(file);
     }
+    createProfileLoadedFromFile(_title) {
+        throw new Error('Not implemented');
+    }
     addProfile(profile) {
         this.profiles.push(profile);
         this.dispatchEventToListeners(ProfileEvents.AddProfileHeader, profile);

@@ -60,6 +60,8 @@ export declare class StylePropertyTreeElement extends UI.TreeOutline.TreeElement
     private handleContextMenuEvent;
     private handleCopyContextMenuEvent;
     private viewComputedValue;
+    private copyCssDeclarationAsJs;
+    private copyAllCssDeclarationAsJs;
     private navigateToSource;
     startEditing(selectElement?: Element | null): void;
     private editingNameValueKeyDown;

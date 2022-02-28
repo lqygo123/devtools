@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as i18n from '../../core/i18n/i18n.js';
+import * as ThemeSupport from './theme_support/theme_support.js';
 import * as Utils from './utils/utils.js';
 import * as ARIAUtils from './ARIAUtils.js';
 import { Size } from './Geometry.js';
@@ -9,6 +10,8 @@ import { GlassPane } from './GlassPane.js';
 import { Icon } from './Icon.js';
 import { ListControl, ListMode } from './ListControl.js';
 import { Events as ListModelEvents } from './ListModel.js';
+import softDropDownStyles from './softDropDown.css.legacy.js';
+import softDropDownButtonStyles from './softDropDownButton.css.legacy.js';
 const UIStrings = {
     /**
     *@description Placeholder text in Soft Drop Down
@@ -36,7 +39,7 @@ export class SoftDropDown {
         this.placeholderText = i18nString(UIStrings.noItemSelected);
         this.element = document.createElement('button');
         this.element.classList.add('soft-dropdown');
-        Utils.appendStyle(this.element, 'ui/legacy/softDropDownButton.css');
+        ThemeSupport.ThemeSupport.instance().appendStyle(this.element, softDropDownButtonStyles);
         this.titleElement = this.element.createChild('span', 'title');
         const dropdownArrowIcon = Icon.create('smallicon-triangle-down');
         this.element.appendChild(dropdownArrowIcon);
@@ -52,7 +55,7 @@ export class SoftDropDown {
         this.width = 315;
         Utils
             .createShadowRootWithCoreStyles(this.glassPane.contentElement, {
-            cssFile: 'ui/legacy/softDropDown.css',
+            cssFile: softDropDownStyles,
             delegatesFocus: undefined,
         })
             .appendChild(this.list.element);
@@ -95,7 +98,7 @@ export class SoftDropDown {
             this.list.selectItem(this.selectedItem);
         }
         event.consume(true);
-        setTimeout(() => {
+        window.setTimeout(() => {
             this.listWasShowing200msAgo = true;
         }, 200);
     }
@@ -105,7 +108,7 @@ export class SoftDropDown {
         this.list.viewportResized();
     }
     hide(event) {
-        setTimeout(() => {
+        window.setTimeout(() => {
             this.listWasShowing200msAgo = false;
         }, 200);
         this.glassPane.hide();

@@ -164,7 +164,7 @@ export class BackgroundServiceView extends UI.Widget.VBox {
         this.recordAction =
             UI.ActionRegistry.ActionRegistry.instance().action('background-service.toggle-recording');
         this.toolbar = new UI.Toolbar.Toolbar('background-service-toolbar', this.contentElement);
-        this.setupToolbar();
+        void this.setupToolbar();
         /**
          * This will contain the DataGrid for displaying events, and a panel at the bottom for showing
          * extra metadata related to the selected event.
@@ -191,7 +191,7 @@ export class BackgroundServiceView extends UI.Widget.VBox {
         this.toolbar.appendSeparator();
         this.saveButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.saveEvents), 'largeicon-download');
         this.saveButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, _event => {
-            this.saveToFile();
+            void this.saveToFile();
         });
         this.saveButton.setEnabled(false);
         this.toolbar.appendToolbarItem(this.saveButton);
@@ -231,8 +231,7 @@ export class BackgroundServiceView extends UI.Widget.VBox {
         this.model.clearEvents(this.serviceName);
         this.clearView();
     }
-    onRecordingStateChanged(event) {
-        const state = event.data;
+    onRecordingStateChanged({ data: state }) {
         if (state.serviceName !== this.serviceName) {
             return;
         }
@@ -248,8 +247,7 @@ export class BackgroundServiceView extends UI.Widget.VBox {
             i18nString(UIStrings.startRecordingEvents);
         this.recordButton.setTitle(buttonTooltip, 'background-service.toggle-recording');
     }
-    onEventReceived(event) {
-        const serviceEvent = event.data;
+    onEventReceived({ data: serviceEvent, }) {
         if (!this.acceptEvent(serviceEvent)) {
             return;
         }
@@ -398,7 +396,7 @@ export class BackgroundServiceView extends UI.Widget.VBox {
         }
         const events = this.model.getEvents(this.serviceName).filter(event => this.acceptEvent(event));
         await stream.write(JSON.stringify(events, undefined, 2));
-        stream.close();
+        void stream.close();
     }
     wasShown() {
         super.wasShown();

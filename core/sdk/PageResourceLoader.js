@@ -29,21 +29,21 @@ let pageResourceLoader = null;
  * resources were loaded, and whether there was a load error.
  */
 export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
-    currentlyLoading;
-    maxConcurrentLoads;
-    pageResources;
-    queuedLoads;
-    loadOverride;
-    loadTimeout;
+    #currentlyLoading;
+    #maxConcurrentLoads;
+    #pageResources;
+    #queuedLoads;
+    #loadOverride;
+    #loadTimeout;
     constructor(loadOverride, maxConcurrentLoads, loadTimeout) {
         super();
-        this.currentlyLoading = 0;
-        this.maxConcurrentLoads = maxConcurrentLoads;
-        this.pageResources = new Map();
-        this.queuedLoads = [];
+        this.#currentlyLoading = 0;
+        this.#maxConcurrentLoads = maxConcurrentLoads;
+        this.#pageResources = new Map();
+        this.#queuedLoads = [];
         TargetManager.instance().addModelListener(ResourceTreeModel, ResourceTreeModelEvents.MainFrameNavigated, this.onMainFrameNavigated, this);
-        this.loadOverride = loadOverride;
-        this.loadTimeout = loadTimeout;
+        this.#loadOverride = loadOverride;
+        this.#loadTimeout = loadTimeout;
     }
     static instance({ forceNew, loadOverride, maxConcurrentLoads, loadTimeout } = {
         forceNew: false,
@@ -61,15 +61,15 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
         if (!mainFrame.isTopFrame()) {
             return;
         }
-        for (const { reject } of this.queuedLoads) {
+        for (const { reject } of this.#queuedLoads) {
             reject(new Error(i18nString(UIStrings.loadCanceledDueToReloadOf)));
         }
-        this.queuedLoads = [];
-        this.pageResources.clear();
+        this.#queuedLoads = [];
+        this.#pageResources.clear();
         this.dispatchEventToListeners(Events.Update);
     }
     getResourcesLoaded() {
-        return this.pageResources;
+        return this.#pageResources;
     }
     /**
      * Loading is the number of currently loading and queued items. Resources is the total number of resources,
@@ -77,29 +77,29 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
      * for cancelation.;
      */
     getNumberOfResources() {
-        return { loading: this.currentlyLoading, queued: this.queuedLoads.length, resources: this.pageResources.size };
+        return { loading: this.#currentlyLoading, queued: this.#queuedLoads.length, resources: this.#pageResources.size };
     }
     async acquireLoadSlot() {
-        this.currentlyLoading++;
-        if (this.currentlyLoading > this.maxConcurrentLoads) {
+        this.#currentlyLoading++;
+        if (this.#currentlyLoading > this.#maxConcurrentLoads) {
             const entry = { resolve: () => { }, reject: () => { } };
             const waitForCapacity = new Promise((resolve, reject) => {
                 entry.resolve = resolve;
                 entry.reject = reject;
             });
-            this.queuedLoads.push(entry);
+            this.#queuedLoads.push(entry);
             await waitForCapacity;
         }
     }
     releaseLoadSlot() {
-        this.currentlyLoading--;
-        const entry = this.queuedLoads.shift();
+        this.#currentlyLoading--;
+        const entry = this.#queuedLoads.shift();
         if (entry) {
             entry.resolve();
         }
     }
     static async withTimeout(promise, timeout) {
-        const timeoutPromise = new Promise((_, reject) => setTimeout(reject, timeout, new Error(i18nString(UIStrings.loadCanceledDueToLoadTimeout))));
+        const timeoutPromise = new Promise((_, reject) => window.setTimeout(reject, timeout, new Error(i18nString(UIStrings.loadCanceledDueToLoadTimeout))));
         return Promise.race([promise, timeoutPromise]);
     }
     static makeKey(url, initiator) {
@@ -114,12 +114,12 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
     async loadResource(url, initiator) {
         const key = PageResourceLoader.makeKey(url, initiator);
         const pageResource = { success: null, size: null, errorMessage: undefined, url, initiator };
-        this.pageResources.set(key, pageResource);
+        this.#pageResources.set(key, pageResource);
         this.dispatchEventToListeners(Events.Update);
         try {
             await this.acquireLoadSlot();
             const resultPromise = this.dispatchLoad(url, initiator);
-            const result = await PageResourceLoader.withTimeout(resultPromise, this.loadTimeout);
+            const result = await PageResourceLoader.withTimeout(resultPromise, this.#loadTimeout);
             pageResource.errorMessage = result.errorDescription.message;
             pageResource.success = result.success;
             if (result.success) {
@@ -144,11 +144,12 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
     }
     async dispatchLoad(url, initiator) {
         let failureReason = null;
-        if (this.loadOverride) {
-            return this.loadOverride(url);
+        if (this.#loadOverride) {
+            return this.#loadOverride(url);
         }
         const parsedURL = new Common.ParsedURL.ParsedURL(url);
-        const eligibleForLoadFromTarget = getLoadThroughTargetSetting().get() && parsedURL && parsedURL.isHttpOrHttps();
+        const eligibleForLoadFromTarget = getLoadThroughTargetSetting().get() && parsedURL && parsedURL.scheme !== 'file' &&
+            parsedURL.scheme !== 'data' && parsedURL.scheme !== 'devtools';
         Host.userMetrics.developerResourceScheme(this.getDeveloperResourceScheme(parsedURL));
         if (eligibleForLoadFromTarget) {
             try {
@@ -231,7 +232,7 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
         }
         finally {
             if (resource.stream) {
-                ioModel.close(resource.stream);
+                void ioModel.close(resource.stream);
             }
         }
     }

@@ -5,7 +5,6 @@
 import * as ChangesModule from './changes.js';
 self.Changes = self.Changes || {};
 Changes = Changes || {};
-Changes.ChangesHighlighter = ChangesModule.ChangesHighlighter.ChangesHighlighter;
 /**
  * @constructor
  */

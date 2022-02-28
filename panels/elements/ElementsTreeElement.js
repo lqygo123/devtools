@@ -36,8 +36,10 @@ import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
+import * as CodeMirror from '../../third_party/codemirror.next/codemirror.next.js';
 import * as Adorners from '../../ui/components/adorners/adorners.js';
-import * as TextEditor from '../../ui/legacy/components/text_editor/text_editor.js';
+import * as CodeHighlighter from '../../ui/components/code_highlighter/code_highlighter.js';
+import * as TextEditor from '../../ui/components/text_editor/text_editor.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import * as Emulation from '../emulation/emulation.js';
@@ -77,6 +79,14 @@ const UIStrings = {
     *@description Text to scroll the displayed content into view
     */
     scrollIntoView: 'Scroll into view',
+    /**
+    *@description Text to enter Isolation Mode, a mode with focus on a single element and interactive resizing
+    */
+    enterIsolationMode: 'Enter Isolation Mode',
+    /**
+    *@description Text to exit Isolation Mode, a mode with focus on a single element and interactive resizing
+    */
+    exitIsolationMode: 'Exit Isolation Mode',
     /**
     *@description A context menu item in the Elements Tree Element of the Elements panel
     */
@@ -219,15 +229,17 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     searchHighlightsVisible;
     selectionElement;
     hintElement;
+    contentElement;
     constructor(node, isClosingTag) {
         // The title will be updated in onattach.
         super();
         this.nodeInternal = node;
         this.treeOutline = null;
-        this.gutterContainer = this.listItemElement.createChild('div', 'gutter-container');
+        this.contentElement = this.listItemElement.createChild('div');
+        this.gutterContainer = this.contentElement.createChild('div', 'gutter-container');
         this.gutterContainer.addEventListener('click', this.showContextMenu.bind(this));
         const gutterMenuIcon = UI.Icon.Icon.create('largeicon-menu', 'gutter-menu-icon');
-        this.gutterContainer.appendChild(gutterMenuIcon);
+        this.gutterContainer.append(gutterMenuIcon);
         this.decorationsElement = this.gutterContainer.createChild('div', 'hidden');
         this.isClosingTagInternal = isClosingTag;
         if (this.nodeInternal.nodeType() === Node.ELEMENT_NODE && !isClosingTag) {
@@ -241,11 +253,11 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
         this.editing = null;
         this.highlightResult = [];
         if (!isClosingTag) {
-            this.adornerContainer = this.listItemElement.createChild('div', 'adorner-container hidden');
+            this.adornerContainer = this.contentElement.createChild('div', 'adorner-container hidden');
             this.adorners = [];
             this.styleAdorners = [];
             this.adornersThrottler = new Common.Throttler.Throttler(100);
-            this.updateStyleAdorners();
+            void this.updateStyleAdorners();
             if (node.isAdFrameNode()) {
                 const config = ElementsComponents.AdornerManager.getRegisteredAdorner(ElementsComponents.AdornerManager.RegisteredAdorners.AD);
                 const adorner = this.adorn(config);
@@ -368,20 +380,20 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
         this.expandedChildrenLimitInternal = expandedChildrenLimit;
     }
     createSelection() {
-        const listItemElement = this.listItemElement;
-        if (!listItemElement) {
+        const contentElement = this.contentElement;
+        if (!contentElement) {
             return;
         }
         if (!this.selectionElement) {
             this.selectionElement = document.createElement('div');
             this.selectionElement.className = 'selection fill';
             this.selectionElement.style.setProperty('margin-left', (-this.computeLeftIndent()) + 'px');
-            listItemElement.insertBefore(this.selectionElement, listItemElement.firstChild);
+            contentElement.prepend(this.selectionElement);
         }
     }
     createHint() {
-        if (this.listItemElement && !this.hintElement) {
-            this.hintElement = this.listItemElement.createChild('span', 'selected-hint');
+        if (this.contentElement && !this.hintElement) {
+            this.hintElement = this.contentElement.createChild('span', 'selected-hint');
             const selectedElementCommand = '$0';
             UI.Tooltip.Tooltip.install(this.hintElement, i18nString(UIStrings.useSInTheConsoleToReferToThis, { PH1: selectedElementCommand }));
             UI.ARIAUtils.markAsHidden(this.hintElement);
@@ -556,6 +568,17 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
         contextMenu.viewSection().appendItem(i18nString(UIStrings.focus), async () => {
             await this.nodeInternal.focus();
         });
+        const overlayModel = this.nodeInternal.domModel().overlayModel();
+        if (overlayModel.isHighlightedIsolatedElementInPersistentOverlay(this.nodeInternal.id)) {
+            contextMenu.viewSection().appendItem(i18nString(UIStrings.exitIsolationMode), () => {
+                overlayModel.hideIsolatedElementInPersistentOverlay(this.nodeInternal.id);
+            });
+        }
+        else {
+            contextMenu.viewSection().appendItem(i18nString(UIStrings.enterIsolationMode), () => {
+                overlayModel.highlightIsolatedElementInPersistentOverlay(this.nodeInternal.id);
+            });
+        }
     }
     populateScrollIntoView(contextMenu) {
         contextMenu.viewSection().appendItem(i18nString(UIStrings.scrollIntoView), () => this.nodeInternal.scrollIntoView());
@@ -569,9 +592,11 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     populateNodeContextMenu(contextMenu) {
         // Add free-form node-related actions.
         const isEditable = this.hasEditableNode();
+        // clang-format off
         if (isEditable && !this.editing) {
             contextMenu.editSection().appendItem(i18nString(UIStrings.editAsHtml), this.editAsHTML.bind(this));
         }
+        // clang-format on
         const isShadowRoot = this.nodeInternal.isShadowRoot();
         const createShortcut = UI.KeyboardShortcut.KeyboardShortcut.shortcutToString.bind(null);
         const modifier = UI.KeyboardShortcut.Modifiers.CtrlOrMeta;
@@ -621,7 +646,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
                 const frameOwnerFrameId = this.nodeInternal.frameOwnerFrameId();
                 if (frameOwnerFrameId) {
                     const frame = SDK.FrameManager.FrameManager.instance().getFrame(frameOwnerFrameId);
-                    Common.Revealer.reveal(frame);
+                    void Common.Revealer.reveal(frame);
                 }
             });
         }
@@ -808,7 +833,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
             };
         }
     }
-    startEditingAsHTML(commitCallback, disposeCallback, maybeInitialValue) {
+    async startEditingAsHTML(commitCallback, disposeCallback, maybeInitialValue) {
         if (maybeInitialValue === null) {
             return;
         }
@@ -829,46 +854,64 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
             this.childrenListElement.style.display = 'none';
         }
         // Append editor.
-        this.listItemElement.appendChild(this.htmlEditElement);
-        const factory = TextEditor.CodeMirrorTextEditor.CodeMirrorTextEditorFactory.instance();
-        const editor = factory.createEditor({
-            lineNumbers: false,
-            lineWrapping: Common.Settings.Settings.instance().moduleSetting('domWordWrap').get(),
-            mimeType: 'text/html',
-            autoHeight: false,
-            padBottom: false,
-            bracketMatchingSetting: undefined,
-            devtoolsAccessibleName: undefined,
-            maxHighlightLength: undefined,
-            placeholder: undefined,
-            lineWiseCopyCut: undefined,
-            inputStyle: undefined,
+        this.listItemElement.append(this.htmlEditElement);
+        this.htmlEditElement.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                event.consume(true);
+            }
         });
+        const editor = new TextEditor.TextEditor.TextEditor(CodeMirror.EditorState.create({
+            doc: initialValue,
+            extensions: [
+                CodeMirror.keymap.of([
+                    {
+                        key: 'Mod-Enter',
+                        run: () => {
+                            this.editing?.commit();
+                            return true;
+                        },
+                    },
+                    {
+                        key: 'Escape',
+                        run: () => {
+                            this.editing?.cancel();
+                            return true;
+                        },
+                    },
+                ]),
+                TextEditor.Config.baseConfiguration(initialValue),
+                TextEditor.Config.closeBrackets,
+                TextEditor.Config.autocompletion,
+                CodeMirror.html.html(),
+                TextEditor.Config.domWordWrap.instance(),
+                CodeMirror.EditorView.theme({
+                    '&.cm-editor': { maxHeight: '300px' },
+                    '.cm-scroller': { overflowY: 'auto' },
+                }),
+                CodeMirror.EditorView.domEventHandlers({
+                    focusout: event => {
+                        // The relatedTarget is null when no element gains focus, e.g. switching windows.
+                        const relatedTarget = event.relatedTarget;
+                        if (relatedTarget && !relatedTarget.isSelfOrDescendant(editor)) {
+                            this.editing && this.editing.commit();
+                        }
+                    },
+                }),
+            ],
+        }));
         this.editing = { commit: commit.bind(this), cancel: dispose.bind(this), editor, resize: resize.bind(this) };
         resize.call(this);
-        editor.widget().show(this.htmlEditElement);
-        editor.setText(initialValue);
-        editor.widget().focus();
-        editor.widget().element.addEventListener('focusout', event => {
-            // The relatedTarget is null when no element gains focus, e.g. switching windows.
-            const relatedTarget = event.relatedTarget;
-            if (relatedTarget && !relatedTarget.isSelfOrDescendant(editor.widget().element)) {
-                this.editing && this.editing.commit();
-            }
-        }, false);
-        editor.widget().element.addEventListener('keydown', keydown.bind(this), true);
+        this.htmlEditElement.appendChild(editor);
+        editor.editor.focus();
         this.treeOutline && this.treeOutline.setMultilineEditing(this.editing);
         function resize() {
             if (this.treeOutline && this.htmlEditElement) {
                 this.htmlEditElement.style.width = this.treeOutline.visibleWidth() - this.computeLeftIndent() - 30 + 'px';
             }
-            if (this.editing && this.editing.editor) {
-                this.editing.editor.onResize();
-            }
         }
         function commit() {
             if (this.editing && this.editing.editor) {
-                commitCallback(initialValue, this.editing.editor.text());
+                commitCallback(initialValue, this.editing.editor.state.doc.toString());
             }
             dispose.call(this);
         }
@@ -876,8 +919,6 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
             if (!this.editing || !this.editing.editor) {
                 return;
             }
-            this.editing.editor.widget().element.removeEventListener('blur', this.editing.commit, true);
-            this.editing.editor.widget().detach();
             this.editing = null;
             // Remove editor.
             if (this.htmlEditElement) {
@@ -899,20 +940,6 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
                 this.treeOutline.focus();
             }
             disposeCallback();
-        }
-        function keydown(event) {
-            const keyboardEvent = event;
-            const isMetaOrCtrl = UI.KeyboardShortcut.KeyboardShortcut.eventHasCtrlEquivalentKey(keyboardEvent) &&
-                !keyboardEvent.altKey && !keyboardEvent.shiftKey;
-            if (keyboardEvent.key === 'Enter' && (isMetaOrCtrl || keyboardEvent.isMetaOrCtrlForTest)) {
-                keyboardEvent.consume(true);
-                this.editing && this.editing.commit();
-            }
-            else if (keyboardEvent.keyCode === UI.KeyboardShortcut.Keys.Esc.code ||
-                keyboardEvent.key === Platform.KeyboardUtilities.ESCAPE_KEY) {
-                keyboardEvent.consume(true);
-                this.editing && this.editing.cancel();
-            }
         }
     }
     attributeEditingCommitted(element, newText, oldText, attributeName, moveDirection) {
@@ -1084,15 +1111,15 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
                     this.childrenListElement.classList.add('shadow-root-depth-' + depth);
                 }
             }
-            const highlightElement = document.createElement('span');
-            highlightElement.className = 'highlight';
-            highlightElement.appendChild(nodeInfo);
+            this.contentElement.removeChildren();
+            const highlightElement = this.contentElement.createChild('span', 'highlight');
+            highlightElement.append(nodeInfo);
             // fixme: make it clear that `this.title = x` is a setter with significant side effects
-            this.title = highlightElement;
+            this.title = this.contentElement;
             this.updateDecorations();
-            this.listItemElement.insertBefore(this.gutterContainer, this.listItemElement.firstChild);
+            this.contentElement.prepend(this.gutterContainer);
             if (!this.isClosingTagInternal && this.adornerContainer) {
-                this.listItemElement.appendChild(this.adornerContainer);
+                this.contentElement.append(this.adornerContainer);
             }
             this.highlightResult = [];
             delete this.selectionElement;
@@ -1112,7 +1139,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
             treeElement = treeElement.parent;
         }
         /** Keep it in sync with elementsTreeOutline.css **/
-        return 12 * (depth - 2) + (this.isExpandable() ? 1 : 12);
+        return 12 * (depth - 2) + (this.isExpandable() && this.isCollapsible() ? 1 : 12);
     }
     updateDecorations() {
         this.gutterContainer.style.left = (-this.computeLeftIndent()) + 'px';
@@ -1122,7 +1149,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
         if (this.nodeInternal.nodeType() !== Node.ELEMENT_NODE) {
             return;
         }
-        this.decorationsThrottler.schedule(this.updateDecorationsInternal.bind(this));
+        void this.decorationsThrottler.schedule(this.updateDecorationsInternal.bind(this));
     }
     updateDecorationsInternal() {
         if (!this.treeOutline) {
@@ -1258,6 +1285,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
                     className: undefined,
                     lineNumber: undefined,
                     columnNumber: undefined,
+                    showColumnNumber: false,
                     inlineFrameIndex: 0,
                     maxLength: undefined,
                     tabStop: undefined,
@@ -1453,16 +1481,14 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
                 if (node.parentNode && node.parentNode.nodeName().toLowerCase() === 'script') {
                     const newNode = titleDOM.createChild('span', 'webkit-html-text-node webkit-html-js-node');
                     const text = node.nodeValue();
-                    newNode.textContent = text.startsWith('\n') ? text.substring(1) : text;
-                    const javascriptSyntaxHighlighter = new TextEditor.SyntaxHighlighter.SyntaxHighlighter('text/javascript', true);
-                    javascriptSyntaxHighlighter.syntaxHighlightNode(newNode).then(updateSearchHighlight);
+                    newNode.textContent = text.replace(/^[\n\r]+|\s+$/g, '');
+                    void CodeHighlighter.CodeHighlighter.highlightNode(newNode, 'text/javascript').then(updateSearchHighlight);
                 }
                 else if (node.parentNode && node.parentNode.nodeName().toLowerCase() === 'style') {
                     const newNode = titleDOM.createChild('span', 'webkit-html-text-node webkit-html-css-node');
                     const text = node.nodeValue();
-                    newNode.textContent = text.startsWith('\n') ? text.substring(1) : text;
-                    const cssSyntaxHighlighter = new TextEditor.SyntaxHighlighter.SyntaxHighlighter('text/css', true);
-                    cssSyntaxHighlighter.syntaxHighlightNode(newNode).then(updateSearchHighlight);
+                    newNode.textContent = text.replace(/^[\n\r]+|\s+$/g, '');
+                    void CodeHighlighter.CodeHighlighter.highlightNode(newNode, 'text/css').then(updateSearchHighlight);
                 }
                 else {
                     UI.UIUtils.createTextChild(titleDOM, '"');
@@ -1527,10 +1553,8 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
         if (!this.nodeInternal.parentNode || this.nodeInternal.parentNode.nodeType() === Node.DOCUMENT_NODE) {
             return;
         }
-        this.nodeInternal.removeNode();
+        void this.nodeInternal.removeNode();
     }
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     toggleEditAsHTML(callback, startEditing) {
         if (this.editing && this.htmlEditElement) {
             this.editing.commit();
@@ -1555,7 +1579,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
             }
         }
         const node = this.nodeInternal;
-        node.getOuterHTML().then(this.startEditingAsHTML.bind(this, commitChange, disposeCallback));
+        void node.getOuterHTML().then(this.startEditingAsHTML.bind(this, commitChange, disposeCallback));
     }
     copyCSSPath() {
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(cssPath(this.nodeInternal, true));
@@ -1603,7 +1627,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
         }
         this.hideSearchHighlight();
         const text = this.listItemElement.textContent || '';
-        const regexObject = createPlainTextSearchRegex(this.searchQuery, 'gi');
+        const regexObject = Platform.StringUtilities.createPlainTextSearchRegex(this.searchQuery, 'gi');
         let match = regexObject.exec(text);
         const matchRanges = [];
         while (match) {
@@ -1619,7 +1643,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     }
     editAsHTML() {
         const promise = Common.Revealer.reveal(this.node());
-        promise.then(() => {
+        void promise.then(() => {
             const action = UI.ActionRegistry.ActionRegistry.instance().action('elements.edit-as-html');
             if (!action) {
                 return;
@@ -1662,7 +1686,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
         this.updateAdorners();
     }
     updateAdorners() {
-        this.adornersThrottler.schedule(this.updateAdornersInternal.bind(this));
+        void this.adornersThrottler.schedule(this.updateAdornersInternal.bind(this));
     }
     updateAdornersInternal() {
         const adornerContainer = this.adornerContainer;

@@ -370,7 +370,7 @@
    * Enum for recordPerformanceHistogram
    * Warning: There is another definition of this enum in the DevTools code
    * base, keep them in sync:
-   * front_end/host/InspectorFrontendHostAPI.js
+   * front_end/core/host/InspectorFrontendHostAPI.ts
    * @readonly
    * @enum {string}
    */
@@ -385,16 +385,21 @@
     IssuesPanelOpenedFrom: 'DevTools.IssuesPanelOpenedFrom',
     IssuesPanelResourceOpened: 'DevTools.IssuesPanelResourceOpened',
     KeybindSetSettingChanged: 'DevTools.KeybindSetSettingChanged',
-    DualScreenDeviceEmulated: 'DevTools.DualScreenDeviceEmulated',
     ExperimentEnabledAtLaunch: 'DevTools.ExperimentEnabledAtLaunch',
     ExperimentEnabled: 'DevTools.ExperimentEnabled',
     ExperimentDisabled: 'DevTools.ExperimentDisabled',
-    CssEditorOpened: 'DevTools.CssEditorOpened',
     DeveloperResourceLoaded: 'DevTools.DeveloperResourceLoaded',
     DeveloperResourceScheme: 'DevTools.DeveloperResourceScheme',
     LinearMemoryInspectorRevealedFrom: 'DevTools.LinearMemoryInspector.RevealedFrom',
     LinearMemoryInspectorTarget: 'DevTools.LinearMemoryInspector.Target',
     Language: 'DevTools.Language',
+    ConsoleShowsCorsErrors: 'DevTools.ConsoleShowsCorsErrors',
+    RecordingEdited: 'DevTools.RecordingEdited',
+    RecordingExported: 'DevTools.RecordingExported',
+    RecordingReplayFinished: 'DevTools.RecordingReplayFinished',
+    RecordingReplayStarted: 'DevTools.RecordingReplayStarted',
+    RecordingToggled: 'DevTools.RecordingToggled',
+    SyncSetting: 'DevTools.SyncSetting',
   };
 
   /**
@@ -522,10 +527,28 @@
 
     /**
      * @override
+     * @param {string} name
+     * @param {!{synced: (boolean|undefined)}} options
+     */
+    registerPreference(name, options) {
+      DevToolsAPI.sendMessageToEmbedder('registerPreference', [name, options], null);
+    }
+
+    /**
+     * @override
      * @param {function(!Object<string, string>)} callback
      */
     getPreferences(callback) {
       DevToolsAPI.sendMessageToEmbedder('getPreferences', [], /** @type {function(?Object)} */ (callback));
+    }
+
+    /**
+     * @override
+     * @param {string} name
+     * @param {function(string)} callback
+     */
+    getPreference(name, callback) {
+      DevToolsAPI.sendMessageToEmbedder('getPreference', [name], /** @type {function(string)} */ (callback));
     }
 
     /**
@@ -550,6 +573,14 @@
      */
     clearPreferences() {
       DevToolsAPI.sendMessageToEmbedder('clearPreferences', [], null);
+    }
+
+    /**
+     * @override
+     * @param {!function(!InspectorFrontendHostAPI.SyncInformation):void} callback
+     */
+    getSyncInformation(callback) {
+      DevToolsAPI.sendMessageToEmbedder('getSyncInformation', [], callback);
     }
 
     /**
@@ -1467,13 +1498,6 @@
       styleRules.push('* { min-width: 0; min-height: 0; }');
     }
 
-    if (majorVersion <= 51) {
-      // Support for quirky border-image behavior (<M51), see:
-      // https://bugs.chromium.org/p/chromium/issues/detail?id=559258
-      styleRules.push('.cm-breakpoint .CodeMirror-linenumber { border-style: solid !important; }');
-      styleRules.push(
-          '.cm-breakpoint.cm-breakpoint-conditional .CodeMirror-linenumber { border-style: solid !important; }');
-    }
     if (majorVersion <= 71) {
       styleRules.push(
           '.coverage-toolbar-container, .animation-timeline-toolbar-container, .computed-properties { flex-basis: auto; }');

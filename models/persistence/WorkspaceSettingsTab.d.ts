@@ -8,6 +8,7 @@ export declare class WorkspaceSettingsTab extends UI.Widget.VBox {
     static instance(opts?: {
         forceNew: boolean | null;
     }): WorkspaceSettingsTab;
+    wasShown(): void;
     private createFolderExcludePatternInput;
     private addItem;
     private renderFileSystem;
@@ -15,5 +16,4 @@ export declare class WorkspaceSettingsTab extends UI.Widget.VBox {
     private addFileSystemClicked;
     private fileSystemAdded;
     private fileSystemRemoved;
-    wasShown(): void;
 }

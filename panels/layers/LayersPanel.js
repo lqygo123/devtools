@@ -100,7 +100,7 @@ export class LayersPanel extends UI.Panel.PanelWithSidebar {
     }
     willHide() {
         if (this.model) {
-            this.model.disable();
+            void this.model.disable();
         }
         super.willHide();
     }
@@ -124,11 +124,11 @@ export class LayersPanel extends UI.Panel.PanelWithSidebar {
         }
         this.model.removeEventListener(Events.LayerTreeChanged, this.onLayerTreeUpdated, this);
         this.model.removeEventListener(Events.LayerPainted, this.onLayerPainted, this);
-        this.model.disable();
+        void this.model.disable();
         this.model = null;
     }
     onLayerTreeUpdated() {
-        this.updateThrottler.schedule(this.update.bind(this));
+        void this.updateThrottler.schedule(this.update.bind(this));
     }
     update() {
         if (this.model) {
@@ -145,11 +145,10 @@ export class LayersPanel extends UI.Panel.PanelWithSidebar {
         }
         return Promise.resolve();
     }
-    onLayerPainted(event) {
+    onLayerPainted({ data: layer }) {
         if (!this.model) {
             return;
         }
-        const layer = event.data;
         const selection = this.layerViewHost.selection();
         if (selection && selection.layer() === layer) {
             this.layerDetailsView.update();
@@ -157,7 +156,7 @@ export class LayersPanel extends UI.Panel.PanelWithSidebar {
         this.layers3DView.updateLayerSnapshot(layer);
     }
     onPaintProfileRequested({ data: selection }) {
-        this.layers3DView.snapshotForSelection(selection).then(snapshotWithRect => {
+        void this.layers3DView.snapshotForSelection(selection).then(snapshotWithRect => {
             if (!snapshotWithRect) {
                 return;
             }

@@ -46,10 +46,8 @@ const str_ = i18n.i18n.registerUIStrings('core/host/InspectorFrontendHost.ts', U
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 const MAX_RECORDED_HISTOGRAMS_SIZE = 100;
 export class InspectorFrontendHostStub {
-    urlsBeingSaved;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    #urlsBeingSaved;
     events;
-    windowVisible;
     recordedEnumeratedHistograms = [];
     recordedPerformanceHistograms = [];
     constructor() {
@@ -63,7 +61,7 @@ export class InspectorFrontendHostStub {
         document.addEventListener('keydown', event => {
             stopEventPropagation.call(this, event);
         }, true);
-        this.urlsBeingSaved = new Map();
+        this.#urlsBeingSaved = new Map();
     }
     platform() {
         const userAgent = navigator.userAgent;
@@ -78,19 +76,17 @@ export class InspectorFrontendHostStub {
     loadCompleted() {
     }
     bringToFront() {
-        this.windowVisible = true;
     }
     closeWindow() {
-        this.windowVisible = false;
     }
     setIsDocked(isDocked, callback) {
-        setTimeout(callback, 0);
+        window.setTimeout(callback, 0);
     }
     showSurvey(trigger, callback) {
-        setTimeout(() => callback({ surveyShown: false }), 0);
+        window.setTimeout(() => callback({ surveyShown: false }), 0);
     }
     canShowSurvey(trigger, callback) {
-        setTimeout(() => callback({ canShowSurvey: false }), 0);
+        window.setTimeout(() => callback({ canShowSurvey: false }), 0);
     }
     /**
      * Requests inspected page to be placed atop of the inspector frontend with specified bounds.
@@ -108,7 +104,7 @@ export class InspectorFrontendHostStub {
         if (text === undefined || text === null) {
             return;
         }
-        navigator.clipboard.writeText(text);
+        void navigator.clipboard.writeText(text);
     }
     openInNewTab(url) {
         window.open(url, '_blank');
@@ -117,24 +113,24 @@ export class InspectorFrontendHostStub {
         Common.Console.Console.instance().error('Show item in folder is not enabled in hosted mode. Please inspect using chrome://inspect');
     }
     save(url, content, forceSaveAs) {
-        let buffer = this.urlsBeingSaved.get(url);
+        let buffer = this.#urlsBeingSaved.get(url);
         if (!buffer) {
             buffer = [];
-            this.urlsBeingSaved.set(url, buffer);
+            this.#urlsBeingSaved.set(url, buffer);
         }
         buffer.push(content);
         this.events.dispatchEventToListeners(Events.SavedURL, { url, fileSystemPath: url });
     }
     append(url, content) {
-        const buffer = this.urlsBeingSaved.get(url);
+        const buffer = this.#urlsBeingSaved.get(url);
         if (buffer) {
             buffer.push(content);
             this.events.dispatchEventToListeners(Events.AppendedToURL, url);
         }
     }
     close(url) {
-        const buffer = this.urlsBeingSaved.get(url) || [];
-        this.urlsBeingSaved.delete(url);
+        const buffer = this.#urlsBeingSaved.get(url) || [];
+        this.#urlsBeingSaved.delete(url);
         let fileName = '';
         if (url) {
             try {
@@ -181,7 +177,8 @@ export class InspectorFrontendHostStub {
         return null;
     }
     loadNetworkResource(url, headers, streamId, callback) {
-        Root.Runtime.loadResourcePromise(url)
+        fetch(url)
+            .then(result => result.text())
             .then(function (text) {
             resourceLoaderStreamWrite(streamId, text);
             callback({
@@ -204,12 +201,17 @@ export class InspectorFrontendHostStub {
             });
         });
     }
+    registerPreference(name, options) {
+    }
     getPreferences(callback) {
         const prefs = {};
         for (const name in window.localStorage) {
             prefs[name] = window.localStorage[name];
         }
         callback(prefs);
+    }
+    getPreference(name, callback) {
+        callback(window.localStorage[name]);
     }
     setPreference(name, value) {
         window.localStorage[name] = value;
@@ -219,6 +221,12 @@ export class InspectorFrontendHostStub {
     }
     clearPreferences() {
         window.localStorage.clear();
+    }
+    getSyncInformation(callback) {
+        callback({
+            isSyncActive: false,
+            arePreferencesSynced: false,
+        });
     }
     upgradeDraggedFileSystemPermissions(fileSystem) {
     }
@@ -278,44 +286,34 @@ export class InspectorFrontendHostStub {
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export let InspectorFrontendHostInstance = window.InspectorFrontendHost;
 class InspectorFrontendAPIImpl {
-    debugFrontend;
     constructor() {
-        this.debugFrontend = (Boolean(Root.Runtime.Runtime.queryParam('debugFrontend'))) ||
-            // @ts-ignore Compatibility hacks
-            (window['InspectorTest'] && window['InspectorTest']['debugTest']);
         for (const descriptor of EventDescriptors) {
             // @ts-ignore Dispatcher magic
             this[descriptor[1]] = this.dispatch.bind(this, descriptor[0], descriptor[2], descriptor[3]);
         }
     }
     dispatch(name, signature, runOnceLoaded, ...params) {
-        if (this.debugFrontend) {
-            setTimeout(() => innerDispatch(), 0);
-        }
-        else {
-            innerDispatch();
-        }
-        function innerDispatch() {
-            // Single argument methods get dispatched with the param.
-            if (signature.length < 2) {
-                try {
-                    InspectorFrontendHostInstance.events.dispatchEventToListeners(name, params[0]);
-                }
-                catch (error) {
-                    console.error(error + ' ' + error.stack);
-                }
-                return;
-            }
-            const data = {};
-            for (let i = 0; i < signature.length; ++i) {
-                data[signature[i]] = params[i];
-            }
+        // Single argument methods get dispatched with the param.
+        if (signature.length < 2) {
             try {
-                InspectorFrontendHostInstance.events.dispatchEventToListeners(name, data);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                InspectorFrontendHostInstance.events.dispatchEventToListeners(name, params[0]);
             }
             catch (error) {
                 console.error(error + ' ' + error.stack);
             }
+            return;
+        }
+        const data = {};
+        for (let i = 0; i < signature.length; ++i) {
+            data[signature[i]] = params[i];
+        }
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            InspectorFrontendHostInstance.events.dispatchEventToListeners(name, data);
+        }
+        catch (error) {
+            console.error(error + ' ' + error.stack);
         }
     }
     streamWrite(id, chunk) {

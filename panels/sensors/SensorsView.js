@@ -401,7 +401,7 @@ export class SensorsView extends UI.Widget.VBox {
                 title: i18nString(UIStrings.presets),
                 value: [
                     { title: i18nString(UIStrings.portrait), orientation: '[0, 90, 0]' },
-                    { title: i18nString(UIStrings.portraitUpsideDown), orientation: '[180, -90, 0]' },
+                    { title: i18nString(UIStrings.portraitUpsideDown), orientation: '[-180, -90, 0]' },
                     { title: i18nString(UIStrings.landscapeLeft), orientation: '[90, 0, -90]' },
                     { title: i18nString(UIStrings.landscapeRight), orientation: '[90, -180, -90]' },
                     { title: i18nString(UIStrings.displayUp), orientation: '[0, 0, 0]' },
@@ -461,6 +461,7 @@ export class SensorsView extends UI.Widget.VBox {
         }
         else if (value === NonPresetOptions.Custom) {
             this.deviceOrientationOverrideEnabled = true;
+            this.resetDeviceOrientation();
             this.alphaElement.focus();
         }
         else {
@@ -475,7 +476,7 @@ export class SensorsView extends UI.Widget.VBox {
             this.deviceOrientationSetting.set(this.deviceOrientation.toSetting());
         }
         for (const emulationModel of SDK.TargetManager.TargetManager.instance().models(SDK.EmulationModel.EmulationModel)) {
-            emulationModel.emulateDeviceOrientation(this.deviceOrientationOverrideEnabled ? this.deviceOrientation : null);
+            void emulationModel.emulateDeviceOrientation(this.deviceOrientationOverrideEnabled ? this.deviceOrientation : null);
         }
     }
     setSelectElementLabel(selectElement, labelValue) {
@@ -656,7 +657,7 @@ export class PresetOrientations {
                 title: i18nString(UIStrings.presets),
                 value: [
                     { title: i18nString(UIStrings.portrait), orientation: '[0, 90, 0]' },
-                    { title: i18nString(UIStrings.portraitUpsideDown), orientation: '[180, -90, 0]' },
+                    { title: i18nString(UIStrings.portraitUpsideDown), orientation: '[-180, -90, 0]' },
                     { title: i18nString(UIStrings.landscapeLeft), orientation: '[90, 0, -90]' },
                     { title: i18nString(UIStrings.landscapeRight), orientation: '[90, -180, -90]' },
                     { title: i18nString(UIStrings.displayUp), orientation: '[0, 0, 0]' },
@@ -668,7 +669,7 @@ export class PresetOrientations {
 let showActionDelegateInstance;
 export class ShowActionDelegate {
     handleAction(_context, _actionId) {
-        UI.ViewManager.ViewManager.instance().showView('sensors');
+        void UI.ViewManager.ViewManager.instance().showView('sensors');
         return true;
     }
     static instance(opts = { forceNew: null }) {

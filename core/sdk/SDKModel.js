@@ -7,13 +7,13 @@ const registeredModels = new Map();
 //                         all event emitters and sinks have been migrated.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class SDKModel extends Common.ObjectWrapper.ObjectWrapper {
-    targetInternal;
+    #targetInternal;
     constructor(target) {
         super();
-        this.targetInternal = target;
+        this.#targetInternal = target;
     }
     target() {
-        return this.targetInternal;
+        return this.#targetInternal;
     }
     /**
      * Override this method to perform tasks that are required to suspend the

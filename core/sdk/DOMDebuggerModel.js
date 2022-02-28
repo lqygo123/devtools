@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 import * as Common from '../common/common.js';
 import * as i18n from '../i18n/i18n.js';
+import { CategorizedBreakpoint } from './CategorizedBreakpoint.js';
 import { DOMModel, Events as DOMModelEvents } from './DOMModel.js';
 import { RemoteObject } from './RemoteObject.js';
 import { RuntimeModel } from './RuntimeModel.js';
@@ -187,28 +188,57 @@ const UIStrings = {
 };
 const str_ = i18n.i18n.registerUIStrings('core/sdk/DOMDebuggerModel.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
+// Some instrumentation breakpoints have their titles adjusted to localized
+// versions, and some are merely renamed to more recognizable names.
+//
+// This function returns a table that links the breakpoint names and replacement
+// titles.
+function getInstrumentationBreakpointTitles() {
+    return [
+        ['setTimeout.callback', i18nString(UIStrings.setTimeoutOrIntervalFired, { PH1: 'setTimeout' })],
+        ['setInterval.callback', i18nString(UIStrings.setTimeoutOrIntervalFired, { PH1: 'setInterval' })],
+        ['scriptFirstStatement', i18nString(UIStrings.scriptFirstStatement)],
+        ['scriptBlockedByCSP', i18nString(UIStrings.scriptBlockedByContentSecurity)],
+        ['requestAnimationFrame', i18nString(UIStrings.requestAnimationFrame)],
+        ['cancelAnimationFrame', i18nString(UIStrings.cancelAnimationFrame)],
+        ['requestAnimationFrame.callback', i18nString(UIStrings.animationFrameFired)],
+        ['webglErrorFired', i18nString(UIStrings.webglErrorFired)],
+        ['webglWarningFired', i18nString(UIStrings.webglWarningFired)],
+        ['Element.setInnerHTML', i18nString(UIStrings.setInnerhtml)],
+        ['canvasContextCreated', i18nString(UIStrings.createCanvasContext)],
+        ['Geolocation.getCurrentPosition', 'getCurrentPosition'],
+        ['Geolocation.watchPosition', 'watchPosition'],
+        ['Notification.requestPermission', 'requestPermission'],
+        ['DOMWindow.close', 'window.close'],
+        ['Document.write', 'document.write'],
+        ['audioContextCreated', i18nString(UIStrings.createAudiocontext)],
+        ['audioContextClosed', i18nString(UIStrings.closeAudiocontext)],
+        ['audioContextResumed', i18nString(UIStrings.resumeAudiocontext)],
+        ['audioContextSuspended', i18nString(UIStrings.suspendAudiocontext)],
+    ];
+}
 export class DOMDebuggerModel extends SDKModel {
     agent;
-    runtimeModelInternal;
-    domModel;
-    domBreakpointsInternal;
-    domBreakpointsSetting;
+    #runtimeModelInternal;
+    #domModel;
+    #domBreakpointsInternal;
+    #domBreakpointsSetting;
     suspended = false;
     constructor(target) {
         super(target);
         this.agent = target.domdebuggerAgent();
-        this.runtimeModelInternal = target.model(RuntimeModel);
-        this.domModel = target.model(DOMModel);
-        this.domModel.addEventListener(DOMModelEvents.DocumentUpdated, this.documentUpdated, this);
-        this.domModel.addEventListener(DOMModelEvents.NodeRemoved, this.nodeRemoved, this);
-        this.domBreakpointsInternal = [];
-        this.domBreakpointsSetting = Common.Settings.Settings.instance().createLocalSetting('domBreakpoints', []);
-        if (this.domModel.existingDocument()) {
-            this.documentUpdated();
+        this.#runtimeModelInternal = target.model(RuntimeModel);
+        this.#domModel = target.model(DOMModel);
+        this.#domModel.addEventListener(DOMModelEvents.DocumentUpdated, this.documentUpdated, this);
+        this.#domModel.addEventListener(DOMModelEvents.NodeRemoved, this.nodeRemoved, this);
+        this.#domBreakpointsInternal = [];
+        this.#domBreakpointsSetting = Common.Settings.Settings.instance().createLocalSetting('domBreakpoints', []);
+        if (this.#domModel.existingDocument()) {
+            void this.documentUpdated();
         }
     }
     runtimeModel() {
-        return this.runtimeModelInternal;
+        return this.#runtimeModelInternal;
     }
     async suspendModel() {
         this.suspended = true;
@@ -217,39 +247,39 @@ export class DOMDebuggerModel extends SDKModel {
         this.suspended = false;
     }
     async eventListeners(remoteObject) {
-        console.assert(remoteObject.runtimeModel() === this.runtimeModelInternal);
+        console.assert(remoteObject.runtimeModel() === this.#runtimeModelInternal);
         if (!remoteObject.objectId) {
             return [];
         }
         const listeners = await this.agent.invoke_getEventListeners({ objectId: remoteObject.objectId });
         const eventListeners = [];
         for (const payload of listeners.listeners || []) {
-            const location = this.runtimeModelInternal.debuggerModel().createRawLocationByScriptId(payload.scriptId, payload.lineNumber, payload.columnNumber);
+            const location = this.#runtimeModelInternal.debuggerModel().createRawLocationByScriptId(payload.scriptId, payload.lineNumber, payload.columnNumber);
             if (!location) {
                 continue;
             }
-            eventListeners.push(new EventListener(this, remoteObject, payload.type, payload.useCapture, payload.passive, payload.once, payload.handler ? this.runtimeModelInternal.createRemoteObject(payload.handler) : null, payload.originalHandler ? this.runtimeModelInternal.createRemoteObject(payload.originalHandler) : null, location, null));
+            eventListeners.push(new EventListener(this, remoteObject, payload.type, payload.useCapture, payload.passive, payload.once, payload.handler ? this.#runtimeModelInternal.createRemoteObject(payload.handler) : null, payload.originalHandler ? this.#runtimeModelInternal.createRemoteObject(payload.originalHandler) : null, location, null));
         }
         return eventListeners;
     }
     retrieveDOMBreakpoints() {
-        this.domModel.requestDocument();
+        void this.#domModel.requestDocument();
     }
     domBreakpoints() {
-        return this.domBreakpointsInternal.slice();
+        return this.#domBreakpointsInternal.slice();
     }
     hasDOMBreakpoint(node, type) {
-        return this.domBreakpointsInternal.some(breakpoint => (breakpoint.node === node && breakpoint.type === type));
+        return this.#domBreakpointsInternal.some(breakpoint => (breakpoint.node === node && breakpoint.type === type));
     }
     setDOMBreakpoint(node, type) {
-        for (const breakpoint of this.domBreakpointsInternal) {
+        for (const breakpoint of this.#domBreakpointsInternal) {
             if (breakpoint.node === node && breakpoint.type === type) {
                 this.toggleDOMBreakpoint(breakpoint, true);
                 return breakpoint;
             }
         }
         const breakpoint = new DOMBreakpoint(this, node, type, true);
-        this.domBreakpointsInternal.push(breakpoint);
+        this.#domBreakpointsInternal.push(breakpoint);
         this.saveDOMBreakpoints();
         this.enableDOMBreakpoint(breakpoint);
         this.dispatchEventToListeners(Events.DOMBreakpointAdded, breakpoint);
@@ -276,18 +306,18 @@ export class DOMDebuggerModel extends SDKModel {
     }
     enableDOMBreakpoint(breakpoint) {
         if (breakpoint.node.id) {
-            this.agent.invoke_setDOMBreakpoint({ nodeId: breakpoint.node.id, type: breakpoint.type });
+            void this.agent.invoke_setDOMBreakpoint({ nodeId: breakpoint.node.id, type: breakpoint.type });
             breakpoint.node.setMarker(Marker, true);
         }
     }
     disableDOMBreakpoint(breakpoint) {
         if (breakpoint.node.id) {
-            this.agent.invoke_removeDOMBreakpoint({ nodeId: breakpoint.node.id, type: breakpoint.type });
+            void this.agent.invoke_removeDOMBreakpoint({ nodeId: breakpoint.node.id, type: breakpoint.type });
             breakpoint.node.setMarker(Marker, this.nodeHasBreakpoints(breakpoint.node) ? true : null);
         }
     }
     nodeHasBreakpoints(node) {
-        for (const breakpoint of this.domBreakpointsInternal) {
+        for (const breakpoint of this.#domBreakpointsInternal) {
             if (breakpoint.node === node && breakpoint.enabled) {
                 return true;
             }
@@ -296,7 +326,7 @@ export class DOMDebuggerModel extends SDKModel {
     }
     resolveDOMBreakpointData(auxData) {
         const type = auxData['type'];
-        const node = this.domModel.nodeForId(auxData['nodeId']);
+        const node = this.#domModel.nodeForId(auxData['nodeId']);
         if (!type || !node) {
             return null;
         }
@@ -304,40 +334,40 @@ export class DOMDebuggerModel extends SDKModel {
         let insertion = false;
         if (type === "subtree-modified" /* SubtreeModified */) {
             insertion = auxData['insertion'] || false;
-            targetNode = this.domModel.nodeForId(auxData['targetNodeId']);
+            targetNode = this.#domModel.nodeForId(auxData['targetNodeId']);
         }
         return { type: type, node: node, targetNode: targetNode, insertion: insertion };
     }
     currentURL() {
-        const domDocument = this.domModel.existingDocument();
+        const domDocument = this.#domModel.existingDocument();
         return domDocument ? domDocument.documentURL : '';
     }
     async documentUpdated() {
         if (this.suspended) {
             return;
         }
-        const removed = this.domBreakpointsInternal;
-        this.domBreakpointsInternal = [];
+        const removed = this.#domBreakpointsInternal;
+        this.#domBreakpointsInternal = [];
         this.dispatchEventToListeners(Events.DOMBreakpointsRemoved, removed);
         // this.currentURL() is empty when the page is reloaded because the
         // new document has not been requested yet and the old one has been
         // removed. Therefore, we need to request the document and wait for it.
         // Note that requestDocument() caches the document so that it is requested
         // only once.
-        const document = await this.domModel.requestDocument();
+        const document = await this.#domModel.requestDocument();
         const currentURL = document ? document.documentURL : '';
-        for (const breakpoint of this.domBreakpointsSetting.get()) {
+        for (const breakpoint of this.#domBreakpointsSetting.get()) {
             if (breakpoint.url === currentURL) {
-                this.domModel.pushNodeByPathToFrontend(breakpoint.path).then(appendBreakpoint.bind(this, breakpoint));
+                void this.#domModel.pushNodeByPathToFrontend(breakpoint.path).then(appendBreakpoint.bind(this, breakpoint));
             }
         }
         function appendBreakpoint(breakpoint, nodeId) {
-            const node = nodeId ? this.domModel.nodeForId(nodeId) : null;
+            const node = nodeId ? this.#domModel.nodeForId(nodeId) : null;
             if (!node) {
                 return;
             }
             const domBreakpoint = new DOMBreakpoint(this, node, breakpoint.type, breakpoint.enabled);
-            this.domBreakpointsInternal.push(domBreakpoint);
+            this.#domBreakpointsInternal.push(domBreakpoint);
             if (breakpoint.enabled) {
                 this.enableDOMBreakpoint(domBreakpoint);
             }
@@ -347,7 +377,7 @@ export class DOMDebuggerModel extends SDKModel {
     removeDOMBreakpoints(filter) {
         const removed = [];
         const left = [];
-        for (const breakpoint of this.domBreakpointsInternal) {
+        for (const breakpoint of this.#domBreakpointsInternal) {
             if (filter(breakpoint)) {
                 removed.push(breakpoint);
                 if (breakpoint.enabled) {
@@ -362,7 +392,7 @@ export class DOMDebuggerModel extends SDKModel {
         if (!removed.length) {
             return;
         }
-        this.domBreakpointsInternal = left;
+        this.#domBreakpointsInternal = left;
         this.saveDOMBreakpoints();
         this.dispatchEventToListeners(Events.DOMBreakpointsRemoved, removed);
     }
@@ -376,11 +406,11 @@ export class DOMDebuggerModel extends SDKModel {
     }
     saveDOMBreakpoints() {
         const currentURL = this.currentURL();
-        const breakpoints = this.domBreakpointsSetting.get().filter((breakpoint) => breakpoint.url !== currentURL);
-        for (const breakpoint of this.domBreakpointsInternal) {
+        const breakpoints = this.#domBreakpointsSetting.get().filter((breakpoint) => breakpoint.url !== currentURL);
+        for (const breakpoint of this.#domBreakpointsInternal) {
             breakpoints.push({ url: currentURL, path: breakpoint.node.path(), type: breakpoint.type, enabled: breakpoint.enabled });
         }
-        this.domBreakpointsSetting.set(breakpoints);
+        this.#domBreakpointsSetting.set(breakpoints);
     }
 }
 // TODO(crbug.com/1167717): Make this a const enum again
@@ -405,68 +435,68 @@ export class DOMBreakpoint {
     }
 }
 export class EventListener {
-    domDebuggerModelInternal;
-    eventTarget;
-    typeInternal;
-    useCaptureInternal;
-    passiveInternal;
-    onceInternal;
-    handlerInternal;
-    originalHandlerInternal;
-    locationInternal;
-    sourceURLInternal;
-    customRemoveFunction;
-    originInternal;
+    #domDebuggerModelInternal;
+    #eventTarget;
+    #typeInternal;
+    #useCaptureInternal;
+    #passiveInternal;
+    #onceInternal;
+    #handlerInternal;
+    #originalHandlerInternal;
+    #locationInternal;
+    #sourceURLInternal;
+    #customRemoveFunction;
+    #originInternal;
     constructor(domDebuggerModel, eventTarget, type, useCapture, passive, once, handler, originalHandler, location, customRemoveFunction, origin) {
-        this.domDebuggerModelInternal = domDebuggerModel;
-        this.eventTarget = eventTarget;
-        this.typeInternal = type;
-        this.useCaptureInternal = useCapture;
-        this.passiveInternal = passive;
-        this.onceInternal = once;
-        this.handlerInternal = handler;
-        this.originalHandlerInternal = originalHandler || handler;
-        this.locationInternal = location;
+        this.#domDebuggerModelInternal = domDebuggerModel;
+        this.#eventTarget = eventTarget;
+        this.#typeInternal = type;
+        this.#useCaptureInternal = useCapture;
+        this.#passiveInternal = passive;
+        this.#onceInternal = once;
+        this.#handlerInternal = handler;
+        this.#originalHandlerInternal = originalHandler || handler;
+        this.#locationInternal = location;
         const script = location.script();
-        this.sourceURLInternal = script ? script.contentURL() : '';
-        this.customRemoveFunction = customRemoveFunction;
-        this.originInternal = origin || EventListener.Origin.Raw;
+        this.#sourceURLInternal = script ? script.contentURL() : '';
+        this.#customRemoveFunction = customRemoveFunction;
+        this.#originInternal = origin || EventListener.Origin.Raw;
     }
     domDebuggerModel() {
-        return this.domDebuggerModelInternal;
+        return this.#domDebuggerModelInternal;
     }
     type() {
-        return this.typeInternal;
+        return this.#typeInternal;
     }
     useCapture() {
-        return this.useCaptureInternal;
+        return this.#useCaptureInternal;
     }
     passive() {
-        return this.passiveInternal;
+        return this.#passiveInternal;
     }
     once() {
-        return this.onceInternal;
+        return this.#onceInternal;
     }
     handler() {
-        return this.handlerInternal;
+        return this.#handlerInternal;
     }
     location() {
-        return this.locationInternal;
+        return this.#locationInternal;
     }
     sourceURL() {
-        return this.sourceURLInternal;
+        return this.#sourceURLInternal;
     }
     originalHandler() {
-        return this.originalHandlerInternal;
+        return this.#originalHandlerInternal;
     }
     canRemove() {
-        return Boolean(this.customRemoveFunction) || this.originInternal !== EventListener.Origin.FrameworkUser;
+        return Boolean(this.#customRemoveFunction) || this.#originInternal !== EventListener.Origin.FrameworkUser;
     }
     remove() {
         if (!this.canRemove()) {
             return Promise.resolve(undefined);
         }
-        if (this.originInternal !== EventListener.Origin.FrameworkUser) {
+        if (this.#originInternal !== EventListener.Origin.FrameworkUser) {
             function removeListener(type, listener, useCapture) {
                 this.removeEventListener(type, listener, useCapture);
                 // @ts-ignore:
@@ -475,48 +505,48 @@ export class EventListener {
                     this['on' + type] = undefined;
                 }
             }
-            return this.eventTarget
+            return this.#eventTarget
                 .callFunction(
             // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
             // @ts-expect-error
             removeListener, [
-                RemoteObject.toCallArgument(this.typeInternal),
-                RemoteObject.toCallArgument(this.originalHandlerInternal),
-                RemoteObject.toCallArgument(this.useCaptureInternal),
+                RemoteObject.toCallArgument(this.#typeInternal),
+                RemoteObject.toCallArgument(this.#originalHandlerInternal),
+                RemoteObject.toCallArgument(this.#useCaptureInternal),
             ])
                 .then(() => undefined);
         }
-        if (this.customRemoveFunction) {
+        if (this.#customRemoveFunction) {
             function callCustomRemove(type, listener, useCapture, passive) {
                 this.call(null, type, listener, useCapture, passive);
             }
-            return this.customRemoveFunction
+            return this.#customRemoveFunction
                 .callFunction(
             // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
             // @ts-expect-error
             callCustomRemove, [
-                RemoteObject.toCallArgument(this.typeInternal),
-                RemoteObject.toCallArgument(this.originalHandlerInternal),
-                RemoteObject.toCallArgument(this.useCaptureInternal),
-                RemoteObject.toCallArgument(this.passiveInternal),
+                RemoteObject.toCallArgument(this.#typeInternal),
+                RemoteObject.toCallArgument(this.#originalHandlerInternal),
+                RemoteObject.toCallArgument(this.#useCaptureInternal),
+                RemoteObject.toCallArgument(this.#passiveInternal),
             ])
                 .then(() => undefined);
         }
         return Promise.resolve(undefined);
     }
     canTogglePassive() {
-        return this.originInternal !== EventListener.Origin.FrameworkUser;
+        return this.#originInternal !== EventListener.Origin.FrameworkUser;
     }
     togglePassive() {
-        return this.eventTarget
+        return this.#eventTarget
             .callFunction(
         // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
         // @ts-expect-error
         callTogglePassive, [
-            RemoteObject.toCallArgument(this.typeInternal),
-            RemoteObject.toCallArgument(this.originalHandlerInternal),
-            RemoteObject.toCallArgument(this.useCaptureInternal),
-            RemoteObject.toCallArgument(this.passiveInternal),
+            RemoteObject.toCallArgument(this.#typeInternal),
+            RemoteObject.toCallArgument(this.#originalHandlerInternal),
+            RemoteObject.toCallArgument(this.#useCaptureInternal),
+            RemoteObject.toCallArgument(this.#passiveInternal),
         ])
             .then(() => undefined);
         function callTogglePassive(type, listener, useCapture, passive) {
@@ -525,14 +555,14 @@ export class EventListener {
         }
     }
     origin() {
-        return this.originInternal;
+        return this.#originInternal;
     }
     markAsFramework() {
-        this.originInternal = EventListener.Origin.Framework;
+        this.#originInternal = EventListener.Origin.Framework;
     }
     isScrollBlockingType() {
-        return this.typeInternal === 'touchstart' || this.typeInternal === 'touchmove' ||
-            this.typeInternal === 'mousewheel' || this.typeInternal === 'wheel';
+        return this.#typeInternal === 'touchstart' || this.#typeInternal === 'touchmove' ||
+            this.#typeInternal === 'mousewheel' || this.#typeInternal === 'wheel';
     }
 }
 (function (EventListener) {
@@ -545,42 +575,17 @@ export class EventListener {
         Origin["FrameworkUser"] = "FrameworkUser";
     })(Origin = EventListener.Origin || (EventListener.Origin = {}));
 })(EventListener || (EventListener = {}));
-export class CategorizedBreakpoint {
-    categoryInternal;
-    titleInternal;
-    enabledInternal;
-    constructor(category, title) {
-        this.categoryInternal = category;
-        this.titleInternal = title;
-        this.enabledInternal = false;
-    }
-    category() {
-        return this.categoryInternal;
-    }
-    enabled() {
-        return this.enabledInternal;
-    }
-    setEnabled(enabled) {
-        this.enabledInternal = enabled;
-    }
-    title() {
-        return this.titleInternal;
-    }
-    setTitle(title) {
-        this.titleInternal = title;
-    }
-}
 export class CSPViolationBreakpoint extends CategorizedBreakpoint {
-    typeInternal;
+    #typeInternal;
     constructor(category, title, type) {
         super(category, title);
-        this.typeInternal = type;
+        this.#typeInternal = type;
     }
     type() {
-        return this.typeInternal;
+        return this.#typeInternal;
     }
 }
-export class EventListenerBreakpoint extends CategorizedBreakpoint {
+export class DOMEventListenerBreakpoint extends CategorizedBreakpoint {
     instrumentationName;
     eventName;
     eventTargetNames;
@@ -602,19 +607,19 @@ export class EventListenerBreakpoint extends CategorizedBreakpoint {
     updateOnModel(model) {
         if (this.instrumentationName) {
             if (this.enabled()) {
-                model.agent.invoke_setInstrumentationBreakpoint({ eventName: this.instrumentationName });
+                void model.agent.invoke_setInstrumentationBreakpoint({ eventName: this.instrumentationName });
             }
             else {
-                model.agent.invoke_removeInstrumentationBreakpoint({ eventName: this.instrumentationName });
+                void model.agent.invoke_removeInstrumentationBreakpoint({ eventName: this.instrumentationName });
             }
         }
         else {
             for (const eventTargetName of this.eventTargetNames) {
                 if (this.enabled()) {
-                    model.agent.invoke_setEventListenerBreakpoint({ eventName: this.eventName, targetName: eventTargetName });
+                    void model.agent.invoke_setEventListenerBreakpoint({ eventName: this.eventName, targetName: eventTargetName });
                 }
                 else {
-                    model.agent.invoke_removeEventListenerBreakpoint({ eventName: this.eventName, targetName: eventTargetName });
+                    void model.agent.invoke_removeEventListenerBreakpoint({ eventName: this.eventName, targetName: eventTargetName });
                 }
             }
         }
@@ -624,20 +629,20 @@ export class EventListenerBreakpoint extends CategorizedBreakpoint {
 }
 let domDebuggerManagerInstance;
 export class DOMDebuggerManager {
-    xhrBreakpointsSetting;
-    xhrBreakpointsInternal;
-    cspViolationsToBreakOn;
-    eventListenerBreakpointsInternal;
+    #xhrBreakpointsSetting;
+    #xhrBreakpointsInternal;
+    #cspViolationsToBreakOn;
+    #eventListenerBreakpointsInternal;
     constructor() {
-        this.xhrBreakpointsSetting = Common.Settings.Settings.instance().createLocalSetting('xhrBreakpoints', []);
-        this.xhrBreakpointsInternal = new Map();
-        for (const breakpoint of this.xhrBreakpointsSetting.get()) {
-            this.xhrBreakpointsInternal.set(breakpoint.url, breakpoint.enabled);
+        this.#xhrBreakpointsSetting = Common.Settings.Settings.instance().createLocalSetting('xhrBreakpoints', []);
+        this.#xhrBreakpointsInternal = new Map();
+        for (const breakpoint of this.#xhrBreakpointsSetting.get()) {
+            this.#xhrBreakpointsInternal.set(breakpoint.url, breakpoint.enabled);
         }
-        this.cspViolationsToBreakOn = [];
-        this.cspViolationsToBreakOn.push(new CSPViolationBreakpoint(i18nString(UIStrings.trustedTypeViolations), i18nString(UIStrings.sinkViolations), "trustedtype-sink-violation" /* TrustedtypeSinkViolation */));
-        this.cspViolationsToBreakOn.push(new CSPViolationBreakpoint(i18nString(UIStrings.trustedTypeViolations), i18nString(UIStrings.policyViolations), "trustedtype-policy-violation" /* TrustedtypePolicyViolation */));
-        this.eventListenerBreakpointsInternal = [];
+        this.#cspViolationsToBreakOn = [];
+        this.#cspViolationsToBreakOn.push(new CSPViolationBreakpoint(i18nString(UIStrings.trustedTypeViolations), i18nString(UIStrings.sinkViolations), "trustedtype-sink-violation" /* TrustedtypeSinkViolation */));
+        this.#cspViolationsToBreakOn.push(new CSPViolationBreakpoint(i18nString(UIStrings.trustedTypeViolations), i18nString(UIStrings.policyViolations), "trustedtype-policy-violation" /* TrustedtypePolicyViolation */));
+        this.#eventListenerBreakpointsInternal = [];
         this.createInstrumentationBreakpoints(i18nString(UIStrings.animation), ['requestAnimationFrame', 'cancelAnimationFrame', 'requestAnimationFrame.callback']);
         this.createInstrumentationBreakpoints(i18nString(UIStrings.canvas), ['canvasContextCreated', 'webglErrorFired', 'webglWarningFired']);
         this.createInstrumentationBreakpoints(i18nString(UIStrings.geolocation), ['Geolocation.getCurrentPosition', 'Geolocation.watchPosition']);
@@ -673,7 +678,23 @@ export class DOMDebuggerManager {
         ], ['*']);
         this.createEventListenerBreakpoints(i18nString(UIStrings.dragDrop), ['drag', 'dragstart', 'dragend', 'dragenter', 'dragover', 'dragleave', 'drop'], ['*']);
         this.createEventListenerBreakpoints(i18nString(UIStrings.keyboard), ['keydown', 'keyup', 'keypress', 'input'], ['*']);
-        this.createEventListenerBreakpoints(i18nString(UIStrings.load), ['load', 'beforeunload', 'unload', 'abort', 'error', 'hashchange', 'popstate'], ['*']);
+        this.createEventListenerBreakpoints(i18nString(UIStrings.load), [
+            'load',
+            'beforeunload',
+            'unload',
+            'abort',
+            'error',
+            'hashchange',
+            'popstate',
+            'navigate',
+            'navigatesuccess',
+            'navigateerror',
+            'currentchange',
+            'navigateto',
+            'navigatefrom',
+            'finish',
+            'dispose',
+        ], ['*']);
         this.createEventListenerBreakpoints(i18nString(UIStrings.mouse), [
             'auxclick',
             'click',
@@ -705,86 +726,11 @@ export class DOMDebuggerManager {
         this.createEventListenerBreakpoints(i18nString(UIStrings.touch), ['touchstart', 'touchmove', 'touchend', 'touchcancel'], ['*']);
         this.createEventListenerBreakpoints(i18nString(UIStrings.worker), ['message', 'messageerror'], ['*']);
         this.createEventListenerBreakpoints(i18nString(UIStrings.xhr), ['readystatechange', 'load', 'loadstart', 'loadend', 'abort', 'error', 'progress', 'timeout'], ['xmlhttprequest', 'xmlhttprequestupload']);
-        let breakpoint;
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:setTimeout.callback');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.setTimeoutOrIntervalFired, { PH1: 'setTimeout' }));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:setInterval.callback');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.setTimeoutOrIntervalFired, { PH1: 'setInterval' }));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:scriptFirstStatement');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.scriptFirstStatement));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:scriptBlockedByCSP');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.scriptBlockedByContentSecurity));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:requestAnimationFrame');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.requestAnimationFrame));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:cancelAnimationFrame');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.cancelAnimationFrame));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:requestAnimationFrame.callback');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.animationFrameFired));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:webglErrorFired');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.webglErrorFired));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:webglWarningFired');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.webglWarningFired));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:Element.setInnerHTML');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.setInnerhtml));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:canvasContextCreated');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.createCanvasContext));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:Geolocation.getCurrentPosition');
-        if (breakpoint) {
-            breakpoint.setTitle('getCurrentPosition');
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:Geolocation.watchPosition');
-        if (breakpoint) {
-            breakpoint.setTitle('watchPosition');
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:Notification.requestPermission');
-        if (breakpoint) {
-            breakpoint.setTitle('requestPermission');
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:DOMWindow.close');
-        if (breakpoint) {
-            breakpoint.setTitle('window.close');
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:Document.write');
-        if (breakpoint) {
-            breakpoint.setTitle('document.write');
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:audioContextCreated');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.createAudiocontext));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:audioContextClosed');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.closeAudiocontext));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:audioContextResumed');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.resumeAudiocontext));
-        }
-        breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:audioContextSuspended');
-        if (breakpoint) {
-            breakpoint.setTitle(i18nString(UIStrings.suspendAudiocontext));
+        for (const [name, newTitle] of getInstrumentationBreakpointTitles()) {
+            const breakpoint = this.resolveEventListenerBreakpointInternal('instrumentation:' + name);
+            if (breakpoint) {
+                breakpoint.setTitle(newTitle);
+            }
         }
         TargetManager.instance().observeModels(DOMDebuggerModel, this);
     }
@@ -796,16 +742,16 @@ export class DOMDebuggerManager {
         return domDebuggerManagerInstance;
     }
     cspViolationBreakpoints() {
-        return this.cspViolationsToBreakOn.slice();
+        return this.#cspViolationsToBreakOn.slice();
     }
     createInstrumentationBreakpoints(category, instrumentationNames) {
         for (const instrumentationName of instrumentationNames) {
-            this.eventListenerBreakpointsInternal.push(new EventListenerBreakpoint(instrumentationName, '', [], category, instrumentationName));
+            this.#eventListenerBreakpointsInternal.push(new DOMEventListenerBreakpoint(instrumentationName, '', [], category, instrumentationName));
         }
     }
     createEventListenerBreakpoints(category, eventNames, eventTargetNames) {
         for (const eventName of eventNames) {
-            this.eventListenerBreakpointsInternal.push(new EventListenerBreakpoint('', eventName, eventTargetNames, category, eventName));
+            this.#eventListenerBreakpointsInternal.push(new DOMEventListenerBreakpoint('', eventName, eventTargetNames, category, eventName));
         }
     }
     resolveEventListenerBreakpointInternal(eventName, eventTargetName) {
@@ -824,7 +770,7 @@ export class DOMDebuggerManager {
         }
         eventTargetName = (eventTargetName || '*').toLowerCase();
         let result = null;
-        for (const breakpoint of this.eventListenerBreakpointsInternal) {
+        for (const breakpoint of this.#eventListenerBreakpointsInternal) {
             if (instrumentationName && breakpoint.instrumentationName === instrumentationName) {
                 result = breakpoint;
             }
@@ -840,7 +786,7 @@ export class DOMDebuggerManager {
         return result;
     }
     eventListenerBreakpoints() {
-        return this.eventListenerBreakpointsInternal.slice();
+        return this.#eventListenerBreakpointsInternal.slice();
     }
     resolveEventListenerBreakpointTitle(auxData) {
         const id = auxData['eventName'];
@@ -866,67 +812,67 @@ export class DOMDebuggerManager {
         return this.resolveEventListenerBreakpointInternal(auxData['eventName'], auxData['targetName']);
     }
     updateCSPViolationBreakpoints() {
-        const violationTypes = this.cspViolationsToBreakOn.filter(v => v.enabled()).map(v => v.type());
+        const violationTypes = this.#cspViolationsToBreakOn.filter(v => v.enabled()).map(v => v.type());
         for (const model of TargetManager.instance().models(DOMDebuggerModel)) {
             this.updateCSPViolationBreakpointsForModel(model, violationTypes);
         }
     }
     updateCSPViolationBreakpointsForModel(model, violationTypes) {
-        model.agent.invoke_setBreakOnCSPViolation({ violationTypes: violationTypes });
+        void model.agent.invoke_setBreakOnCSPViolation({ violationTypes: violationTypes });
     }
     xhrBreakpoints() {
-        return this.xhrBreakpointsInternal;
+        return this.#xhrBreakpointsInternal;
     }
     saveXHRBreakpoints() {
         const breakpoints = [];
-        for (const url of this.xhrBreakpointsInternal.keys()) {
-            breakpoints.push({ url: url, enabled: this.xhrBreakpointsInternal.get(url) || false });
+        for (const url of this.#xhrBreakpointsInternal.keys()) {
+            breakpoints.push({ url: url, enabled: this.#xhrBreakpointsInternal.get(url) || false });
         }
-        this.xhrBreakpointsSetting.set(breakpoints);
+        this.#xhrBreakpointsSetting.set(breakpoints);
     }
     addXHRBreakpoint(url, enabled) {
-        this.xhrBreakpointsInternal.set(url, enabled);
+        this.#xhrBreakpointsInternal.set(url, enabled);
         if (enabled) {
             for (const model of TargetManager.instance().models(DOMDebuggerModel)) {
-                model.agent.invoke_setXHRBreakpoint({ url });
+                void model.agent.invoke_setXHRBreakpoint({ url });
             }
         }
         this.saveXHRBreakpoints();
     }
     removeXHRBreakpoint(url) {
-        const enabled = this.xhrBreakpointsInternal.get(url);
-        this.xhrBreakpointsInternal.delete(url);
+        const enabled = this.#xhrBreakpointsInternal.get(url);
+        this.#xhrBreakpointsInternal.delete(url);
         if (enabled) {
             for (const model of TargetManager.instance().models(DOMDebuggerModel)) {
-                model.agent.invoke_removeXHRBreakpoint({ url });
+                void model.agent.invoke_removeXHRBreakpoint({ url });
             }
         }
         this.saveXHRBreakpoints();
     }
     toggleXHRBreakpoint(url, enabled) {
-        this.xhrBreakpointsInternal.set(url, enabled);
+        this.#xhrBreakpointsInternal.set(url, enabled);
         for (const model of TargetManager.instance().models(DOMDebuggerModel)) {
             if (enabled) {
-                model.agent.invoke_setXHRBreakpoint({ url });
+                void model.agent.invoke_setXHRBreakpoint({ url });
             }
             else {
-                model.agent.invoke_removeXHRBreakpoint({ url });
+                void model.agent.invoke_removeXHRBreakpoint({ url });
             }
         }
         this.saveXHRBreakpoints();
     }
     modelAdded(domDebuggerModel) {
-        for (const url of this.xhrBreakpointsInternal.keys()) {
-            if (this.xhrBreakpointsInternal.get(url)) {
-                domDebuggerModel.agent.invoke_setXHRBreakpoint({ url: url });
+        for (const url of this.#xhrBreakpointsInternal.keys()) {
+            if (this.#xhrBreakpointsInternal.get(url)) {
+                void domDebuggerModel.agent.invoke_setXHRBreakpoint({ url: url });
             }
         }
-        for (const breakpoint of this.eventListenerBreakpointsInternal) {
+        for (const breakpoint of this.#eventListenerBreakpointsInternal) {
             if (breakpoint.enabled()) {
                 breakpoint.updateOnModel(domDebuggerModel);
             }
         }
-        const violationTypes = this.cspViolationsToBreakOn.filter(v => v.enabled()).map(v => v.type());
+        const violationTypes = this.#cspViolationsToBreakOn.filter(v => v.enabled()).map(v => v.type());
         this.updateCSPViolationBreakpointsForModel(domDebuggerModel, violationTypes);
     }
     modelRemoved(_domDebuggerModel) {

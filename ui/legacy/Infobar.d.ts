@@ -1,6 +1,7 @@
 import type * as Common from '../../core/common/common.js';
 import type { Widget } from './Widget.js';
 export declare class Infobar {
+    #private;
     element: HTMLElement;
     private readonly shadowRoot;
     private readonly contentElement;
@@ -22,7 +23,7 @@ export declare class Infobar {
     static create(type: Type, text: string, actions?: InfobarAction[], disableSetting?: Common.Settings.Setting<any>): Infobar | null;
     dispose(): void;
     setText(text: string): void;
-    setCloseCallback(callback: (() => any) | null): void;
+    setCloseCallback(callback: (() => void) | null): void;
     setParentView(parentView: Widget): void;
     private actionCallbackFactory;
     private onResize;

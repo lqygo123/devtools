@@ -2,7 +2,7 @@ import * as Common from '../../core/common/common.js';
 import { EmulationModel } from './EmulationModel.js';
 import type { SDKModelObserver } from './TargetManager.js';
 export declare class CPUThrottlingManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements SDKModelObserver<EmulationModel> {
-    private cpuThrottlingRateInternal;
+    #private;
     private constructor();
     static instance(opts?: {
         forceNew: boolean | null;

@@ -1,11 +1,6 @@
 import * as UI from '../../ui/legacy/legacy.js';
 export declare class XHRBreakpointsSidebarPane extends UI.Widget.VBox implements UI.ContextFlavorListener.ContextFlavorListener, UI.Toolbar.ItemsProvider, UI.ListControl.ListDelegate<string> {
-    private readonly breakpoints;
-    private list;
-    private readonly emptyElement;
-    private readonly breakpointElements;
-    private readonly addButton;
-    private hitBreakpoint?;
+    #private;
     private constructor();
     static instance(): XHRBreakpointsSidebarPane;
     toolbarItems(): UI.Toolbar.ToolbarItem[];

@@ -5,6 +5,7 @@ export declare class TimelineFrameModel {
     private readonly categoryMapper;
     private frames;
     private frameById;
+    private beginFrameQueue;
     private minimumRecordTime;
     private lastFrame;
     private mainFrameCommitted;
@@ -29,9 +30,9 @@ export declare class TimelineFrameModel {
         snapshot: SDK.PaintProfiler.PaintProfilerSnapshot;
     } | null>;
     reset(): void;
-    handleBeginFrame(startTime: number): void;
-    handleDroppedFrame(startTime: number): void;
-    handleDrawFrame(startTime: number): void;
+    handleBeginFrame(startTime: number, seqId: number): void;
+    handleDroppedFrame(startTime: number, seqId: number): void;
+    handleDrawFrame(startTime: number, seqId: number): void;
     handleActivateLayerTree(): void;
     handleRequestMainThreadFrame(): void;
     handleCompositeLayers(): void;
@@ -108,3 +109,18 @@ export declare class PendingFrame {
         [x: string]: number;
     });
 }
+declare class BeginFrameInfo {
+    seqId: number;
+    startTime: number;
+    isDropped: boolean;
+    constructor(seqId: number, startTime: number, isDropped: boolean);
+}
+export declare class TimelineFrameBeginFrameQueue {
+    private queueFrames;
+    private mapFrames;
+    constructor();
+    addFrameIfNotExists(seqId: number, startTime: number, isDropped: boolean): void;
+    setDropped(seqId: number, isDropped: boolean): void;
+    processPendingBeginFramesOnDrawFrame(seqId: number): BeginFrameInfo[];
+}
+export {};

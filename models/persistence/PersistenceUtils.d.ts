@@ -7,7 +7,7 @@ export declare class PersistenceUtils {
     static tooltipForUISourceCode(uiSourceCode: Workspace.UISourceCode.UISourceCode): string;
     static iconForUISourceCode(uiSourceCode: Workspace.UISourceCode.UISourceCode): UI.Icon.Icon | null;
 }
-export declare class LinkDecorator extends Common.ObjectWrapper.ObjectWrapper implements Components.Linkifier.LinkDecorator {
+export declare class LinkDecorator extends Common.ObjectWrapper.ObjectWrapper<Components.Linkifier.LinkDecorator.EventTypes> implements Components.Linkifier.LinkDecorator {
     constructor(persistence: PersistenceImpl);
     private bindingChanged;
     linkIcon(uiSourceCode: Workspace.UISourceCode.UISourceCode): UI.Icon.Icon | null;

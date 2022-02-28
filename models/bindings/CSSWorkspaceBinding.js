@@ -10,16 +10,16 @@ import { SASSSourceMapping } from './SASSSourceMapping.js';
 import { StylesSourceMapping } from './StylesSourceMapping.js';
 let cssWorkspaceBindingInstance;
 export class CSSWorkspaceBinding {
-    workspace;
-    modelToInfo;
-    sourceMappings;
-    liveLocationPromises;
+    #workspace;
+    #modelToInfo;
+    #sourceMappings;
+    #liveLocationPromises;
     constructor(targetManager, workspace) {
-        this.workspace = workspace;
-        this.modelToInfo = new Map();
-        this.sourceMappings = [];
+        this.#workspace = workspace;
+        this.#modelToInfo = new Map();
+        this.#sourceMappings = [];
         targetManager.observeModels(SDK.CSSModel.CSSModel, this);
-        this.liveLocationPromises = new Set();
+        this.#liveLocationPromises = new Set();
     }
     static instance(opts = { forceNew: null, targetManager: null, workspace: null }) {
         const { forceNew, targetManager, workspace } = opts;
@@ -34,28 +34,31 @@ export class CSSWorkspaceBinding {
     static removeInstance() {
         cssWorkspaceBindingInstance = undefined;
     }
+    get modelToInfo() {
+        return this.#modelToInfo;
+    }
     getCSSModelInfo(cssModel) {
-        return this.modelToInfo.get(cssModel);
+        return this.#modelToInfo.get(cssModel);
     }
     modelAdded(cssModel) {
-        this.modelToInfo.set(cssModel, new ModelInfo(cssModel, this.workspace));
+        this.#modelToInfo.set(cssModel, new ModelInfo(cssModel, this.#workspace));
     }
     modelRemoved(cssModel) {
         this.getCSSModelInfo(cssModel).dispose();
-        this.modelToInfo.delete(cssModel);
+        this.#modelToInfo.delete(cssModel);
     }
     /**
      * The promise returned by this function is resolved once all *currently*
      * pending LiveLocations are processed.
      */
     async pendingLiveLocationChangesPromise() {
-        await Promise.all(this.liveLocationPromises);
+        await Promise.all(this.#liveLocationPromises);
     }
     recordLiveLocationChange(promise) {
-        promise.then(() => {
-            this.liveLocationPromises.delete(promise);
+        void promise.then(() => {
+            this.#liveLocationPromises.delete(promise);
         });
-        this.liveLocationPromises.add(promise);
+        this.#liveLocationPromises.add(promise);
     }
     async updateLocations(header) {
         const updatePromise = this.getCSSModelInfo(header.cssModel()).updateLocations(header);
@@ -86,8 +89,8 @@ export class CSSWorkspaceBinding {
         return this.rawLocationToUILocation(rawLocation);
     }
     rawLocationToUILocation(rawLocation) {
-        for (let i = this.sourceMappings.length - 1; i >= 0; --i) {
-            const uiLocation = this.sourceMappings[i].rawLocationToUILocation(rawLocation);
+        for (let i = this.#sourceMappings.length - 1; i >= 0; --i) {
+            const uiLocation = this.#sourceMappings[i].rawLocationToUILocation(rawLocation);
             if (uiLocation) {
                 return uiLocation;
             }
@@ -95,68 +98,71 @@ export class CSSWorkspaceBinding {
         return this.getCSSModelInfo(rawLocation.cssModel()).rawLocationToUILocation(rawLocation);
     }
     uiLocationToRawLocations(uiLocation) {
-        for (let i = this.sourceMappings.length - 1; i >= 0; --i) {
-            const rawLocations = this.sourceMappings[i].uiLocationToRawLocations(uiLocation);
+        for (let i = this.#sourceMappings.length - 1; i >= 0; --i) {
+            const rawLocations = this.#sourceMappings[i].uiLocationToRawLocations(uiLocation);
             if (rawLocations.length) {
                 return rawLocations;
             }
         }
         const rawLocations = [];
-        for (const modelInfo of this.modelToInfo.values()) {
+        for (const modelInfo of this.#modelToInfo.values()) {
             rawLocations.push(...modelInfo.uiLocationToRawLocations(uiLocation));
         }
         return rawLocations;
     }
     addSourceMapping(sourceMapping) {
-        this.sourceMappings.push(sourceMapping);
+        this.#sourceMappings.push(sourceMapping);
     }
 }
 export class ModelInfo {
-    eventListeners;
-    stylesSourceMapping;
-    sassSourceMapping;
-    locations;
-    unboundLocations;
+    #eventListeners;
+    #stylesSourceMapping;
+    #sassSourceMapping;
+    #locations;
+    #unboundLocations;
     constructor(cssModel, workspace) {
-        this.eventListeners = [
+        this.#eventListeners = [
             cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetAdded, event => {
-                this.styleSheetAdded(event);
+                void this.styleSheetAdded(event);
             }, this),
             cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetRemoved, event => {
-                this.styleSheetRemoved(event);
+                void this.styleSheetRemoved(event);
             }, this),
         ];
-        this.stylesSourceMapping = new StylesSourceMapping(cssModel, workspace);
+        this.#stylesSourceMapping = new StylesSourceMapping(cssModel, workspace);
         const sourceMapManager = cssModel.sourceMapManager();
-        this.sassSourceMapping = new SASSSourceMapping(cssModel.target(), sourceMapManager, workspace);
-        this.locations = new Platform.MapUtilities.Multimap();
-        this.unboundLocations = new Platform.MapUtilities.Multimap();
+        this.#sassSourceMapping = new SASSSourceMapping(cssModel.target(), sourceMapManager, workspace);
+        this.#locations = new Platform.MapUtilities.Multimap();
+        this.#unboundLocations = new Platform.MapUtilities.Multimap();
+    }
+    get locations() {
+        return this.#locations;
     }
     async createLiveLocation(rawLocation, updateDelegate, locationPool) {
         const location = new LiveLocation(rawLocation, this, updateDelegate, locationPool);
         const header = rawLocation.header();
         if (header) {
             location.setHeader(header);
-            this.locations.set(header, location);
+            this.#locations.set(header, location);
             await location.update();
         }
         else {
-            this.unboundLocations.set(rawLocation.url, location);
+            this.#unboundLocations.set(rawLocation.url, location);
         }
         return location;
     }
     disposeLocation(location) {
         const header = location.header();
         if (header) {
-            this.locations.delete(header, location);
+            this.#locations.delete(header, location);
         }
         else {
-            this.unboundLocations.delete(location.url, location);
+            this.#unboundLocations.delete(location.url, location);
         }
     }
     updateLocations(header) {
         const promises = [];
-        for (const location of this.locations.get(header)) {
+        for (const location of this.#locations.get(header)) {
             promises.push(location.update());
         }
         return Promise.all(promises);
@@ -167,61 +173,61 @@ export class ModelInfo {
             return;
         }
         const promises = [];
-        for (const location of this.unboundLocations.get(header.sourceURL)) {
+        for (const location of this.#unboundLocations.get(header.sourceURL)) {
             location.setHeader(header);
-            this.locations.set(header, location);
+            this.#locations.set(header, location);
             promises.push(location.update());
         }
         await Promise.all(promises);
-        this.unboundLocations.deleteAll(header.sourceURL);
+        this.#unboundLocations.deleteAll(header.sourceURL);
     }
     async styleSheetRemoved(event) {
         const header = event.data;
         const promises = [];
-        for (const location of this.locations.get(header)) {
+        for (const location of this.#locations.get(header)) {
             location.setHeader(header);
-            this.unboundLocations.set(location.url, location);
+            this.#unboundLocations.set(location.url, location);
             promises.push(location.update());
         }
         await Promise.all(promises);
-        this.locations.deleteAll(header);
+        this.#locations.deleteAll(header);
     }
     rawLocationToUILocation(rawLocation) {
         let uiLocation = null;
-        uiLocation = uiLocation || this.sassSourceMapping.rawLocationToUILocation(rawLocation);
-        uiLocation = uiLocation || this.stylesSourceMapping.rawLocationToUILocation(rawLocation);
+        uiLocation = uiLocation || this.#sassSourceMapping.rawLocationToUILocation(rawLocation);
+        uiLocation = uiLocation || this.#stylesSourceMapping.rawLocationToUILocation(rawLocation);
         uiLocation = uiLocation || ResourceMapping.instance().cssLocationToUILocation(rawLocation);
         return uiLocation;
     }
     uiLocationToRawLocations(uiLocation) {
-        let rawLocations = this.sassSourceMapping.uiLocationToRawLocations(uiLocation);
+        let rawLocations = this.#sassSourceMapping.uiLocationToRawLocations(uiLocation);
         if (rawLocations.length) {
             return rawLocations;
         }
-        rawLocations = this.stylesSourceMapping.uiLocationToRawLocations(uiLocation);
+        rawLocations = this.#stylesSourceMapping.uiLocationToRawLocations(uiLocation);
         if (rawLocations.length) {
             return rawLocations;
         }
         return ResourceMapping.instance().uiLocationToCSSLocations(uiLocation);
     }
     dispose() {
-        Common.EventTarget.removeEventListeners(this.eventListeners);
-        this.stylesSourceMapping.dispose();
-        this.sassSourceMapping.dispose();
+        Common.EventTarget.removeEventListeners(this.#eventListeners);
+        this.#stylesSourceMapping.dispose();
+        this.#sassSourceMapping.dispose();
     }
 }
 export class LiveLocation extends LiveLocationWithPool {
     url;
-    lineNumber;
-    columnNumber;
-    info;
+    #lineNumber;
+    #columnNumber;
+    #info;
     headerInternal;
     constructor(rawLocation, info, updateDelegate, locationPool) {
         super(updateDelegate, locationPool);
         this.url = rawLocation.url;
-        this.lineNumber = rawLocation.lineNumber;
-        this.columnNumber = rawLocation.columnNumber;
-        this.info = info;
+        this.#lineNumber = rawLocation.lineNumber;
+        this.#columnNumber = rawLocation.columnNumber;
+        this.#info = info;
         this.headerInternal = null;
     }
     header() {
@@ -234,12 +240,12 @@ export class LiveLocation extends LiveLocationWithPool {
         if (!this.headerInternal) {
             return null;
         }
-        const rawLocation = new SDK.CSSModel.CSSLocation(this.headerInternal, this.lineNumber, this.columnNumber);
+        const rawLocation = new SDK.CSSModel.CSSLocation(this.headerInternal, this.#lineNumber, this.#columnNumber);
         return CSSWorkspaceBinding.instance().rawLocationToUILocation(rawLocation);
     }
     dispose() {
         super.dispose();
-        this.info.disposeLocation(this);
+        this.#info.disposeLocation(this);
     }
     async isIgnoreListed() {
         return false;

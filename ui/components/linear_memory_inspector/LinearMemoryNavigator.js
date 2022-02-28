@@ -67,23 +67,23 @@ export class RefreshRequestedEvent extends Event {
 }
 export class LinearMemoryNavigator extends HTMLElement {
     static litTagName = LitHtml.literal `devtools-linear-memory-inspector-navigator`;
-    shadow = this.attachShadow({ mode: 'open' });
-    address = '0';
-    error = undefined;
-    valid = true;
-    canGoBackInHistory = false;
-    canGoForwardInHistory = false;
+    #shadow = this.attachShadow({ mode: 'open' });
+    #address = '0';
+    #error = undefined;
+    #valid = true;
+    #canGoBackInHistory = false;
+    #canGoForwardInHistory = false;
     connectedCallback() {
-        this.shadow.adoptedStyleSheets = [linearMemoryNavigatorStyles];
+        this.#shadow.adoptedStyleSheets = [linearMemoryNavigatorStyles];
     }
     set data(data) {
-        this.address = data.address;
-        this.error = data.error;
-        this.valid = data.valid;
-        this.canGoBackInHistory = data.canGoBackInHistory;
-        this.canGoForwardInHistory = data.canGoForwardInHistory;
-        this.render();
-        const addressInput = this.shadow.querySelector('.address-input');
+        this.#address = data.address;
+        this.#error = data.error;
+        this.#valid = data.valid;
+        this.#canGoBackInHistory = data.canGoBackInHistory;
+        this.#canGoForwardInHistory = data.canGoForwardInHistory;
+        this.#render();
+        const addressInput = this.#shadow.querySelector('.address-input');
         if (addressInput) {
             if (data.mode === "Submitted" /* Submitted */) {
                 addressInput.blur();
@@ -93,45 +93,45 @@ export class LinearMemoryNavigator extends HTMLElement {
             }
         }
     }
-    render() {
+    #render() {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
         const result = html `
       <div class="navigator">
         <div class="navigator-item">
-          ${this.createButton({ icon: 'ic_undo_16x16_icon', title: i18nString(UIStrings.goBackInAddressHistory),
-            event: new HistoryNavigationEvent("Backward" /* Backward */), enabled: this.canGoBackInHistory })}
-          ${this.createButton({ icon: 'ic_redo_16x16_icon', title: i18nString(UIStrings.goForwardInAddressHistory),
-            event: new HistoryNavigationEvent("Forward" /* Forward */), enabled: this.canGoForwardInHistory })}
+          ${this.#createButton({ icon: 'ic_undo_16x16_icon', title: i18nString(UIStrings.goBackInAddressHistory),
+            event: new HistoryNavigationEvent("Backward" /* Backward */), enabled: this.#canGoBackInHistory })}
+          ${this.#createButton({ icon: 'ic_redo_16x16_icon', title: i18nString(UIStrings.goForwardInAddressHistory),
+            event: new HistoryNavigationEvent("Forward" /* Forward */), enabled: this.#canGoForwardInHistory })}
         </div>
         <div class="navigator-item">
-          ${this.createButton({ icon: 'ic_page_prev_16x16_icon', title: i18nString(UIStrings.previousPage),
+          ${this.#createButton({ icon: 'ic_page_prev_16x16_icon', title: i18nString(UIStrings.previousPage),
             event: new PageNavigationEvent("Backward" /* Backward */), enabled: true })}
-          ${this.createAddressInput()}
-          ${this.createButton({ icon: 'ic_page_next_16x16_icon', title: i18nString(UIStrings.nextPage),
+          ${this.#createAddressInput()}
+          ${this.#createButton({ icon: 'ic_page_next_16x16_icon', title: i18nString(UIStrings.nextPage),
             event: new PageNavigationEvent("Forward" /* Forward */), enabled: true })}
         </div>
-        ${this.createButton({ icon: 'refresh_12x12_icon', title: i18nString(UIStrings.refresh),
+        ${this.#createButton({ icon: 'refresh_12x12_icon', title: i18nString(UIStrings.refresh),
             event: new RefreshRequestedEvent(), enabled: true })}
       </div>
       `;
-        render(result, this.shadow, { host: this });
+        render(result, this.#shadow, { host: this });
         // clang-format on
     }
-    createAddressInput() {
+    #createAddressInput() {
         const classMap = {
             'address-input': true,
-            invalid: !this.valid,
+            invalid: !this.#valid,
         };
         return html `
-      <input class=${LitHtml.Directives.classMap(classMap)} data-input="true" .value=${this.address}
-        title=${this.valid ? i18nString(UIStrings.enterAddress) : this.error} @change=${this.onAddressChange.bind(this, "Submitted" /* Submitted */)} @input=${this.onAddressChange.bind(this, "Edit" /* Edit */)}/>`;
+      <input class=${LitHtml.Directives.classMap(classMap)} data-input="true" .value=${this.#address}
+        title=${this.#valid ? i18nString(UIStrings.enterAddress) : this.#error} @change=${this.#onAddressChange.bind(this, "Submitted" /* Submitted */)} @input=${this.#onAddressChange.bind(this, "Edit" /* Edit */)}/>`;
     }
-    onAddressChange(mode, event) {
+    #onAddressChange(mode, event) {
         const addressInput = event.target;
         this.dispatchEvent(new AddressInputChangedEvent(addressInput.value, mode));
     }
-    createButton(data) {
+    #createButton(data) {
         const iconColor = data.enabled ? 'var(--color-text-secondary)' : 'var(--color-background-highlight)';
         return html `
       <button class="navigator-button" ?disabled=${!data.enabled}

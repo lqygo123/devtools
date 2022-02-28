@@ -31,6 +31,7 @@ import * as Common from '../../../../core/common/common.js';
 import * as UI from '../../legacy.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
 import { Events as OverviewGridEvents, OverviewGrid } from './OverviewGrid.js';
+import timelineOverviewInfoStyles from './timelineOverviewInfo.css.js';
 export class TimelineOverviewPane extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
     overviewCalculator;
     overviewGrid;
@@ -57,7 +58,7 @@ export class TimelineOverviewPane extends Common.ObjectWrapper.eventMixin(UI.Wid
         this.cursorArea.addEventListener('mousemove', this.onMouseMove.bind(this), true);
         this.cursorArea.addEventListener('mouseleave', this.hideCursor.bind(this), true);
         this.overviewGrid.setResizeEnabled(false);
-        this.overviewGrid.addEventListener(OverviewGridEvents.WindowChanged, this.onWindowChanged, this);
+        this.overviewGrid.addEventListener(OverviewGridEvents.WindowChangedWithPosition, this.onWindowChanged, this);
         this.overviewGrid.setClickHandler(this.onClick.bind(this));
         this.overviewControls = [];
         this.markers = new Map();
@@ -79,7 +80,7 @@ export class TimelineOverviewPane extends Common.ObjectWrapper.eventMixin(UI.Wid
         this.cursorPosition = mouseEvent.offsetX + target.offsetLeft;
         this.cursorElement.style.left = this.cursorPosition + 'px';
         this.cursorElement.style.visibility = 'visible';
-        this.overviewInfo.setContent(this.buildOverviewInfo());
+        void this.overviewInfo.setContent(this.buildOverviewInfo());
     }
     async buildOverviewInfo() {
         const document = this.element.ownerDocument;
@@ -128,7 +129,7 @@ export class TimelineOverviewPane extends Common.ObjectWrapper.eventMixin(UI.Wid
         this.overviewCalculator.setNavStartTimes(navStartTimes);
     }
     scheduleUpdate() {
-        this.updateThrottler.schedule(async () => {
+        void this.updateThrottler.schedule(async () => {
             this.update();
         });
     }
@@ -343,7 +344,7 @@ export class OverviewInfo {
         this.visible = false;
         this.element = UI.Utils
             .createShadowRootWithCoreStyles(this.glassPane.contentElement, {
-            cssFile: 'ui/legacy/components/perf_ui/timelineOverviewInfo.css',
+            cssFile: [timelineOverviewInfoStyles],
             delegatesFocus: undefined,
         })
             .createChild('div', 'overview-info');

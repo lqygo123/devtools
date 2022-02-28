@@ -2,9 +2,7 @@ import type * as Common from '../../core/common/common.js';
 import type * as TextUtils from '../text_utils/text_utils.js';
 import * as Workspace from '../workspace/workspace.js';
 export declare class ContentProviderBasedProject extends Workspace.Workspace.ProjectStore implements Workspace.Workspace.Project {
-    private readonly contentProviders;
-    private readonly isServiceProjectInternal;
-    private readonly uiSourceCodeToData;
+    #private;
     constructor(workspace: Workspace.Workspace.WorkspaceImpl, id: string, type: Workspace.Workspace.projectTypes, displayName: string, isServiceProject: boolean);
     requestFileContent(uiSourceCode: Workspace.UISourceCode.UISourceCode): Promise<TextUtils.ContentProvider.DeferredContent>;
     isServiceProject(): boolean;

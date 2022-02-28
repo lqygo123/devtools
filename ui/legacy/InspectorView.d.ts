@@ -25,6 +25,7 @@ export declare class InspectorView extends VBox implements ViewLocationResolver 
     static instance(opts?: {
         forceNew: boolean | null;
     } | undefined): InspectorView;
+    static maybeGetInspectorViewInstance(): InspectorView | undefined;
     wasShown(): void;
     willHide(): void;
     resolveLocation(locationName: string): ViewLocation | null;

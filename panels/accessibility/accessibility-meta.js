@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as i18n from '../../core/i18n/i18n.js';
-import * as Root from '../../core/root/root.js';
 import * as UI from '../../ui/legacy/legacy.js';
 let loadedAccessibilityModule;
 const UIStrings = {
@@ -19,8 +18,6 @@ const str_ = i18n.i18n.registerUIStrings('panels/accessibility/accessibility-met
 const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined, str_);
 async function loadAccessibilityModule() {
     if (!loadedAccessibilityModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/accessibility');
         loadedAccessibilityModule = await import('./accessibility.js');
     }
     return loadedAccessibilityModule;

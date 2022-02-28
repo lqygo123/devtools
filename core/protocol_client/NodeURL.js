@@ -8,7 +8,8 @@ export class NodeURL {
         process(object, '');
         function process(object, path) {
             if (object.url && NodeURL.isPlatformPath(object.url, Host.Platform.isWin())) {
-                object.url = Common.ParsedURL.ParsedURL.platformPathToURL(object.url);
+                // object.url can be ob both types: RawPathString and UrlString
+                object.url = Common.ParsedURL.ParsedURL.rawPathToUrlString(object.url);
             }
             for (const entry of Object.entries(object)) {
                 const key = entry[0];

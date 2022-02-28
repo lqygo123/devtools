@@ -41,7 +41,7 @@ import * as ThemeSupport from '../../ui/legacy/theme_support/theme_support.js';
 import timelineFlamechartPopoverStyles from './timelineFlamechartPopover.css.js';
 import { FlameChartStyle, Selection, TimelineFlameChartMarker } from './TimelineFlameChartView.js';
 import { TimelineSelection } from './TimelinePanel.js';
-import { TimelineUIUtils } from './TimelineUIUtils.js';
+import { TimelineUIUtils, assignLayoutShiftsToClusters } from './TimelineUIUtils.js';
 const UIStrings = {
     /**
     *@description Text in Timeline Flame Chart Data Provider of the Performance panel
@@ -224,6 +224,24 @@ export class TimelineFlameChartDataProvider extends Common.ObjectWrapper.ObjectW
         this.interactionsHeaderLevel1 = this.buildGroupStyle({ useFirstLineForOverview: true });
         this.interactionsHeaderLevel2 = this.buildGroupStyle({ padding: 2, nestingLevel: 1 });
         this.experienceHeader = this.buildGroupStyle({ collapsible: false });
+        ThemeSupport.ThemeSupport.instance().addEventListener(ThemeSupport.ThemeChangeEvent.eventName, () => {
+            const headers = [
+                this.headerLevel1,
+                this.headerLevel2,
+                this.staticHeader,
+                this.framesHeader,
+                this.collapsibleTimingsHeader,
+                this.timingsHeader,
+                this.screenshotsHeader,
+                this.interactionsHeaderLevel1,
+                this.interactionsHeaderLevel2,
+                this.experienceHeader,
+            ];
+            for (const header of headers) {
+                header.color = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-text-primary');
+                header.backgroundColor = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-background');
+            }
+        });
         this.flowEventIndexById = new Map();
     }
     buildGroupStyle(extra) {
@@ -231,13 +249,13 @@ export class TimelineFlameChartDataProvider extends Common.ObjectWrapper.ObjectW
             padding: 4,
             height: 17,
             collapsible: true,
-            color: ThemeSupport.ThemeSupport.instance().patchColorText('#222', ThemeSupport.ThemeSupport.ColorUsage.Foreground),
-            backgroundColor: ThemeSupport.ThemeSupport.instance().patchColorText('white', ThemeSupport.ThemeSupport.ColorUsage.Background),
+            color: ThemeSupport.ThemeSupport.instance().getComputedValue('--color-text-primary'),
+            backgroundColor: ThemeSupport.ThemeSupport.instance().getComputedValue('--color-background'),
             font: this.font,
             nestingLevel: 0,
             shareHeaderLine: true,
         };
-        return /** @type {!PerfUI.FlameChart.GroupStyle} */ Object.assign(defaultGroupStyle, extra);
+        return Object.assign(defaultGroupStyle, extra);
     }
     setModel(performanceModel) {
         this.reset();
@@ -511,7 +529,7 @@ export class TimelineFlameChartDataProvider extends Common.ObjectWrapper.ObjectW
         }
         const isExtension = entryType === EntryType.ExtensionEvent;
         const openEvents = [];
-        const ignoreListingEnabled = !isExtension && Root.Runtime.experiments.isEnabled('blackboxJSFramesOnTimeline');
+        const ignoreListingEnabled = !isExtension && Root.Runtime.experiments.isEnabled('ignoreListJSFramesOnTimeline');
         let maxStackDepth = 0;
         let group = null;
         if (track && track.type === TimelineModel.TimelineModel.TrackType.MainThread) {
@@ -700,33 +718,7 @@ export class TimelineFlameChartDataProvider extends Common.ObjectWrapper.ObjectW
             metricEvents.push(...latestEvents);
         }
         if (layoutShifts.length) {
-            const gapTimeInMs = 1000;
-            const limitTimeInMs = 5000;
-            let firstTimestamp = Number.NEGATIVE_INFINITY;
-            let previousTimestamp = Number.NEGATIVE_INFINITY;
-            let maxScore = 0;
-            let currentClusterId = 1;
-            let currentClusterScore = 0;
-            let currentCluster = new Set();
-            for (const e of layoutShifts) {
-                if (e.args['data']['had_recent_input'] || e.args['data']['weighted_score_delta'] === undefined) {
-                    continue;
-                }
-                if (e.startTime - firstTimestamp > limitTimeInMs || e.startTime - previousTimestamp > gapTimeInMs) {
-                    firstTimestamp = e.startTime;
-                    for (const layoutShift of currentCluster) {
-                        layoutShift.args['data']['_current_cluster_score'] = currentClusterScore;
-                        layoutShift.args['data']['_current_cluster_id'] = currentClusterId;
-                    }
-                    currentClusterId += 1;
-                    currentClusterScore = 0;
-                    currentCluster = new Set();
-                }
-                previousTimestamp = e.startTime;
-                currentClusterScore += e.args['data']['weighted_score_delta'];
-                currentCluster.add(e);
-                maxScore = Math.max(maxScore, currentClusterScore);
-            }
+            assignLayoutShiftsToClusters(layoutShifts);
         }
         metricEvents.sort(SDK.TracingModel.Event.compareStartTime);
         if (this.timelineDataInternal) {
@@ -843,8 +835,7 @@ export class TimelineFlameChartDataProvider extends Common.ObjectWrapper.ObjectW
         ++this.currentLevel;
     }
     entryType(entryIndex) {
-        return this.entryTypeByLevel[ /** @type {!PerfUI.FlameChart.TimelineData} */this.timelineDataInternal
-            .entryLevels[entryIndex]];
+        return this.entryTypeByLevel[this.timelineDataInternal.entryLevels[entryIndex]];
     }
     prepareHighlightedEntryInfo(entryIndex) {
         let time = '';
@@ -1030,7 +1021,7 @@ export class TimelineFlameChartDataProvider extends Common.ObjectWrapper.ObjectW
             return true;
         }
         if (type === entryTypes.Screenshot) {
-            this.drawScreenshot(entryIndex, context, barX, barY, barWidth, barHeight);
+            void this.drawScreenshot(entryIndex, context, barX, barY, barWidth, barHeight);
             return true;
         }
         if (type === entryTypes.InteractionRecord) {

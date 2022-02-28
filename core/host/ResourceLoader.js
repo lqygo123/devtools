@@ -71,11 +71,11 @@ const _bindOutputStream = function (stream) {
     return _lastStreamId;
 };
 const _discardOutputStream = function (id) {
-    _boundStreams[id].close();
+    void _boundStreams[id].close();
     delete _boundStreams[id];
 };
 export const streamWrite = function (id, chunk) {
-    _boundStreams[id].write(chunk);
+    void _boundStreams[id].write(chunk);
 };
 export let load = function (url, headers, callback) {
     const stream = new Common.StringOutputStream.StringOutputStream();

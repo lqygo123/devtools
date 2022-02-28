@@ -38,14 +38,17 @@ import * as Bindings from '../../models/bindings/bindings.js';
 import * as Logs from '../../models/logs/logs.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Workspace from '../../models/workspace/workspace.js';
+import * as CodeHighlighter from '../../ui/components/code_highlighter/code_highlighter.js';
 import * as IssueCounter from '../../ui/components/issue_counter/issue_counter.js';
 import * as RequestLinkIcon from '../../ui/components/request_link_icon/request_link_icon.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as ObjectUI from '../../ui/legacy/components/object_ui/object_ui.js';
-import * as TextEditor from '../../ui/legacy/components/text_editor/text_editor.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import * as ThemeSupport from '../../ui/legacy/theme_support/theme_support.js';
+// eslint-disable-next-line rulesdir/es_modules_import
+import objectValueStyles from '../../ui/legacy/components/object_ui/objectValue.css.js';
+import { format } from './ConsoleFormat.js';
+import consoleViewStyles from './consoleView.css.js';
 const UIStrings = {
     /**
     * @description Message element text content in Console View Message of the Console panel. Shown
@@ -154,6 +157,14 @@ const UIStrings = {
     *@description Title of the Console tool
     */
     console: 'Console',
+    /**
+    *@description Message to indicate a console message with a stack table is expanded
+    */
+    stackMessageExpanded: 'Stack table expanded',
+    /**
+    *@description Message to indicate a console message with a stack table is collapsed
+    */
+    stackMessageCollapsed: 'Stack table collapsed',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/console/ConsoleViewMessage.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -181,7 +192,7 @@ export class ConsoleViewMessage {
     linkifier;
     repeatCountInternal;
     closeGroupDecorationCount;
-    nestingLevelInternal;
+    consoleGroupInternal;
     selectableChildren;
     messageResized;
     elementInternal;
@@ -206,14 +217,13 @@ export class ConsoleViewMessage {
     repeatCountElement;
     requestResolver;
     issueResolver;
-    constructor(consoleMessage, linkifier, requestResolver, issueResolver, nestingLevel, onResize) {
+    constructor(consoleMessage, linkifier, requestResolver, issueResolver, onResize) {
         this.message = consoleMessage;
         this.linkifier = linkifier;
         this.requestResolver = requestResolver;
         this.issueResolver = issueResolver;
         this.repeatCountInternal = 1;
         this.closeGroupDecorationCount = 0;
-        this.nestingLevelInternal = nestingLevel;
         this.selectableChildren = [];
         this.messageResized = onResize;
         this.elementInternal = null;
@@ -236,6 +246,7 @@ export class ConsoleViewMessage {
         this.lastInSimilarGroup = false;
         this.groupKeyInternal = '';
         this.repeatCountElement = null;
+        this.consoleGroupInternal = null;
     }
     element() {
         return this.toMessageElement();
@@ -439,11 +450,9 @@ export class ConsoleViewMessage {
         const toggleElement = document.createElement('div');
         toggleElement.classList.add('console-message-stack-trace-toggle');
         const contentElement = toggleElement.createChild('div', 'console-message-stack-trace-wrapper');
-        UI.ARIAUtils.markAsTree(contentElement);
         const messageElement = this.buildMessage();
         const icon = UI.Icon.Icon.create('smallicon-triangle-right', 'console-message-expand-icon');
         const clickableElement = contentElement.createChild('div');
-        UI.ARIAUtils.markAsTreeitem(clickableElement);
         UI.ARIAUtils.setExpanded(clickableElement, false);
         clickableElement.appendChild(icon);
         // Intercept focus to avoid highlight on click.
@@ -456,10 +465,14 @@ export class ConsoleViewMessage {
             this.selectableChildren.push({ element: linkElement, forceSelect: () => linkElement.focus() });
         }
         stackTraceElement.classList.add('hidden');
+        UI.ARIAUtils.setAccessibleName(contentElement, `${messageElement.textContent} ${i18nString(UIStrings.stackMessageCollapsed)}`);
         UI.ARIAUtils.markAsGroup(stackTraceElement);
         this.expandTrace = (expand) => {
             icon.setIconType(expand ? 'smallicon-triangle-down' : 'smallicon-triangle-right');
             stackTraceElement.classList.toggle('hidden', !expand);
+            const stackTableState = expand ? i18nString(UIStrings.stackMessageExpanded) : i18nString(UIStrings.stackMessageCollapsed);
+            UI.ARIAUtils.setAccessibleName(contentElement, `${messageElement.textContent} ${stackTableState}`);
+            UI.ARIAUtils.alert(stackTableState);
             UI.ARIAUtils.setExpanded(clickableElement, expand);
             this.traceExpanded = expand;
         };
@@ -518,8 +531,7 @@ export class ConsoleViewMessage {
                 this.message.level === "error" /* Error */);
         // Multiple parameters with the first being a format string. Save unused substitutions.
         if (shouldFormatMessage) {
-            const result = this.formatWithSubstitutionString(parameters[0].description, parameters.slice(1), formattedResult);
-            parameters = Array.from(result.unusedSubstitutions || []);
+            parameters = this.formatWithSubstitutionString(parameters[0].description, parameters.slice(1), formattedResult);
             if (parameters.length) {
                 UI.UIUtils.createTextChild(formattedResult, ' ');
             }
@@ -628,7 +640,7 @@ export class ConsoleViewMessage {
         }
         else if (obj.type === 'function') {
             const functionElement = titleElement.createChild('span');
-            ObjectUI.ObjectPropertiesSection.ObjectPropertiesSection.formatObjectAsFunction(obj, functionElement, false);
+            void ObjectUI.ObjectPropertiesSection.ObjectPropertiesSection.formatObjectAsFunction(obj, functionElement, false);
             titleElement.classList.add('object-value-function');
         }
         else if (obj.subtype === 'trustedtype') {
@@ -659,18 +671,18 @@ export class ConsoleViewMessage {
     }
     formatParameterAsFunction(func, includePreview) {
         const result = document.createElement('span');
-        SDK.RemoteObject.RemoteFunction.objectAsFunction(func).targetFunction().then(formatTargetFunction.bind(this));
+        void SDK.RemoteObject.RemoteFunction.objectAsFunction(func).targetFunction().then(formatTargetFunction.bind(this));
         return result;
         function formatTargetFunction(targetFunction) {
             const functionElement = document.createElement('span');
             const promise = ObjectUI.ObjectPropertiesSection.ObjectPropertiesSection.formatObjectAsFunction(targetFunction, functionElement, true, includePreview);
             result.appendChild(functionElement);
             if (targetFunction !== func) {
-                const note = result.createChild('span', 'object-info-state-note');
+                const note = result.createChild('span', 'object-state-note info-note');
                 UI.Tooltip.Tooltip.install(note, i18nString(UIStrings.functionWasResolvedFromBound));
             }
             result.addEventListener('contextmenu', this.contextMenuEventFired.bind(this, targetFunction), false);
-            promise.then(() => this.formattedParameterAsFunctionForTest());
+            void promise.then(() => this.formattedParameterAsFunctionForTest());
         }
     }
     formattedParameterAsFunctionForTest() {
@@ -678,7 +690,7 @@ export class ConsoleViewMessage {
     contextMenuEventFired(obj, event) {
         const contextMenu = new UI.ContextMenu.ContextMenu(event);
         contextMenu.appendApplicableItems(obj);
-        contextMenu.show();
+        void contextMenu.show();
     }
     renderPropertyPreviewOrAccessor(object, property, propertyPath) {
         if (property.type === 'accessor') {
@@ -692,7 +704,7 @@ export class ConsoleViewMessage {
         if (!domModel) {
             return result;
         }
-        domModel.pushObjectAsNodeToFrontend(remoteObject).then(async (node) => {
+        void domModel.pushObjectAsNodeToFrontend(remoteObject).then(async (node) => {
             if (!node) {
                 result.appendChild(this.formatParameterAsObject(remoteObject, false));
                 return;
@@ -769,166 +781,62 @@ export class ConsoleViewMessage {
         }
         return rootElement;
     }
-    formatWithSubstitutionString(format, parameters, formattedResult) {
-        function parameterFormatter(force, includePreview, obj) {
-            if (obj instanceof SDK.RemoteObject.RemoteObject) {
-                return this.formatParameter(obj, force, includePreview);
-            }
-            return stringFormatter(obj);
-        }
-        function stringFormatter(obj) {
-            if (obj === undefined) {
-                return undefined;
-            }
-            if (typeof obj === 'string') {
-                return obj;
-            }
-            return obj.description;
-        }
-        function floatFormatter(obj) {
-            if (obj instanceof SDK.RemoteObject.RemoteObject) {
-                if (typeof obj.value !== 'number') {
-                    return 'NaN';
+    formatWithSubstitutionString(formatString, parameters, formattedResult) {
+        const currentStyle = new Map();
+        const { tokens, args } = format(formatString, parameters);
+        for (const token of tokens) {
+            switch (token.type) {
+                case 'generic': {
+                    formattedResult.append(this.formatParameter(token.value, true /* force */, false /* includePreview */));
+                    break;
                 }
-                return obj.value;
-            }
-            return undefined;
-        }
-        function integerFormatter(obj) {
-            if (obj instanceof SDK.RemoteObject.RemoteObject) {
-                if (obj.type === 'bigint') {
-                    return obj.description;
+                case 'optimal': {
+                    formattedResult.append(this.formatParameter(token.value, false /* force */, true /* includePreview */));
+                    break;
                 }
-                if (typeof obj.value !== 'number') {
-                    return 'NaN';
-                }
-                return Math.floor(obj.value);
-            }
-            return undefined;
-        }
-        function bypassFormatter(obj) {
-            return (obj instanceof Node) ? obj : '';
-        }
-        let currentStyle = null;
-        function styleFormatter(obj) {
-            currentStyle = new Map();
-            const buffer = document.createElement('span');
-            if (obj === undefined) {
-                return;
-            }
-            if (typeof obj === 'string' || !obj.description) {
-                return;
-            }
-            buffer.setAttribute('style', obj.description);
-            for (const property of buffer.style) {
-                if (isAllowedProperty(property)) {
-                    const info = {
-                        value: buffer.style.getPropertyValue(property),
-                        priority: buffer.style.getPropertyPriority(property),
-                    };
-                    currentStyle.set(property, info);
-                }
-            }
-        }
-        function isAllowedProperty(property) {
-            // Make sure that allowed properties do not interfere with link visibility.
-            const prefixes = [
-                'background',
-                'border',
-                'color',
-                'font',
-                'line',
-                'margin',
-                'padding',
-                'text',
-                '-webkit-background',
-                '-webkit-border',
-                '-webkit-font',
-                '-webkit-margin',
-                '-webkit-padding',
-                '-webkit-text',
-            ];
-            for (const prefix of prefixes) {
-                if (property.startsWith(prefix)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const formatters = {};
-        // Firebug uses %o for formatting objects.
-        formatters.o = parameterFormatter.bind(this, false /* force */, true /* includePreview */);
-        formatters.s = stringFormatter;
-        formatters.f = floatFormatter;
-        // Firebug allows both %i and %d for formatting integers.
-        formatters.i = integerFormatter;
-        formatters.d = integerFormatter;
-        // Firebug uses %c for styling the message.
-        formatters.c = styleFormatter;
-        // Support %O to force object formatting, instead of the type-based %o formatting.
-        formatters.O = parameterFormatter.bind(this, true /* force */, false /* includePreview */);
-        formatters._ = bypassFormatter;
-        function append(a, b) {
-            if (b instanceof Node) {
-                a.appendChild(b);
-                return a;
-            }
-            if (typeof b === 'undefined') {
-                return a;
-            }
-            if (!currentStyle) {
-                a.appendChild(this.linkifyStringAsFragment(String(b)));
-                return a;
-            }
-            const lines = String(b).split('\n');
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const lineFragment = this.linkifyStringAsFragment(line);
-                const wrapper = document.createElement('span');
-                wrapper.style.setProperty('contain', 'paint');
-                wrapper.style.setProperty('display', 'inline-block');
-                wrapper.style.setProperty('max-width', '100%');
-                wrapper.appendChild(lineFragment);
-                applyCurrentStyle(wrapper);
-                for (const child of wrapper.children) {
-                    if (child.classList.contains('devtools-link') && child instanceof HTMLElement) {
-                        this.applyForcedVisibleStyle(child);
+                case 'string': {
+                    if (currentStyle.size === 0) {
+                        formattedResult.append(this.linkifyStringAsFragment(token.value));
                     }
+                    else {
+                        const lines = token.value.split('\n');
+                        for (let i = 0; i < lines.length; i++) {
+                            if (i > 0) {
+                                formattedResult.append(document.createElement('br'));
+                            }
+                            const wrapper = document.createElement('span');
+                            wrapper.style.setProperty('contain', 'paint');
+                            wrapper.style.setProperty('display', 'inline-block');
+                            wrapper.style.setProperty('max-width', '100%');
+                            wrapper.appendChild(this.linkifyStringAsFragment(lines[i]));
+                            for (const [property, { value, priority }] of currentStyle) {
+                                wrapper.style.setProperty(property, value, priority);
+                            }
+                            formattedResult.append(wrapper);
+                        }
+                    }
+                    break;
                 }
-                a.appendChild(wrapper);
-                if (i < lines.length - 1) {
-                    a.appendChild(document.createElement('br'));
+                case 'style': {
+                    // Make sure that allowed properties do not interfere with link visibility.
+                    const ALLOWED_PROPERTY_PREFIXES = ['background', 'border', 'color', 'font', 'line', 'margin', 'padding', 'text'];
+                    currentStyle.clear();
+                    const buffer = document.createElement('span');
+                    buffer.setAttribute('style', token.value);
+                    for (const property of buffer.style) {
+                        if (!ALLOWED_PROPERTY_PREFIXES.some(prefix => property.startsWith(prefix) || property.startsWith(`-webkit-${prefix}`))) {
+                            continue;
+                        }
+                        currentStyle.set(property, {
+                            value: buffer.style.getPropertyValue(property),
+                            priority: buffer.style.getPropertyPriority(property),
+                        });
+                    }
+                    break;
                 }
             }
-            return a;
         }
-        function applyCurrentStyle(element) {
-            if (!currentStyle) {
-                return;
-            }
-            for (const [property, { value, priority }] of currentStyle.entries()) {
-                element.style.setProperty(property, value, priority);
-            }
-        }
-        // Platform.StringUtilities.format does treat formattedResult like a Builder, result is an object.
-        return Platform.StringUtilities.format(format, parameters, formatters, formattedResult, append.bind(this));
-    }
-    applyForcedVisibleStyle(element) {
-        element.style.setProperty('-webkit-text-stroke', '0', 'important');
-        element.style.setProperty('text-decoration', 'underline', 'important');
-        const themedColor = ThemeSupport.ThemeSupport.instance().patchColorText('rgb(33%, 33%, 33%)', ThemeSupport.ThemeSupport.ColorUsage.Foreground);
-        element.style.setProperty('color', themedColor, 'important');
-        let backgroundColor = 'hsl(0, 0%, 100%)';
-        if (this.message.level === "error" /* Error */) {
-            backgroundColor = 'hsl(0, 100%, 97%)';
-        }
-        else if (this.message.level === "warning" /* Warning */ || this.shouldRenderAsWarning()) {
-            backgroundColor = 'hsl(50, 100%, 95%)';
-        }
-        const themedBackgroundColor = ThemeSupport.ThemeSupport.instance().patchColorText(backgroundColor, ThemeSupport.ThemeSupport.ColorUsage.Background);
-        element.style.setProperty('background-color', themedBackgroundColor, 'important');
+        return args;
     }
     matchesFilterRegex(regexObject) {
         regexObject.lastIndex = 0;
@@ -938,21 +846,8 @@ export class ConsoleViewMessage {
             regexObject.test(contentElement.deepTextContent().slice(anchorText.length));
     }
     matchesFilterText(filter) {
-        return ConsoleViewMessage.recursivelyTestParentConsoleMessage(this.message, filter) ||
-            ConsoleViewMessage.recursivelyTestChildrenConsoleMessage(this.message, filter);
-    }
-    static recursivelyTestParentConsoleMessage(consoleMessage, filterString) {
-        const doesFilterMatchText = consoleMessage.messageText.toLowerCase().includes(filterString.toLowerCase());
-        const doesParentMatchText = consoleMessage.groupParent &&
-            ConsoleViewMessage.recursivelyTestParentConsoleMessage(consoleMessage.groupParent, filterString);
-        return Boolean(doesFilterMatchText || doesParentMatchText);
-    }
-    static recursivelyTestChildrenConsoleMessage(consoleMessage, filterString) {
-        const doesFilterMatchChildren = consoleMessage.groupChildren?.some(childMessage => {
-            const filterMatch = childMessage.messageText.toLowerCase().includes(filterString.toLowerCase());
-            return filterMatch || ConsoleViewMessage.recursivelyTestChildrenConsoleMessage(childMessage, filterString);
-        });
-        return Boolean(doesFilterMatchChildren);
+        const text = this.contentElement().deepTextContent();
+        return text.toLowerCase().includes(filter.toLowerCase());
     }
     updateTimestamp() {
         if (!this.contentElementInternal) {
@@ -973,7 +868,21 @@ export class ConsoleViewMessage {
         }
     }
     nestingLevel() {
-        return this.nestingLevelInternal;
+        let nestingLevel = 0;
+        for (let group = this.consoleGroup(); group !== null; group = group.consoleGroup()) {
+            nestingLevel++;
+        }
+        return nestingLevel;
+    }
+    setConsoleGroup(group) {
+        console.assert(this.consoleGroupInternal === null);
+        this.consoleGroupInternal = group;
+    }
+    clearConsoleGroup() {
+        this.consoleGroupInternal = null;
+    }
+    consoleGroup() {
+        return this.consoleGroupInternal;
     }
     setInSimilarGroup(inSimilarGroup, isLast) {
         this.inSimilarGroup = inSimilarGroup;
@@ -1160,7 +1069,7 @@ export class ConsoleViewMessage {
             this.similarGroupMarker.classList.toggle('group-closed', this.lastInSimilarGroup);
         }
         this.nestingLevelMarkers = [];
-        for (let i = 0; i < this.nestingLevelInternal; ++i) {
+        for (let i = 0; i < this.nestingLevel(); ++i) {
             this.nestingLevelMarkers.push(this.elementInternal.createChild('div', 'nesting-level-marker'));
         }
         this.updateCloseGroupDecorations();
@@ -1459,7 +1368,13 @@ export class ConsoleViewMessage {
             const prefix = line.substring(0, link.positionLeft);
             const suffix = `${line.substring(link.positionRight)}${newline}`;
             formattedLine.appendChild(this.linkifyStringAsFragment(prefix));
-            const scriptLocationLink = this.linkifier.linkifyScriptLocation(debuggerModel.target(), null, link.url, link.lineNumber, { columnNumber: link.columnNumber, className: undefined, tabStop: undefined, inlineFrameIndex: 0 });
+            const scriptLocationLink = this.linkifier.linkifyScriptLocation(debuggerModel.target(), null, link.url, link.lineNumber, {
+                columnNumber: link.columnNumber,
+                className: undefined,
+                tabStop: undefined,
+                inlineFrameIndex: 0,
+                showColumnNumber: true,
+            });
             scriptLocationLink.tabIndex = -1;
             this.selectableChildren.push({ element: scriptLocationLink, forceSelect: () => scriptLocationLink.focus() });
             formattedLine.appendChild(scriptLocationLink);
@@ -1472,7 +1387,8 @@ export class ConsoleViewMessage {
             // If we were able to parse the function name from the stack trace line, try to replace it with an expansion of
             // any inline frames.
             const selectableChildIndex = this.selectableChildren.length - 1;
-            this.expandInlineStackFrames(debuggerModel, prefixWithoutFunction, suffix, link.url, link.lineNumber, link.columnNumber, formattedResult, formattedLine)
+            void this
+                .expandInlineStackFrames(debuggerModel, prefixWithoutFunction, suffix, link.url, link.lineNumber, link.columnNumber, formattedResult, formattedLine)
                 .then(modified => {
                 if (modified) {
                     formattedResult.removeChild(formattedLine);
@@ -1620,12 +1536,14 @@ export class ConsoleGroupViewMessage extends ConsoleViewMessage {
     collapsedInternal;
     expandGroupIcon;
     onToggle;
-    constructor(consoleMessage, linkifier, requestResolver, issueResolver, nestingLevel, onToggle, onResize) {
+    groupEndMessageInternal;
+    constructor(consoleMessage, linkifier, requestResolver, issueResolver, onToggle, onResize) {
         console.assert(consoleMessage.isGroupStartMessage());
-        super(consoleMessage, linkifier, requestResolver, issueResolver, nestingLevel, onResize);
+        super(consoleMessage, linkifier, requestResolver, issueResolver, onResize);
         this.collapsedInternal = consoleMessage.type === "startGroupCollapsed" /* StartGroupCollapsed */;
         this.expandGroupIcon = null;
         this.onToggle = onToggle;
+        this.groupEndMessageInternal = null;
     }
     setCollapsed(collapsed) {
         this.collapsedInternal = collapsed;
@@ -1672,11 +1590,30 @@ export class ConsoleGroupViewMessage extends ConsoleViewMessage {
             this.repeatCountElement.insertBefore(this.expandGroupIcon, this.repeatCountElement.firstChild);
         }
     }
+    messagesHidden() {
+        if (this.collapsed()) {
+            return true;
+        }
+        const parent = this.consoleGroup();
+        return Boolean(parent && parent.messagesHidden());
+    }
+    setGroupEnd(viewMessage) {
+        if (viewMessage.consoleMessage().type !== "endGroup" /* EndGroup */) {
+            throw new Error('Invalid console message as group end');
+        }
+        if (this.groupEndMessageInternal !== null) {
+            throw new Error('Console group already has an end');
+        }
+        this.groupEndMessageInternal = viewMessage;
+    }
+    groupEnd() {
+        return this.groupEndMessageInternal;
+    }
 }
 export class ConsoleCommand extends ConsoleViewMessage {
     formattedCommand;
-    constructor(consoleMessage, linkifier, requestResolver, issueResolver, nestingLevel, onResize) {
-        super(consoleMessage, linkifier, requestResolver, issueResolver, nestingLevel, onResize);
+    constructor(consoleMessage, linkifier, requestResolver, issueResolver, onResize) {
+        super(consoleMessage, linkifier, requestResolver, issueResolver, onResize);
         this.formattedCommand = null;
     }
     contentElement() {
@@ -1695,8 +1632,8 @@ export class ConsoleCommand extends ConsoleViewMessage {
         this.formattedCommand.textContent = Platform.StringUtilities.replaceControlCharacters(this.text);
         newContentElement.appendChild(this.formattedCommand);
         if (this.formattedCommand.textContent.length < MaxLengthToIgnoreHighlighter) {
-            const javascriptSyntaxHighlighter = new TextEditor.SyntaxHighlighter.SyntaxHighlighter('text/javascript', true);
-            javascriptSyntaxHighlighter.syntaxHighlightNode(this.formattedCommand).then(this.updateSearch.bind(this));
+            void CodeHighlighter.CodeHighlighter.highlightNode(this.formattedCommand, 'text/javascript')
+                .then(this.updateSearch.bind(this));
         }
         else {
             this.updateSearch();
@@ -1723,8 +1660,8 @@ export class ConsoleCommandResult extends ConsoleViewMessage {
 }
 export class ConsoleTableMessageView extends ConsoleViewMessage {
     dataGrid;
-    constructor(consoleMessage, linkifier, requestResolver, issueResolver, nestingLevel, onResize) {
-        super(consoleMessage, linkifier, requestResolver, issueResolver, nestingLevel, onResize);
+    constructor(consoleMessage, linkifier, requestResolver, issueResolver, onResize) {
+        super(consoleMessage, linkifier, requestResolver, issueResolver, onResize);
         console.assert(consoleMessage.type === "table" /* Table */);
         this.dataGrid = null;
     }
@@ -1828,7 +1765,11 @@ export class ConsoleTableMessageView extends ConsoleViewMessage {
                 const tableElement = formattedResult.createChild('div', 'console-message-formatted-table');
                 const dataGridContainer = tableElement.createChild('span');
                 tableElement.appendChild(this.formatParameter(actualTable, true, false));
-                dataGridContainer.appendChild(this.dataGrid.element);
+                const shadowRoot = dataGridContainer.attachShadow({ mode: 'open' });
+                const dataGridWidget = this.dataGrid.asWidget();
+                dataGridWidget.markAsRoot();
+                dataGridWidget.show(shadowRoot);
+                dataGridWidget.registerCSSFiles([consoleViewStyles, objectValueStyles]);
                 formattedMessage.appendChild(formattedResult);
                 this.dataGrid.renderInline();
             }

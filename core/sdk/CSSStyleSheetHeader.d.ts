@@ -6,7 +6,7 @@ import { DeferredDOMNode } from './DOMModel.js';
 import type { FrameAssociated } from './FrameAssociated.js';
 import type { PageResourceLoadInitiator } from './PageResourceLoader.js';
 export declare class CSSStyleSheetHeader implements TextUtils.ContentProvider.ContentProvider, FrameAssociated {
-    private cssModelInternal;
+    #private;
     id: Protocol.CSS.StyleSheetId;
     frameId: Protocol.Page.FrameId;
     sourceURL: string;
@@ -24,7 +24,6 @@ export declare class CSSStyleSheetHeader implements TextUtils.ContentProvider.Co
     contentLength: number;
     ownerNode: DeferredDOMNode | undefined;
     sourceMapURL: string | undefined;
-    private originalContentProviderInternal;
     constructor(cssModel: CSSModel, payload: Protocol.CSS.CSSStyleSheetHeader);
     originalContentProvider(): TextUtils.ContentProvider.ContentProvider;
     setSourceMapURL(sourceMapURL?: string): void;

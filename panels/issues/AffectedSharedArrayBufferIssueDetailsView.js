@@ -52,7 +52,7 @@ export class AffectedSharedArrayBufferIssueDetailsView extends AffectedResources
     getResourceNameWithCount(count) {
         return i18nString(UIStrings.nViolations, { n: count });
     }
-    appendStatus(element, isWarning) {
+    #appendStatus(element, isWarning) {
         const status = document.createElement('td');
         if (isWarning) {
             status.classList.add('affected-resource-report-only-status');
@@ -64,7 +64,7 @@ export class AffectedSharedArrayBufferIssueDetailsView extends AffectedResources
         }
         element.appendChild(status);
     }
-    appendType(element, type) {
+    #appendType(element, type) {
         const status = document.createElement('td');
         switch (type) {
             case "CreationIssue" /* CreationIssue */:
@@ -78,7 +78,7 @@ export class AffectedSharedArrayBufferIssueDetailsView extends AffectedResources
         }
         element.appendChild(status);
     }
-    appendDetails(sabIssues) {
+    #appendDetails(sabIssues) {
         const header = document.createElement('tr');
         this.appendColumnTitle(header, i18nString(UIStrings.sourceLocation));
         this.appendColumnTitle(header, i18nString(UIStrings.trigger));
@@ -87,23 +87,23 @@ export class AffectedSharedArrayBufferIssueDetailsView extends AffectedResources
         let count = 0;
         for (const sabIssue of sabIssues) {
             count++;
-            this.appendDetail(sabIssue);
+            this.#appendDetail(sabIssue);
         }
         this.updateAffectedResourceCount(count);
     }
-    appendDetail(sabIssue) {
+    #appendDetail(sabIssue) {
         const element = document.createElement('tr');
         element.classList.add('affected-resource-directive');
         const sabIssueDetails = sabIssue.details();
         const location = IssuesManager.Issue.toZeroBasedLocation(sabIssueDetails.sourceCodeLocation);
         this.appendSourceLocation(element, location, sabIssue.model()?.getTargetIfNotDisposed());
-        this.appendType(element, sabIssueDetails.type);
-        this.appendStatus(element, sabIssueDetails.isWarning);
+        this.#appendType(element, sabIssueDetails.type);
+        this.#appendStatus(element, sabIssueDetails.isWarning);
         this.affectedResources.appendChild(element);
     }
     update() {
         this.clear();
-        this.appendDetails(this.issue.getSharedArrayBufferIssues());
+        this.#appendDetails(this.issue.getSharedArrayBufferIssues());
     }
 }
 //# sourceMappingURL=AffectedSharedArrayBufferIssueDetailsView.js.map

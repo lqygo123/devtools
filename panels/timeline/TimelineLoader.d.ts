@@ -26,9 +26,6 @@ export declare class TimelineLoader implements Common.StringOutputStream.OutputS
     private parseCPUProfileFormat;
 }
 export declare const TransferChunkLengthBytes = 5000000;
-/**
- * @interface
- */
 export interface Client {
     loadingStarted(): void;
     loadingProgress(progress?: number): void;

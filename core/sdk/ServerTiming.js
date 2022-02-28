@@ -63,7 +63,7 @@ export class ServerTiming {
     }
     /**
      * TODO(crbug.com/1011811): Instead of using !Object<string, *> we should have a proper type
-     *                          with name, desc and dur properties.
+     *                          with #name, desc and dur properties.
      */
     static createFromHeaderValue(valueString) {
         function trimLeadingWhiteSpace() {
@@ -141,7 +141,7 @@ export class ServerTiming {
                 const parseParameter = this.getParserForParameter(paramName);
                 let paramValue = null;
                 if (consumeDelimiter('=')) {
-                    // always parse the value, even if we don't recognize the parameter name
+                    // always parse the value, even if we don't recognize the parameter #name
                     paramValue = consumeTokenOrQuotedString();
                     consumeExtraneous();
                 }

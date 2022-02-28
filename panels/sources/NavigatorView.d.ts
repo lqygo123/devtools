@@ -98,7 +98,7 @@ export declare class NavigatorFolderTreeElement extends UI.TreeOutline.TreeEleme
     private hoverCallback;
     node: NavigatorTreeNode;
     private hovered?;
-    constructor(navigatorView: NavigatorView, type: string, title: string, hoverCallback?: ((arg0: boolean) => any));
+    constructor(navigatorView: NavigatorView, type: string, title: string, hoverCallback?: ((arg0: boolean) => void));
     onpopulate(): Promise<void>;
     onattach(): void;
     setNode(node: NavigatorTreeNode): void;
@@ -172,7 +172,7 @@ export declare class NavigatorUISourceCodeTreeNode extends NavigatorTreeNode {
     hasChildren(): boolean;
     dispose(): void;
     reveal(select?: boolean): void;
-    rename(callback?: ((arg0: boolean) => any)): void;
+    rename(callback?: ((arg0: boolean) => void)): void;
 }
 export declare class NavigatorFolderTreeNode extends NavigatorTreeNode {
     project: Workspace.Workspace.Project | null;

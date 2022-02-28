@@ -18,7 +18,7 @@ export declare class ProfileNode {
     get columnNumber(): number;
 }
 export declare class ProfileTreeModel {
-    private readonly targetInternal;
+    #private;
     root: ProfileNode;
     total: number;
     maxDepth: number;

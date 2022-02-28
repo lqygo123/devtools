@@ -26,6 +26,10 @@ export declare class AppManifestView extends UI.Widget.VBox implements SDK.Targe
     private readonly startURLField;
     private readonly themeColorSwatch;
     private readonly backgroundColorSwatch;
+    private readonly darkThemeColorField;
+    private readonly darkThemeColorSwatch;
+    private readonly darkBackgroundColorField;
+    private readonly darkBackgroundColorSwatch;
     private orientationField;
     private displayField;
     private readonly newNoteUrlField;

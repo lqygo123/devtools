@@ -49,34 +49,34 @@ export class PaintProfilerModel extends SDKModel {
     }
 }
 export class PaintProfilerSnapshot {
-    paintProfilerModel;
-    id;
-    refCount;
+    #paintProfilerModel;
+    #id;
+    #refCount;
     constructor(paintProfilerModel, snapshotId) {
-        this.paintProfilerModel = paintProfilerModel;
-        this.id = snapshotId;
-        this.refCount = 1;
+        this.#paintProfilerModel = paintProfilerModel;
+        this.#id = snapshotId;
+        this.#refCount = 1;
     }
     release() {
-        console.assert(this.refCount > 0, 'release is already called on the object');
-        if (!--this.refCount) {
-            this.paintProfilerModel.layerTreeAgent.invoke_releaseSnapshot({ snapshotId: this.id });
+        console.assert(this.#refCount > 0, 'release is already called on the object');
+        if (!--this.#refCount) {
+            void this.#paintProfilerModel.layerTreeAgent.invoke_releaseSnapshot({ snapshotId: this.#id });
         }
     }
     addReference() {
-        ++this.refCount;
-        console.assert(this.refCount > 0, 'Referencing a dead object');
+        ++this.#refCount;
+        console.assert(this.#refCount > 0, 'Referencing a dead object');
     }
     async replay(scale, fromStep, toStep) {
-        const response = await this.paintProfilerModel.layerTreeAgent.invoke_replaySnapshot({ snapshotId: this.id, fromStep, toStep, scale: scale || 1.0 });
+        const response = await this.#paintProfilerModel.layerTreeAgent.invoke_replaySnapshot({ snapshotId: this.#id, fromStep, toStep, scale: scale || 1.0 });
         return response.dataURL;
     }
     async profile(clipRect) {
-        const response = await this.paintProfilerModel.layerTreeAgent.invoke_profileSnapshot({ snapshotId: this.id, minRepeatCount: 5, minDuration: 1, clipRect: clipRect || undefined });
+        const response = await this.#paintProfilerModel.layerTreeAgent.invoke_profileSnapshot({ snapshotId: this.#id, minRepeatCount: 5, minDuration: 1, clipRect: clipRect || undefined });
         return response.timings;
     }
     async commandLog() {
-        const response = await this.paintProfilerModel.layerTreeAgent.invoke_snapshotCommandLog({ snapshotId: this.id });
+        const response = await this.#paintProfilerModel.layerTreeAgent.invoke_snapshotCommandLog({ snapshotId: this.#id });
         return response.commandLog ? response.commandLog.map((entry, index) => new PaintProfilerLogItem(entry, index)) :
             null;
     }

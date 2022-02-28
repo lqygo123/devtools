@@ -208,6 +208,10 @@ export declare const AXSourceTypes: {
     };
 };
 export declare const AXNativeSourceTypes: {
+    description: {
+        name: () => import("../../core/platform/UIString.js").LocalizedString;
+        description: () => import("../../core/platform/UIString.js").LocalizedString;
+    };
     figcaption: {
         name: () => import("../../core/platform/UIString.js").LocalizedString;
         description: () => import("../../core/platform/UIString.js").LocalizedString;

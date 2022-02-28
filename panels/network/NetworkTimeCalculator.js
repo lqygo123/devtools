@@ -171,7 +171,7 @@ export class NetworkTimeCalculator extends Common.ObjectWrapper.ObjectWrapper {
         return percentage * this.boundarySpan() / 100 + this.minimumBoundary();
     }
     boundaryChanged() {
-        this.boundryChangedEventThrottler.schedule(async () => {
+        void this.boundryChangedEventThrottler.schedule(async () => {
             this.dispatchEventToListeners(Events.BoundariesChanged);
         });
     }

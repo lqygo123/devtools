@@ -37,6 +37,7 @@ import * as IconButton from '../../../components/icon_button/icon_button.js';
 import * as UI from '../../legacy.js';
 import { ContrastDetails } from './ContrastDetails.js';
 import { ContrastOverlay } from './ContrastOverlay.js';
+import spectrumStyles from './spectrum.css.js';
 const UIStrings = {
     /**
     *@description Tooltip text that appears when hovering over largeicon eyedropper button in Spectrum of the Color Picker
@@ -169,7 +170,6 @@ export class Spectrum extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
     colorFormat;
     constructor(contrastInfo) {
         super(true);
-        this.registerRequiredCSS('ui/legacy/components/color_picker/spectrum.css');
         this.contentElement.tabIndex = 0;
         this.colorElement = this.contentElement.createChild('div', 'spectrum-color');
         this.colorElement.tabIndex = 0;
@@ -241,9 +241,9 @@ export class Spectrum extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
             event.consume(true);
         });
         UI.ARIAUtils.markAsButton(displaySwitcher);
-        UI.UIUtils.installDragHandle(this.hueElement, this.dragStart.bind(this, positionHue.bind(this)), positionHue.bind(this), null, 'pointer', 'default');
-        UI.UIUtils.installDragHandle(this.alphaElement, this.dragStart.bind(this, positionAlpha.bind(this)), positionAlpha.bind(this), null, 'pointer', 'default');
-        UI.UIUtils.installDragHandle(this.colorElement, this.dragStart.bind(this, positionColor.bind(this)), positionColor.bind(this), null, 'pointer', 'default');
+        UI.UIUtils.installDragHandle(this.hueElement, this.dragStart.bind(this, positionHue.bind(this)), positionHue.bind(this), null, 'ew-resize', 'crosshair');
+        UI.UIUtils.installDragHandle(this.alphaElement, this.dragStart.bind(this, positionAlpha.bind(this)), positionAlpha.bind(this), null, 'ew-resize', 'crosshair');
+        UI.UIUtils.installDragHandle(this.colorElement, this.dragStart.bind(this, positionColor.bind(this)), positionColor.bind(this), null, 'move', 'crosshair');
         // Color contrast business.
         if (contrastInfo) {
             this.contrastInfo = contrastInfo;
@@ -302,7 +302,7 @@ export class Spectrum extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
                 case 'ArrowUp':
                     return elementPosition.right + 1;
                 default:
-                    return /** @type {!MouseEvent} */ event.x;
+                    return event.x;
             }
         }
         function positionHue(event) {
@@ -786,7 +786,7 @@ export class Spectrum extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
             contextMenu.defaultSection().appendItem(i18nString(UIStrings.removeAllToTheRight), this.deletePaletteColors.bind(this, colorIndex, true));
         }
         contextMenu.defaultSection().appendItem(i18nString(UIStrings.clearPalette), this.deletePaletteColors.bind(this, -1, true));
-        contextMenu.show();
+        void contextMenu.show();
     }
     deletePaletteColors(colorIndex, toRight) {
         const palette = this.customPaletteSetting.get();
@@ -960,7 +960,7 @@ export class Spectrum extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
     /**
      * If the pasted input is parsable as a color, applies it converting to the current user format
      */
-    pasted(/** @type {!ClipboardEvent} */ event) {
+    pasted(event) {
         if (!event.clipboardData) {
             return;
         }
@@ -1006,6 +1006,7 @@ export class Spectrum extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
         this.innerSetColor(color.hsva(), colorString, undefined /* colorName */, colorFormat, ChangeSource.Input);
     }
     wasShown() {
+        this.registerCSSFiles([spectrumStyles]);
         this.hueAlphaWidth = this.hueElement.offsetWidth;
         this.slideHelperWidth = this.hueSlider.offsetWidth / 2;
         this.dragWidth = this.colorElement.offsetWidth;
@@ -1023,7 +1024,7 @@ export class Spectrum extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
             this.contrastDetails.removeEventListener("BackgroundColorPickerWillBeToggled" /* BackgroundColorPickerWillBeToggled */, this.contrastDetailsBackgroundColorPickedToggledBound);
         }
     }
-    toggleColorPicker(enabled, _event) {
+    toggleColorPicker(enabled) {
         if (enabled === undefined) {
             enabled = !this.colorPickerButton.toggled();
         }
@@ -1041,8 +1042,7 @@ export class Spectrum extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
             Host.InspectorFrontendHost.InspectorFrontendHostInstance.events.removeEventListener(Host.InspectorFrontendHostAPI.Events.EyeDropperPickedColor, this.colorPickedBound);
         }
     }
-    colorPicked(event) {
-        const rgbColor = event.data;
+    colorPicked({ data: rgbColor, }) {
         const rgba = [rgbColor.r, rgbColor.g, rgbColor.b, (rgbColor.a / 2.55 | 0) / 100];
         const color = Common.Color.Color.fromRGBA(rgba);
         this.innerSetColor(color.hsva(), '', undefined /* colorName */, undefined, ChangeSource.Other);
@@ -1076,7 +1076,7 @@ export class PaletteGenerator {
                 stylesheetPromises.push(this.processStylesheet(stylesheet));
             }
         }
-        Promise.all(stylesheetPromises)
+        void Promise.all(stylesheetPromises)
             .catch(error => {
             console.error(error);
         })

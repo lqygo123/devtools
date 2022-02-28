@@ -32,6 +32,7 @@
 import * as i18n from '../../../../core/i18n/i18n.js';
 import * as UI from '../../legacy.js';
 import { SourceFrameImpl } from './SourceFrame.js';
+import resourceSourceFrameStyles from './resourceSourceFrame.css.legacy.js';
 const UIStrings = {
     /**
     *@description Text to find an item
@@ -41,32 +42,35 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/source_frame/ResourceSourceFrame.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class ResourceSourceFrame extends SourceFrameImpl {
+    givenContentType;
     resourceInternal;
-    constructor(resource, autoPrettyPrint, codeMirrorOptions) {
-        super(() => resource.requestContent(), codeMirrorOptions);
+    constructor(resource, givenContentType, options) {
+        super(() => resource.requestContent(), options);
+        this.givenContentType = givenContentType;
         this.resourceInternal = resource;
     }
-    static createSearchableView(resource, highlighterType, autoPrettyPrint) {
-        return new SearchableContainer(resource, highlighterType, autoPrettyPrint);
+    static createSearchableView(resource, contentType, autoPrettyPrint) {
+        return new SearchableContainer(resource, contentType, autoPrettyPrint);
+    }
+    getContentType() {
+        return this.givenContentType;
     }
     get resource() {
         return this.resourceInternal;
     }
-    populateTextAreaContextMenu(contextMenu, _lineNumber, _columnNumber) {
+    populateTextAreaContextMenu(contextMenu, lineNumber, columnNumber) {
+        super.populateTextAreaContextMenu(contextMenu, lineNumber, columnNumber);
         contextMenu.appendApplicableItems(this.resourceInternal);
-        return Promise.resolve();
     }
 }
 export class SearchableContainer extends UI.Widget.VBox {
     sourceFrame;
-    constructor(resource, highlighterType, autoPrettyPrint) {
+    constructor(resource, contentType, autoPrettyPrint) {
         super(true);
-        this.registerRequiredCSS('ui/legacy/components/source_frame/resourceSourceFrame.css');
-        const sourceFrame = new ResourceSourceFrame(resource, autoPrettyPrint);
+        this.registerRequiredCSS(resourceSourceFrameStyles);
+        const sourceFrame = new ResourceSourceFrame(resource, contentType);
         this.sourceFrame = sourceFrame;
-        sourceFrame.setHighlighterType(highlighterType);
-        const canPrettyPrint = sourceFrame.resource.contentType().isDocumentOrScriptOrStyleSheet() ||
-            sourceFrame.highlighterType() === 'application/json';
+        const canPrettyPrint = sourceFrame.resource.contentType().isDocumentOrScriptOrStyleSheet() || contentType === 'application/json';
         sourceFrame.setCanPrettyPrint(canPrettyPrint, autoPrettyPrint);
         const searchableView = new UI.SearchableView.SearchableView(sourceFrame, sourceFrame);
         searchableView.element.classList.add('searchable-view');
@@ -75,12 +79,12 @@ export class SearchableContainer extends UI.Widget.VBox {
         sourceFrame.setSearchableView(searchableView);
         searchableView.show(this.contentElement);
         const toolbar = new UI.Toolbar.Toolbar('toolbar', this.contentElement);
-        sourceFrame.toolbarItems().then(items => {
+        void sourceFrame.toolbarItems().then(items => {
             items.map(item => toolbar.appendToolbarItem(item));
         });
     }
     async revealPosition(lineNumber, columnNumber) {
-        this.sourceFrame.revealPosition(lineNumber, columnNumber, true);
+        this.sourceFrame.revealPosition({ lineNumber, columnNumber }, true);
     }
 }
 //# sourceMappingURL=ResourceSourceFrame.js.map

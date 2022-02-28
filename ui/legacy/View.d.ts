@@ -6,6 +6,7 @@ export interface View {
     viewId(): string;
     title(): string;
     isCloseable(): boolean;
+    isPreviewFeature(): boolean;
     isTransient(): boolean;
     toolbarItems(): Promise<ToolbarItem[]>;
     widget(): Promise<Widget>;
@@ -22,6 +23,7 @@ export declare class SimpleView extends VBox implements View {
     widget(): Promise<Widget>;
     revealView(): Promise<void>;
     disposeView(): void;
+    isPreviewFeature(): boolean;
 }
 export interface ViewLocation {
     appendApplicableItems(locationName: string): void;

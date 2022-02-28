@@ -1,6 +1,6 @@
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
-export declare class SecurityModel extends SDK.SDKModel.SDKModel {
+export declare class SecurityModel extends SDK.SDKModel.SDKModel<EventTypes> {
     private readonly dispatcher;
     private readonly securityAgent;
     constructor(target: SDK.Target.Target);
@@ -11,6 +11,9 @@ export declare class SecurityModel extends SDK.SDKModel.SDKModel {
 export declare enum Events {
     VisibleSecurityStateChanged = "VisibleSecurityStateChanged"
 }
+export declare type EventTypes = {
+    [Events.VisibleSecurityStateChanged]: PageVisibleSecurityState;
+};
 export declare const SummaryMessages: {
     [x: string]: () => string;
 };

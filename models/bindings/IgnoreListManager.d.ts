@@ -2,9 +2,7 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as Workspace from '../workspace/workspace.js';
 import type { DebuggerWorkspaceBinding } from './DebuggerWorkspaceBinding.js';
 export declare class IgnoreListManager implements SDK.TargetManager.SDKModelObserver<SDK.DebuggerModel.DebuggerModel> {
-    private readonly debuggerWorkspaceBinding;
-    private readonly listeners;
-    private readonly isIgnoreListedURLCache;
+    #private;
     private constructor();
     static instance(opts?: {
         forceNew: boolean | null;

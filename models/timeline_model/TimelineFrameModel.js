@@ -36,6 +36,7 @@ export class TimelineFrameModel {
     categoryMapper;
     frames;
     frameById;
+    beginFrameQueue;
     minimumRecordTime;
     lastFrame;
     mainFrameCommitted;
@@ -92,6 +93,7 @@ export class TimelineFrameModel {
         this.minimumRecordTime = Infinity;
         this.frames = [];
         this.frameById = {};
+        this.beginFrameQueue = new TimelineFrameBeginFrameQueue();
         this.lastFrame = null;
         this.lastLayerTree = null;
         this.mainFrameCommitted = false;
@@ -106,19 +108,24 @@ export class TimelineFrameModel {
         this.layerTreeId = null;
         this.currentTaskTimeByCategory = {};
     }
-    handleBeginFrame(startTime) {
+    handleBeginFrame(startTime, seqId) {
         if (!this.lastFrame) {
             this.startFrame(startTime);
         }
         this.lastBeginFrame = startTime;
+        this.beginFrameQueue.addFrameIfNotExists(seqId, startTime, false);
     }
-    handleDroppedFrame(startTime) {
+    handleDroppedFrame(startTime, seqId) {
         if (!this.lastFrame) {
             this.startFrame(startTime);
         }
-        this.lastDroppedFrame = startTime;
+        // This line handles the case where no BeginFrame event is issued for
+        // the dropped frame. In this situation, add a BeginFrame to the queue
+        // as if it actually occurred.
+        this.beginFrameQueue.addFrameIfNotExists(seqId, startTime, true);
+        this.beginFrameQueue.setDropped(seqId, true);
     }
-    handleDrawFrame(startTime) {
+    handleDrawFrame(startTime, seqId) {
         if (!this.lastFrame) {
             this.startFrame(startTime);
             return;
@@ -131,20 +138,24 @@ export class TimelineFrameModel {
                     (this.lastBeginFrame || this.lastNeedsBeginFrame);
                 if (idleTimeEnd > this.lastFrame.startTime) {
                     this.lastFrame.idle = true;
-                    this.startFrame(idleTimeEnd);
-                    if (this.framePendingActivation) {
-                        this.commitPendingFrame();
-                    }
                     this.lastBeginFrame = null;
                 }
                 this.lastNeedsBeginFrame = null;
             }
-            if (this.lastDroppedFrame) {
-                this.lastFrame.dropped = true;
-                this.startFrame(this.lastDroppedFrame);
-                this.lastDroppedFrame = null;
+            const framesToVisualize = this.beginFrameQueue.processPendingBeginFramesOnDrawFrame(seqId);
+            // Visualize the current frame and all pending frames before it.
+            for (const frame of framesToVisualize) {
+                const isLastFrameIdle = this.lastFrame.idle;
+                // If |frame| is the first frame after an idle period, the CPU time
+                // will be logged ("committed") under |frame| if applicable.
+                this.startFrame(frame.startTime);
+                if (isLastFrameIdle && this.framePendingActivation) {
+                    this.commitPendingFrame();
+                }
+                if (frame.isDropped) {
+                    this.lastFrame.dropped = true;
+                }
             }
-            this.startFrame(startTime);
         }
         this.mainFrameCommitted = false;
     }
@@ -249,23 +260,10 @@ export class TimelineFrameModel {
         }
         const timestamp = event.startTime;
         if (event.name === RecordType.BeginFrame) {
-            this.handleBeginFrame(timestamp);
+            this.handleBeginFrame(timestamp, event.args['frameSeqId']);
         }
         else if (event.name === RecordType.DrawFrame) {
-            if (event.phase === 'I') {
-                // Legacy behavior: If DrawFrame is an instant event, then it is not
-                // supposed to contain frame presentation info; use the event time of
-                // DrawFrame in this case.
-                // TODO(mjzhang): Remove this legacy support when the migration to
-                // using presentation time as frame boundary is stablized.
-                this.handleDrawFrame(timestamp);
-            }
-            else if (event.args['presentationTimestamp']) {
-                // Current behavior: Use the presentation timestamp. If the non-instant
-                // DrawFrame event contains no such timestamp, then the presentation did
-                // not happen and therefore the event will not be processed.
-                this.handleDrawFrame(event.args['presentationTimestamp'] / 1000);
-            }
+            this.handleDrawFrame(timestamp, event.args['frameSeqId']);
         }
         else if (event.name === RecordType.ActivateLayerTree) {
             this.handleActivateLayerTree();
@@ -277,7 +275,7 @@ export class TimelineFrameModel {
             this.handleNeedFrameChanged(timestamp, event.args['data'] && event.args['data']['needsBeginFrame']);
         }
         else if (event.name === RecordType.DroppedFrame) {
-            this.handleDroppedFrame(timestamp);
+            this.handleDroppedFrame(timestamp, event.args['frameSeqId']);
         }
     }
     addMainThreadTraceEvent(event) {
@@ -443,6 +441,69 @@ export class PendingFrame {
         this.paints = [];
         this.mainFrameId = undefined;
         this.triggerTime = triggerTime;
+    }
+}
+// The parameters of an impl-side BeginFrame.
+class BeginFrameInfo {
+    seqId;
+    startTime;
+    isDropped;
+    constructor(seqId, startTime, isDropped) {
+        this.seqId = seqId;
+        this.startTime = startTime;
+        this.isDropped = isDropped;
+    }
+}
+// A queue of BeginFrames pending visualization.
+// BeginFrames are added into this queue as they occur; later when their
+// corresponding DrawFrames occur (or lack thereof), the BeginFrames are removed
+// from the queue and their timestamps are used for visualization.
+export class TimelineFrameBeginFrameQueue {
+    queueFrames;
+    // Maps frameSeqId to BeginFrameInfo.
+    mapFrames;
+    constructor() {
+        this.queueFrames = [];
+        this.mapFrames = {};
+    }
+    // Add a BeginFrame to the queue, if it does not already exit.
+    addFrameIfNotExists(seqId, startTime, isDropped) {
+        if (!(seqId in this.mapFrames)) {
+            this.mapFrames[seqId] = new BeginFrameInfo(seqId, startTime, isDropped);
+            this.queueFrames.push(seqId);
+        }
+    }
+    // Set a BeginFrame in queue as dropped.
+    setDropped(seqId, isDropped) {
+        if (seqId in this.mapFrames) {
+            this.mapFrames[seqId].isDropped = isDropped;
+        }
+    }
+    processPendingBeginFramesOnDrawFrame(seqId) {
+        const framesToVisualize = [];
+        // Do not visualize this frame in the rare case where the current DrawFrame
+        // does not have a corresponding BeginFrame.
+        if (seqId in this.mapFrames) {
+            // Pop all BeginFrames before the current frame, and add only the dropped
+            // ones in |frames_to_visualize|.
+            // Non-dropped frames popped here are BeginFrames that are never
+            // drawn (but not considered dropped either for some reason).
+            // Those frames do not require an proactive visualization effort and will
+            // be naturally presented as continuationss of other frames.
+            while (this.queueFrames[0] !== seqId) {
+                const currentSeqId = this.queueFrames[0];
+                if (this.mapFrames[currentSeqId].isDropped) {
+                    framesToVisualize.push(this.mapFrames[currentSeqId]);
+                }
+                delete this.mapFrames[currentSeqId];
+                this.queueFrames.shift();
+            }
+            // Pop the BeginFrame associated with the current DrawFrame.
+            framesToVisualize.push(this.mapFrames[seqId]);
+            delete this.mapFrames[seqId];
+            this.queueFrames.shift();
+        }
+        return framesToVisualize;
     }
 }
 //# sourceMappingURL=TimelineFrameModel.js.map

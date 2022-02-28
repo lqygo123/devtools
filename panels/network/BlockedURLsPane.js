@@ -65,7 +65,7 @@ export class BlockedURLsPane extends UI.Widget.VBox {
         super(true);
         this.manager = SDK.NetworkManager.MultitargetNetworkManager.instance();
         this.manager.addEventListener(SDK.NetworkManager.MultitargetNetworkManager.Events.BlockedPatternsChanged, () => {
-            this.update();
+            void this.update();
         }, this);
         this.toolbar = new UI.Toolbar.Toolbar('', this.contentElement);
         this.enabledCheckbox = new UI.Toolbar.ToolbarCheckbox(i18nString(UIStrings.enableNetworkRequestBlocking), undefined, this.toggleEnabled.bind(this));
@@ -85,7 +85,7 @@ export class BlockedURLsPane extends UI.Widget.VBox {
         this.blockedCountForUrl = new Map();
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.NetworkManager.NetworkManager, SDK.NetworkManager.Events.RequestFinished, this.onRequestFinished, this);
         this.updateThrottler = new Common.Throttler.Throttler(200);
-        this.update();
+        void this.update();
     }
     static instance(opts = { forceNew: null }) {
         const { forceNew } = opts;
@@ -110,18 +110,20 @@ export class BlockedURLsPane extends UI.Widget.VBox {
         this.manager.setBlockingEnabled(true);
         this.list.addNewItem(0, { url: '', enabled: true });
     }
-    renderItem(pattern, _editable) {
+    renderItem(pattern, editable) {
         const count = this.blockedRequestsCount(pattern.url);
         const element = document.createElement('div');
         element.classList.add('blocked-url');
         const checkbox = element.createChild('input', 'blocked-url-checkbox');
         checkbox.type = 'checkbox';
         checkbox.checked = pattern.enabled;
-        checkbox.disabled = !this.manager.blockingEnabled();
+        checkbox.disabled = !editable;
         element.createChild('div', 'blocked-url-label').textContent = pattern.url;
         element.createChild('div', 'blocked-url-count').textContent = i18nString(UIStrings.dBlocked, { PH1: count });
-        element.addEventListener('click', event => this.togglePattern(pattern, event));
-        checkbox.addEventListener('click', event => this.togglePattern(pattern, event));
+        if (editable) {
+            element.addEventListener('click', event => this.togglePattern(pattern, event));
+            checkbox.addEventListener('click', event => this.togglePattern(pattern, event));
+        }
         return element;
     }
     togglePattern(pattern, event) {
@@ -132,7 +134,7 @@ export class BlockedURLsPane extends UI.Widget.VBox {
     }
     toggleEnabled() {
         this.manager.setBlockingEnabled(!this.manager.blockingEnabled());
-        this.update();
+        void this.update();
     }
     removeItemRequested(pattern, index) {
         const patterns = this.manager.blockedPatterns();
@@ -191,7 +193,7 @@ export class BlockedURLsPane extends UI.Widget.VBox {
         this.enabledCheckbox.setChecked(enabled);
         this.list.clear();
         for (const pattern of this.manager.blockedPatterns()) {
-            this.list.appendItem(pattern, true);
+            this.list.appendItem(pattern, enabled);
         }
         return Promise.resolve();
     }
@@ -225,14 +227,14 @@ export class BlockedURLsPane extends UI.Widget.VBox {
     }
     reset() {
         this.blockedCountForUrl.clear();
-        this.updateThrottler.schedule(this.update.bind(this));
+        void this.updateThrottler.schedule(this.update.bind(this));
     }
     onRequestFinished(event) {
         const request = event.data;
         if (request.wasBlocked()) {
             const count = this.blockedCountForUrl.get(request.url()) || 0;
             this.blockedCountForUrl.set(request.url(), count + 1);
-            this.updateThrottler.schedule(this.update.bind(this));
+            void this.updateThrottler.schedule(this.update.bind(this));
         }
     }
     wasShown() {

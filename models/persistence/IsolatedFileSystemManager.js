@@ -123,7 +123,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
             for (let i = 0; i < fileSystems.length; ++i) {
                 promises.push(this.innerAddFileSystem(fileSystems[i], false));
             }
-            Promise.all(promises).then(onFileSystemsAdded);
+            void Promise.all(promises).then(onFileSystemsAdded);
         }
         function onFileSystemsAdded(fileSystems) {
             fulfill(fileSystems.filter(fs => Boolean(fs)));
@@ -143,7 +143,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
     }
     innerAddFileSystem(fileSystem, dispatchEvent) {
         const embedderPath = fileSystem.fileSystemPath;
-        const fileSystemURL = Common.ParsedURL.ParsedURL.platformPathToURL(fileSystem.fileSystemPath);
+        const fileSystemURL = Common.ParsedURL.ParsedURL.rawPathToUrlString(fileSystem.fileSystemPath);
         const promise = IsolatedFileSystem.create(this, fileSystemURL, embedderPath, fileSystem.type, fileSystem.fileSystemName, fileSystem.rootURL);
         return promise.then(storeFileSystem.bind(this));
         function storeFileSystem(fileSystem) {
@@ -162,8 +162,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         this.dispatchEventToListeners(Events.FileSystemAdded, fileSystem);
     }
     onFileSystemAdded(event) {
-        const errorMessage = event.data['errorMessage'];
-        const fileSystem = event.data['fileSystem'];
+        const { errorMessage, fileSystem } = event.data;
         if (errorMessage) {
             if (errorMessage !== '<selection cancelled>') {
                 Common.Console.Console.instance().error(i18nString(UIStrings.unableToAddFilesystemS, { PH1: errorMessage }));
@@ -175,7 +174,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
             this.fileSystemRequestResolve = null;
         }
         else if (fileSystem) {
-            this.innerAddFileSystem(fileSystem, true).then(fileSystem => {
+            void this.innerAddFileSystem(fileSystem, true).then(fileSystem => {
                 if (this.fileSystemRequestResolve) {
                     this.fileSystemRequestResolve.call(null, fileSystem);
                     this.fileSystemRequestResolve = null;
@@ -185,7 +184,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
     }
     onFileSystemRemoved(event) {
         const embedderPath = event.data;
-        const fileSystemPath = Common.ParsedURL.ParsedURL.platformPathToURL(embedderPath);
+        const fileSystemPath = Common.ParsedURL.ParsedURL.rawPathToUrlString(embedderPath);
         const isolatedFileSystem = this.fileSystemsInternal.get(fileSystemPath);
         if (!isolatedFileSystem) {
             return;
@@ -204,7 +203,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         function groupFilePathsIntoFileSystemPaths(embedderPaths) {
             const paths = new Platform.MapUtilities.Multimap();
             for (const embedderPath of embedderPaths) {
-                const filePath = Common.ParsedURL.ParsedURL.platformPathToURL(embedderPath);
+                const filePath = Common.ParsedURL.ParsedURL.rawPathToUrlString(embedderPath);
                 for (const fileSystemPath of this.fileSystemsInternal.keys()) {
                     const fileSystem = this.fileSystemsInternal.get(fileSystemPath);
                     if (fileSystem && fileSystem.isFileExcluded(embedderPath)) {
@@ -240,8 +239,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         return requestId;
     }
     onIndexingTotalWorkCalculated(event) {
-        const requestId = event.data['requestId'];
-        const totalWork = event.data['totalWork'];
+        const { requestId, totalWork } = event.data;
         const progress = this.progresses.get(requestId);
         if (!progress) {
             return;
@@ -249,8 +247,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         progress.setTotalWork(totalWork);
     }
     onIndexingWorked(event) {
-        const requestId = event.data['requestId'];
-        const worked = event.data['worked'];
+        const { requestId, worked } = event.data;
         const progress = this.progresses.get(requestId);
         if (!progress) {
             return;
@@ -262,7 +259,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         }
     }
     onIndexingDone(event) {
-        const requestId = event.data['requestId'];
+        const { requestId } = event.data;
         const progress = this.progresses.get(requestId);
         if (!progress) {
             return;
@@ -271,8 +268,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         this.progresses.delete(requestId);
     }
     onSearchCompleted(event) {
-        const requestId = event.data['requestId'];
-        const files = event.data['files'];
+        const { requestId, files } = event.data;
         const callback = this.callbacks.get(requestId);
         if (!callback) {
             return;

@@ -3,7 +3,7 @@ import type { MarkdownIssueDescription } from './MarkdownIssueDescription.js';
 import { Issue, IssueKind, IssueCategory } from './Issue.js';
 import type * as SDK from '../../core/sdk/sdk.js';
 export declare class SharedArrayBufferIssue extends Issue {
-    private issueDetails;
+    #private;
     constructor(issueDetails: Protocol.Audits.SharedArrayBufferIssueDetails, issuesModel: SDK.IssuesModel.IssuesModel);
     getCategory(): IssueCategory;
     details(): Protocol.Audits.SharedArrayBufferIssueDetails;

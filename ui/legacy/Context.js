@@ -33,7 +33,7 @@ export class Context {
     dispatchFlavorChange(flavorType, flavorValue) {
         for (const extension of getRegisteredListeners()) {
             if (extension.contextTypes().includes(flavorType)) {
-                extension.loadListener().then(instance => instance.flavorChanged(flavorValue));
+                void extension.loadListener().then(instance => instance.flavorChanged(flavorValue));
             }
         }
         const dispatcher = this.eventDispatchers.get(flavorType);

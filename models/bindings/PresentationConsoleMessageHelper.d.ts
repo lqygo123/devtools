@@ -9,10 +9,7 @@ export declare class PresentationConsoleMessageManager implements SDK.TargetMana
     private consoleCleared;
 }
 export declare class PresentationConsoleMessageHelper {
-    private readonly debuggerModel;
-    private pendingConsoleMessages;
-    private presentationConsoleMessages;
-    private readonly locationPool;
+    #private;
     constructor(debuggerModel: SDK.DebuggerModel.DebuggerModel);
     consoleMessageAdded(message: SDK.ConsoleModel.ConsoleMessage): void;
     private rawLocation;
@@ -23,7 +20,7 @@ export declare class PresentationConsoleMessageHelper {
     private debuggerReset;
 }
 export declare class PresentationConsoleMessage extends Workspace.UISourceCode.Message {
-    private uiSourceCode?;
+    #private;
     constructor(message: SDK.ConsoleModel.ConsoleMessage, rawLocation: SDK.DebuggerModel.Location, locationPool: LiveLocationPool);
     private updateLocation;
     dispose(): void;

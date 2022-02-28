@@ -1,5 +1,3 @@
-import * as ApplicationCacheItemsView from './ApplicationCacheItemsView.js';
-import * as ApplicationCacheModel from './ApplicationCacheModel.js';
 import * as ApplicationPanelSidebar from './ApplicationPanelSidebar.js';
 import * as AppManifestView from './AppManifestView.js';
 import * as BackgroundServiceModel from './BackgroundServiceModel.js';
@@ -13,10 +11,11 @@ import * as DOMStorageModel from './DOMStorageModel.js';
 import * as IndexedDBModel from './IndexedDBModel.js';
 import * as IndexedDBViews from './IndexedDBViews.js';
 import * as OpenedWindowDetailsView from './OpenedWindowDetailsView.js';
+import * as ReportingApiReportsView from './ReportingApiReportsView.js';
 import * as ResourcesPanel from './ResourcesPanel.js';
 import * as ServiceWorkerCacheViews from './ServiceWorkerCacheViews.js';
 import * as ServiceWorkersView from './ServiceWorkersView.js';
 import * as ServiceWorkerUpdateCycleView from './ServiceWorkerUpdateCycleView.js';
 import * as StorageItemsView from './StorageItemsView.js';
 import * as StorageView from './StorageView.js';
-export { ApplicationCacheItemsView, ApplicationCacheModel, ApplicationPanelSidebar, AppManifestView, BackgroundServiceModel, BackgroundServiceView, CookieItemsView, DatabaseModel, DatabaseQueryView, DatabaseTableView, DOMStorageItemsView, DOMStorageModel, IndexedDBModel, IndexedDBViews, OpenedWindowDetailsView, ResourcesPanel, ServiceWorkerCacheViews, ServiceWorkersView, ServiceWorkerUpdateCycleView, StorageItemsView, StorageView, };
+export { ApplicationPanelSidebar, AppManifestView, BackgroundServiceModel, BackgroundServiceView, CookieItemsView, DatabaseModel, DatabaseQueryView, DatabaseTableView, DOMStorageItemsView, DOMStorageModel, IndexedDBModel, IndexedDBViews, OpenedWindowDetailsView, ReportingApiReportsView, ResourcesPanel, ServiceWorkerCacheViews, ServiceWorkersView, ServiceWorkerUpdateCycleView, StorageItemsView, StorageView, };

@@ -57,13 +57,13 @@ export class DOMStorage extends Common.ObjectWrapper.ObjectWrapper {
         return this.model.agent.invoke_getDOMStorageItems({ storageId: this.id }).then(({ entries }) => entries);
     }
     setItem(key, value) {
-        this.model.agent.invoke_setDOMStorageItem({ storageId: this.id, key, value });
+        void this.model.agent.invoke_setDOMStorageItem({ storageId: this.id, key, value });
     }
     removeItem(key) {
-        this.model.agent.invoke_removeDOMStorageItem({ storageId: this.id, key });
+        void this.model.agent.invoke_removeDOMStorageItem({ storageId: this.id, key });
     }
     clear() {
-        this.model.agent.invoke_clear({ storageId: this.id });
+        void this.model.agent.invoke_clear({ storageId: this.id });
     }
 }
 (function (DOMStorage) {
@@ -100,7 +100,7 @@ export class DOMStorageModel extends SDK.SDKModel.SDKModel {
                 this.addOrigin(securityOrigin);
             }
         }
-        this.agent.invoke_enable();
+        void this.agent.invoke_enable();
         this.enabled = true;
     }
     clearForOrigin(origin) {

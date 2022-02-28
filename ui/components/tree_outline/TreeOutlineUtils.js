@@ -153,23 +153,23 @@ export const getNodeChildren = async (node) => {
  *
  * And you look for F, you'll get back [A, D, F]
  */
-export const getPathToTreeNode = async (tree, nodeToFind) => {
+export const getPathToTreeNode = async (tree, nodeIdToFind) => {
     for (const rootNode of tree) {
-        const foundPathOrNull = await getPathToTreeNodeRecursively(rootNode, nodeToFind, [rootNode]);
+        const foundPathOrNull = await getPathToTreeNodeRecursively(rootNode, nodeIdToFind, [rootNode]);
         if (foundPathOrNull !== null) {
             return foundPathOrNull;
         }
     }
     return null;
 };
-const getPathToTreeNodeRecursively = async (currentNode, nodeToFind, pathToNode) => {
-    if (currentNode.id === nodeToFind.id) {
+const getPathToTreeNodeRecursively = async (currentNode, nodeIdToFind, pathToNode) => {
+    if (currentNode.id === nodeIdToFind) {
         return pathToNode;
     }
     if (currentNode.children) {
         const children = await getNodeChildren(currentNode);
         for (const child of children) {
-            const foundPathOrNull = await getPathToTreeNodeRecursively(child, nodeToFind, [...pathToNode, child]);
+            const foundPathOrNull = await getPathToTreeNodeRecursively(child, nodeIdToFind, [...pathToNode, child]);
             if (foundPathOrNull !== null) {
                 return foundPathOrNull;
             }

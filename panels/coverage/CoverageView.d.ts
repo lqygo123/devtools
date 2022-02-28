@@ -1,7 +1,4 @@
-import * as Common from '../../core/common/common.js';
-import * as SourceFrame from '../../ui/legacy/components/source_frame/source_frame.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import type * as Workspace from '../../models/workspace/workspace.js';
 export declare class CoverageView extends UI.Widget.VBox {
     private model;
     private decorationManager;
@@ -59,17 +56,4 @@ export declare class ActionDelegate implements UI.ActionRegistration.ActionDeleg
         forceNew: boolean | null;
     }): ActionDelegate;
     private innerHandleAction;
-}
-export declare class LineDecorator implements SourceFrame.SourceFrame.LineDecorator {
-    static instance({ forceNew }?: {
-        forceNew: boolean;
-    }): LineDecorator;
-    private readonly listeners;
-    constructor();
-    decorate(uiSourceCode: Workspace.UISourceCode.UISourceCode, textEditor: SourceFrame.SourcesTextEditor.SourcesTextEditor): void;
-    private innerDecorate;
-    makeGutterClickHandler(url: string): (arg0: Common.EventTarget.EventTargetEvent) => void;
-    private installGutter;
-    private uninstallGutter;
-    static readonly GUTTER_TYPE = "CodeMirror-gutter-coverage";
 }

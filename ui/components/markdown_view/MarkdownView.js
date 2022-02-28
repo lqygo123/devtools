@@ -10,27 +10,27 @@ const html = LitHtml.html;
 const render = LitHtml.render;
 export class MarkdownView extends HTMLElement {
     static litTagName = LitHtml.literal `devtools-markdown-view`;
-    shadow = this.attachShadow({ mode: 'open' });
+    #shadow = this.attachShadow({ mode: 'open' });
     // TODO(crbug.com/1108699): Replace with `Marked.Marked.Token[]` once AST types are fixed upstream.
-    tokenData = [];
+    #tokenData = [];
     connectedCallback() {
-        this.shadow.adoptedStyleSheets = [markdownViewStyles];
+        this.#shadow.adoptedStyleSheets = [markdownViewStyles];
     }
     set data(data) {
-        this.tokenData = data.tokens;
-        this.update();
+        this.#tokenData = data.tokens;
+        this.#update();
     }
-    update() {
-        this.render();
+    #update() {
+        this.#render();
     }
-    render() {
+    #render() {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
         render(html `
       <div class='message'>
-        ${this.tokenData.map(renderToken)}
+        ${this.#tokenData.map(renderToken)}
       </div>
-    `, this.shadow);
+    `, this.#shadow, { host: this });
         // clang-format on
     }
 }
@@ -43,7 +43,6 @@ const renderChildTokens = (token) => {
 const unescape = (text) => {
     // Unescape will get rid of the escaping done by Marked to avoid double escaping due to escaping it also with Lit-html
     // Table taken from: front_end/third_party/marked/package/src/helpers.js
-    /** @type {Map<string,string>} */
     const escapeReplacements = new Map([
         ['&amp;', '&'],
         ['&lt;', '<'],
@@ -78,11 +77,11 @@ const tokenRenderers = new Map([
     ['space', () => html ``],
     [
         'link',
-        (token) => html `<${MarkdownLink.litTagName} .data="${{ key: token.href, title: token.text }}"></${MarkdownLink.litTagName}>`,
+        (token) => html `<${MarkdownLink.litTagName} .data=${{ key: token.href, title: token.text }}></${MarkdownLink.litTagName}>`,
     ],
     [
         'image',
-        (token) => html `<${MarkdownImage.litTagName} .data="${{ key: token.href, title: token.text }}"></${MarkdownImage.litTagName}>`,
+        (token) => html `<${MarkdownImage.litTagName} .data=${{ key: token.href, title: token.text }}></${MarkdownImage.litTagName}>`,
     ],
 ]);
 // TODO(crbug.com/1108699): Fix types when they are available.

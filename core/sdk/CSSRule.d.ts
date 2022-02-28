@@ -47,15 +47,13 @@ export declare class CSSStyleRule extends CSSRule {
     rebase(edit: Edit): void;
 }
 export declare class CSSKeyframesRule {
-    private readonly cssModel;
-    private readonly animationName;
-    private readonly keyframesInternal;
+    #private;
     constructor(cssModel: CSSModel, payload: Protocol.CSS.CSSKeyframesRule);
     name(): CSSValue;
     keyframes(): CSSKeyframeRule[];
 }
 export declare class CSSKeyframeRule extends CSSRule {
-    private keyText;
+    #private;
     constructor(cssModel: CSSModel, payload: Protocol.CSS.CSSKeyframeRule);
     key(): CSSValue;
     private reinitializeKey;

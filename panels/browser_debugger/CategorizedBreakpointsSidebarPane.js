@@ -14,32 +14,32 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/browser_debugger/CategorizedBreakpointsSidebarPane.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class CategorizedBreakpointsSidebarPane extends UI.Widget.VBox {
-    categoriesTreeOutline;
-    viewId;
-    detailsPausedReason;
-    categories;
-    breakpoints;
-    highlightedElement;
+    #categoriesTreeOutline;
+    #viewId;
+    #detailsPausedReason;
+    #categories;
+    #breakpoints;
+    #highlightedElement;
     constructor(categories, breakpoints, viewId, detailsPausedReason) {
         super(true);
-        this.categoriesTreeOutline = new UI.TreeOutline.TreeOutlineInShadow();
-        this.categoriesTreeOutline.setShowSelectionOnKeyboardFocus(/* show */ true);
-        this.contentElement.appendChild(this.categoriesTreeOutline.element);
-        this.viewId = viewId;
-        this.detailsPausedReason = detailsPausedReason;
-        this.categories = new Map();
+        this.#categoriesTreeOutline = new UI.TreeOutline.TreeOutlineInShadow();
+        this.#categoriesTreeOutline.setShowSelectionOnKeyboardFocus(/* show */ true);
+        this.contentElement.appendChild(this.#categoriesTreeOutline.element);
+        this.#viewId = viewId;
+        this.#detailsPausedReason = detailsPausedReason;
+        this.#categories = new Map();
         for (const category of categories) {
-            if (!this.categories.has(category)) {
+            if (!this.#categories.has(category)) {
                 this.createCategory(category);
             }
         }
         if (categories.length > 0) {
-            const firstCategory = this.categories.get(categories[0]);
+            const firstCategory = this.#categories.get(categories[0]);
             if (firstCategory) {
                 firstCategory.element.select();
             }
         }
-        this.breakpoints = new Map();
+        this.#breakpoints = new Map();
         for (const breakpoint of breakpoints) {
             this.createBreakpoint(breakpoint);
         }
@@ -47,8 +47,14 @@ export class CategorizedBreakpointsSidebarPane extends UI.Widget.VBox {
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DebuggerModel.DebuggerModel, SDK.DebuggerModel.Events.DebuggerResumed, this.update, this);
         UI.Context.Context.instance().addFlavorChangeListener(SDK.Target.Target, this.update, this);
     }
+    get categories() {
+        return this.#categories;
+    }
+    get breakpoints() {
+        return this.#breakpoints;
+    }
     focus() {
-        this.categoriesTreeOutline.forceSelect();
+        this.#categoriesTreeOutline.forceSelect();
     }
     createCategory(name) {
         const labelNode = UI.UIUtils.CheckboxLabel.create(name);
@@ -57,7 +63,7 @@ export class CategorizedBreakpointsSidebarPane extends UI.Widget.VBox {
         const treeElement = new UI.TreeOutline.TreeElement(labelNode);
         treeElement.listItemElement.addEventListener('keydown', event => {
             if (event.key === ' ') {
-                const category = this.categories.get(name);
+                const category = this.#categories.get(name);
                 if (category) {
                     category.checkbox.click();
                 }
@@ -66,8 +72,8 @@ export class CategorizedBreakpointsSidebarPane extends UI.Widget.VBox {
         });
         labelNode.checkboxElement.addEventListener('focus', () => treeElement.listItemElement.focus());
         UI.ARIAUtils.setChecked(treeElement.listItemElement, false);
-        this.categoriesTreeOutline.appendChild(treeElement);
-        this.categories.set(name, { element: treeElement, checkbox: labelNode.checkboxElement });
+        this.#categoriesTreeOutline.appendChild(treeElement);
+        this.#categories.set(name, { element: treeElement, checkbox: labelNode.checkboxElement });
     }
     createBreakpoint(breakpoint) {
         const labelNode = UI.UIUtils.CheckboxLabel.create(breakpoint.title());
@@ -77,7 +83,7 @@ export class CategorizedBreakpointsSidebarPane extends UI.Widget.VBox {
         const treeElement = new UI.TreeOutline.TreeElement(labelNode);
         treeElement.listItemElement.addEventListener('keydown', event => {
             if (event.key === ' ') {
-                const breakpointToClick = this.breakpoints.get(breakpoint);
+                const breakpointToClick = this.#breakpoints.get(breakpoint);
                 if (breakpointToClick) {
                     breakpointToClick.checkbox.click();
                 }
@@ -87,12 +93,12 @@ export class CategorizedBreakpointsSidebarPane extends UI.Widget.VBox {
         labelNode.checkboxElement.addEventListener('focus', () => treeElement.listItemElement.focus());
         UI.ARIAUtils.setChecked(treeElement.listItemElement, false);
         treeElement.listItemElement.createChild('div', 'breakpoint-hit-marker');
-        const category = this.categories.get(breakpoint.category());
+        const category = this.#categories.get(breakpoint.category());
         if (category) {
             category.element.appendChild(treeElement);
         }
         // Better to return that to produce a side-effect
-        this.breakpoints.set(breakpoint, { element: treeElement, checkbox: labelNode.checkboxElement });
+        this.#breakpoints.set(breakpoint, { element: treeElement, checkbox: labelNode.checkboxElement });
     }
     getBreakpointFromPausedDetails(_details) {
         return null;
@@ -101,11 +107,11 @@ export class CategorizedBreakpointsSidebarPane extends UI.Widget.VBox {
         const target = UI.Context.Context.instance().flavor(SDK.Target.Target);
         const debuggerModel = target ? target.model(SDK.DebuggerModel.DebuggerModel) : null;
         const details = debuggerModel ? debuggerModel.debuggerPausedDetails() : null;
-        if (!details || details.reason !== this.detailsPausedReason || !details.auxData) {
-            if (this.highlightedElement) {
-                UI.ARIAUtils.setDescription(this.highlightedElement, '');
-                this.highlightedElement.classList.remove('breakpoint-hit');
-                delete this.highlightedElement;
+        if (!details || details.reason !== this.#detailsPausedReason || !details.auxData) {
+            if (this.#highlightedElement) {
+                UI.ARIAUtils.setDescription(this.#highlightedElement, '');
+                this.#highlightedElement.classList.remove('breakpoint-hit');
+                this.#highlightedElement = undefined;
             }
             return;
         }
@@ -113,29 +119,29 @@ export class CategorizedBreakpointsSidebarPane extends UI.Widget.VBox {
         if (!breakpoint) {
             return;
         }
-        UI.ViewManager.ViewManager.instance().showView(this.viewId);
-        const category = this.categories.get(breakpoint.category());
+        void UI.ViewManager.ViewManager.instance().showView(this.#viewId);
+        const category = this.#categories.get(breakpoint.category());
         if (category) {
             category.element.expand();
         }
-        const matchingBreakpoint = this.breakpoints.get(breakpoint);
+        const matchingBreakpoint = this.#breakpoints.get(breakpoint);
         if (matchingBreakpoint) {
-            this.highlightedElement = matchingBreakpoint.element.listItemElement;
-            UI.ARIAUtils.setDescription(this.highlightedElement, i18nString(UIStrings.breakpointHit));
-            this.highlightedElement.classList.add('breakpoint-hit');
+            this.#highlightedElement = matchingBreakpoint.element.listItemElement;
+            UI.ARIAUtils.setDescription(this.#highlightedElement, i18nString(UIStrings.breakpointHit));
+            this.#highlightedElement.classList.add('breakpoint-hit');
         }
     }
     // Probably can be kept although eventListener does not call this._breakpointCheckboxClicke
     categoryCheckboxClicked(category) {
-        const item = this.categories.get(category);
+        const item = this.#categories.get(category);
         if (!item) {
             return;
         }
         const enabled = item.checkbox.checked;
         UI.ARIAUtils.setChecked(item.element.listItemElement, enabled);
-        for (const breakpoint of this.breakpoints.keys()) {
+        for (const breakpoint of this.#breakpoints.keys()) {
             if (breakpoint.category() === category) {
-                const matchingBreakpoint = this.breakpoints.get(breakpoint);
+                const matchingBreakpoint = this.#breakpoints.get(breakpoint);
                 if (matchingBreakpoint) {
                     matchingBreakpoint.checkbox.checked = enabled;
                     this.toggleBreakpoint(breakpoint, enabled);
@@ -147,7 +153,7 @@ export class CategorizedBreakpointsSidebarPane extends UI.Widget.VBox {
         breakpoint.setEnabled(enabled);
     }
     breakpointCheckboxClicked(breakpoint) {
-        const item = this.breakpoints.get(breakpoint);
+        const item = this.#breakpoints.get(breakpoint);
         if (!item) {
             return;
         }
@@ -156,7 +162,7 @@ export class CategorizedBreakpointsSidebarPane extends UI.Widget.VBox {
         // Put the rest in a separate function
         let hasEnabled = false;
         let hasDisabled = false;
-        for (const other of this.breakpoints.keys()) {
+        for (const other of this.#breakpoints.keys()) {
             if (other.category() === breakpoint.category()) {
                 if (other.enabled()) {
                     hasEnabled = true;
@@ -166,7 +172,7 @@ export class CategorizedBreakpointsSidebarPane extends UI.Widget.VBox {
                 }
             }
         }
-        const category = this.categories.get(breakpoint.category());
+        const category = this.#categories.get(breakpoint.category());
         if (!category) {
             return;
         }
@@ -181,7 +187,7 @@ export class CategorizedBreakpointsSidebarPane extends UI.Widget.VBox {
     }
     wasShown() {
         super.wasShown();
-        this.categoriesTreeOutline.registerCSSFiles([categorizedBreakpointsSidebarPaneStyles]);
+        this.#categoriesTreeOutline.registerCSSFiles([categorizedBreakpointsSidebarPaneStyles]);
     }
 }
 //# sourceMappingURL=CategorizedBreakpointsSidebarPane.js.map

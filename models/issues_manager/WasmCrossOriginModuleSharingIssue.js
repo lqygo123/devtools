@@ -13,16 +13,16 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('models/issues_manager/WasmCrossOriginModuleSharingIssue.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class WasmCrossOriginModuleSharingIssue extends Issue {
-    issueDetails;
+    #issueDetails;
     constructor(issueDetails, issuesModel) {
         super("WasmCrossOriginModuleSharingIssue" /* WasmCrossOriginModuleSharingIssue */, issuesModel);
-        this.issueDetails = issueDetails;
+        this.#issueDetails = issueDetails;
     }
     getCategory() {
         return IssueCategory.Other;
     }
     details() {
-        return this.issueDetails;
+        return this.#issueDetails;
     }
     getDescription() {
         return {
@@ -34,10 +34,10 @@ export class WasmCrossOriginModuleSharingIssue extends Issue {
         };
     }
     primaryKey() {
-        return JSON.stringify(this.issueDetails);
+        return JSON.stringify(this.#issueDetails);
     }
     getKind() {
-        return this.issueDetails.isWarning ? IssueKind.BreakingChange : IssueKind.PageError;
+        return this.#issueDetails.isWarning ? IssueKind.BreakingChange : IssueKind.PageError;
     }
     static fromInspectorIssue(issuesModel, inspectorIssue) {
         const details = inspectorIssue.details.wasmCrossOriginModuleSharingIssue;

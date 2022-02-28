@@ -28,7 +28,39 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as Platform from '../platform/platform.js';
-import * as Root from '../root/root.js';
+/**
+ * http://tools.ietf.org/html/rfc3986#section-5.2.4
+ */
+export function normalizePath(path) {
+    if (path.indexOf('..') === -1 && path.indexOf('.') === -1) {
+        return path;
+    }
+    const normalizedSegments = [];
+    const segments = path.split('/');
+    for (const segment of segments) {
+        if (segment === '.') {
+            continue;
+        }
+        else if (segment === '..') {
+            normalizedSegments.pop();
+        }
+        else if (segment) {
+            normalizedSegments.push(segment);
+        }
+    }
+    let normalizedPath = normalizedSegments.join('/');
+    if (normalizedPath[normalizedPath.length - 1] === '/') {
+        return normalizedPath;
+    }
+    if (path[0] === '/' && normalizedPath) {
+        normalizedPath = '/' + normalizedPath;
+    }
+    if ((path[path.length - 1] === '/') || (segments[segments.length - 1] === '.') ||
+        (segments[segments.length - 1] === '..')) {
+        normalizedPath = normalizedPath + '/';
+    }
+    return normalizedPath;
+}
 export class ParsedURL {
     isValid;
     url;
@@ -42,8 +74,8 @@ export class ParsedURL {
     folderPathComponents;
     lastPathComponent;
     blobInnerScheme;
-    displayNameInternal;
-    dataURLDisplayNameInternal;
+    #displayNameInternal;
+    #dataURLDisplayNameInternal;
     constructor(url) {
         this.isValid = false;
         this.url = url;
@@ -106,19 +138,43 @@ export class ParsedURL {
         }
         return null;
     }
-    static platformPathToURL(fileSystemPath) {
-        fileSystemPath = fileSystemPath.replace(/\\/g, '/');
-        if (!fileSystemPath.startsWith('file://')) {
-            if (fileSystemPath.startsWith('/')) {
-                fileSystemPath = 'file://' + fileSystemPath;
+    static preEncodeSpecialCharactersInPath(path) {
+        // Based on net::FilePathToFileURL. Ideally we would handle
+        // '\\' as well on non-Windows file systems.
+        for (const specialChar of ['%', ';', '#', '?']) {
+            path = path.replaceAll(specialChar, encodeURIComponent(specialChar));
+        }
+        return path;
+    }
+    static rawPathToEncodedPathString(path) {
+        const partiallyEncoded = ParsedURL.preEncodeSpecialCharactersInPath(path);
+        if (path.startsWith('/')) {
+            return new URL(partiallyEncoded, 'file:///').pathname;
+        }
+        // URL prepends a '/'
+        return new URL('/' + partiallyEncoded, 'file:///').pathname.substr(1);
+    }
+    static encodedPathToRawPathString(encPath) {
+        return decodeURIComponent(encPath);
+    }
+    static rawPathToUrlString(fileSystemPath) {
+        let rawPath = fileSystemPath;
+        rawPath = rawPath.replace(/\\/g, '/');
+        if (!rawPath.startsWith('file://')) {
+            if (rawPath.startsWith('/')) {
+                rawPath = 'file://' + rawPath;
             }
             else {
-                fileSystemPath = 'file:///' + fileSystemPath;
+                rawPath = 'file:///' + rawPath;
             }
         }
-        return fileSystemPath;
+        return rawPath;
     }
-    static urlToPlatformPath(fileURL, isWindows) {
+    static relativePathToUrlString(relativePath, baseURL) {
+        const preEncodedPath = ParsedURL.preEncodeSpecialCharactersInPath(relativePath.replace(/\\/g, '/'));
+        return new URL(preEncodedPath, baseURL).toString();
+    }
+    static capFilePrefix(fileURL, isWindows) {
         console.assert(fileURL.startsWith('file://'), 'This must be a file URL.');
         if (isWindows) {
             return fileURL.substr('file:///'.length).replace(/\//g, '\\');
@@ -236,7 +292,7 @@ export class ParsedURL {
         if (hrefPath.charAt(0) !== '/') {
             hrefPath = parsedURL.folderPathComponents + '/' + hrefPath;
         }
-        return securityOrigin + Root.Runtime.Runtime.normalizePath(hrefPath) + hrefSuffix;
+        return securityOrigin + normalizePath(hrefPath) + hrefSuffix;
     }
     static splitLineAndColumn(string) {
         // Only look for line and column numbers in the path to avoid matching port numbers.
@@ -288,8 +344,8 @@ export class ParsedURL {
         return !(/^[A-Za-z][A-Za-z0-9+.-]*:/.test(url));
     }
     get displayName() {
-        if (this.displayNameInternal) {
-            return this.displayNameInternal;
+        if (this.#displayNameInternal) {
+            return this.#displayNameInternal;
         }
         if (this.isDataURL()) {
             return this.dataURLDisplayName();
@@ -300,24 +356,24 @@ export class ParsedURL {
         if (this.isAboutBlank()) {
             return this.url;
         }
-        this.displayNameInternal = this.lastPathComponent;
-        if (!this.displayNameInternal) {
-            this.displayNameInternal = (this.host || '') + '/';
+        this.#displayNameInternal = this.lastPathComponent;
+        if (!this.#displayNameInternal) {
+            this.#displayNameInternal = (this.host || '') + '/';
         }
-        if (this.displayNameInternal === '/') {
-            this.displayNameInternal = this.url;
+        if (this.#displayNameInternal === '/') {
+            this.#displayNameInternal = this.url;
         }
-        return this.displayNameInternal;
+        return this.#displayNameInternal;
     }
     dataURLDisplayName() {
-        if (this.dataURLDisplayNameInternal) {
-            return this.dataURLDisplayNameInternal;
+        if (this.#dataURLDisplayNameInternal) {
+            return this.#dataURLDisplayNameInternal;
         }
         if (!this.isDataURL()) {
             return '';
         }
-        this.dataURLDisplayNameInternal = Platform.StringUtilities.trimEndWithMaxLength(this.url, 20);
-        return this.dataURLDisplayNameInternal;
+        this.#dataURLDisplayNameInternal = Platform.StringUtilities.trimEndWithMaxLength(this.url, 20);
+        return this.#dataURLDisplayNameInternal;
     }
     isAboutBlank() {
         return this.url === 'about:blank';

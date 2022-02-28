@@ -32,5 +32,8 @@ export class SimpleView extends VBox {
     }
     disposeView() {
     }
+    isPreviewFeature() {
+        return false;
+    }
 }
 //# sourceMappingURL=View.js.map

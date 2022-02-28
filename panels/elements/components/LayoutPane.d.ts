@@ -1,5 +1,5 @@
 import type { Setting } from './LayoutPaneUtils.js';
-import { LayoutElement } from './LayoutPaneUtils.js';
+import type { LayoutElement } from './LayoutPaneUtils.js';
 export { LayoutElement };
 export declare class SettingChangedEvent extends Event {
     static readonly eventName = "settingchanged";
@@ -15,27 +15,10 @@ export interface LayoutPaneData {
     flexContainerElements?: LayoutElement[];
 }
 export declare class LayoutPane extends HTMLElement {
+    #private;
     static readonly litTagName: import("../../../ui/lit-html/static.js").Static;
-    private readonly shadow;
-    private settings;
-    private gridElements;
-    private flexContainerElements?;
     constructor();
     set data(data: LayoutPaneData);
-    private onSummaryKeyDown;
-    private render;
-    private getEnumSettings;
-    private getBooleanSettings;
-    private onBooleanSettingChange;
-    private onEnumSettingChange;
-    private onElementToggle;
-    private onElementClick;
-    private onColorChange;
-    private onElementMouseEnter;
-    private onElementMouseLeave;
-    private renderElement;
-    private renderBooleanSetting;
-    private renderEnumSetting;
 }
 declare global {
     interface HTMLElementTagNameMap {

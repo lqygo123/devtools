@@ -19,59 +19,59 @@ export class Segment {
     }
 }
 export class SegmentedRange {
-    segmentsInternal;
-    mergeCallback;
+    #segmentsInternal;
+    #mergeCallback;
     constructor(mergeCallback) {
-        this.segmentsInternal = [];
-        this.mergeCallback = mergeCallback;
+        this.#segmentsInternal = [];
+        this.#mergeCallback = mergeCallback;
     }
     append(newSegment) {
         // 1. Find the proper insertion point for new segment
-        let startIndex = Platform.ArrayUtilities.lowerBound(this.segmentsInternal, newSegment, (a, b) => a.begin - b.begin);
+        let startIndex = Platform.ArrayUtilities.lowerBound(this.#segmentsInternal, newSegment, (a, b) => a.begin - b.begin);
         let endIndex = startIndex;
         let merged = null;
         if (startIndex > 0) {
             // 2. Try mering the preceding segment
-            const precedingSegment = this.segmentsInternal[startIndex - 1];
+            const precedingSegment = this.#segmentsInternal[startIndex - 1];
             merged = this.tryMerge(precedingSegment, newSegment);
             if (merged) {
                 --startIndex;
                 newSegment = merged;
             }
-            else if (this.segmentsInternal[startIndex - 1].end >= newSegment.begin) {
+            else if (this.#segmentsInternal[startIndex - 1].end >= newSegment.begin) {
                 // 2a. If merge failed and segments overlap, adjust preceding segment.
                 // If an old segment entirely contains new one, split it in two.
                 if (newSegment.end < precedingSegment.end) {
-                    this.segmentsInternal.splice(startIndex, 0, new Segment(newSegment.end, precedingSegment.end, precedingSegment.data));
+                    this.#segmentsInternal.splice(startIndex, 0, new Segment(newSegment.end, precedingSegment.end, precedingSegment.data));
                 }
                 precedingSegment.end = newSegment.begin;
             }
         }
         // 3. Consume all segments that are entirely covered by the new one.
-        while (endIndex < this.segmentsInternal.length && this.segmentsInternal[endIndex].end <= newSegment.end) {
+        while (endIndex < this.#segmentsInternal.length && this.#segmentsInternal[endIndex].end <= newSegment.end) {
             ++endIndex;
         }
         // 4. Merge or adjust the succeeding segment if it overlaps.
-        if (endIndex < this.segmentsInternal.length) {
-            merged = this.tryMerge(newSegment, this.segmentsInternal[endIndex]);
+        if (endIndex < this.#segmentsInternal.length) {
+            merged = this.tryMerge(newSegment, this.#segmentsInternal[endIndex]);
             if (merged) {
                 endIndex++;
                 newSegment = merged;
             }
-            else if (newSegment.intersects(this.segmentsInternal[endIndex])) {
-                this.segmentsInternal[endIndex].begin = newSegment.end;
+            else if (newSegment.intersects(this.#segmentsInternal[endIndex])) {
+                this.#segmentsInternal[endIndex].begin = newSegment.end;
             }
         }
-        this.segmentsInternal.splice(startIndex, endIndex - startIndex, newSegment);
+        this.#segmentsInternal.splice(startIndex, endIndex - startIndex, newSegment);
     }
     appendRange(that) {
         that.segments().forEach(segment => this.append(segment));
     }
     segments() {
-        return this.segmentsInternal;
+        return this.#segmentsInternal;
     }
     tryMerge(first, second) {
-        const merged = this.mergeCallback && this.mergeCallback(first, second);
+        const merged = this.#mergeCallback && this.#mergeCallback(first, second);
         if (!merged) {
             return null;
         }

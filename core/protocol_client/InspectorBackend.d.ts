@@ -45,9 +45,8 @@ interface CallbackWithDebugInfo {
     method: string;
 }
 export declare class InspectorBackend {
+    #private;
     readonly agentPrototypes: Map<ProtocolDomainName, _AgentPrototype>;
-    private initialized;
-    private eventParameterNamesForDomain;
     private getOrCreateEventParameterNamesForDomain;
     getOrCreateEventParameterNamesForDomainForTesting(domain: ProtocolDomainName): EventParameterNames;
     getEventParamterNames(): ReadonlyMap<ProtocolDomainName, ReadonlyEventParameterNames>;
@@ -106,12 +105,7 @@ export declare const test: {
     onMessageReceived: ((message: Object, target: TargetBase | null) => void) | null;
 };
 export declare class SessionRouter {
-    private readonly connectionInternal;
-    private lastMessageId;
-    private pendingResponsesCount;
-    private readonly pendingLongPollingMessageIds;
-    private readonly sessions;
-    private pendingScripts;
+    #private;
     constructor(connection: Connection);
     registerSession(target: TargetBase, sessionId: string, proxyConnection?: Connection | null): void;
     unregisterSession(sessionId: string): void;
@@ -128,11 +122,10 @@ export declare class SessionRouter {
     static dispatchUnregisterSessionError({ callback, method }: CallbackWithDebugInfo): void;
 }
 export declare class TargetBase {
+    #private;
     needsNodeJSPatching: boolean;
     readonly sessionId: string;
     routerInternal: SessionRouter | null;
-    private agents;
-    private dispatchers;
     constructor(needsNodeJSPatching: boolean, parentTarget: TargetBase | null, sessionId: string, connection: Connection | null);
     dispatch(eventMessage: EventMessage): void;
     dispose(_reason: string): void;
@@ -146,7 +139,6 @@ export declare class TargetBase {
     private getAgent;
     accessibilityAgent(): ProtocolProxyApi.AccessibilityApi;
     animationAgent(): ProtocolProxyApi.AnimationApi;
-    applicationCacheAgent(): ProtocolProxyApi.ApplicationCacheApi;
     auditsAgent(): ProtocolProxyApi.AuditsApi;
     browserAgent(): ProtocolProxyApi.BrowserApi;
     backgroundServiceAgent(): ProtocolProxyApi.BackgroundServiceApi;
@@ -160,6 +152,7 @@ export declare class TargetBase {
     domsnapshotAgent(): ProtocolProxyApi.DOMSnapshotApi;
     domstorageAgent(): ProtocolProxyApi.DOMStorageApi;
     emulationAgent(): ProtocolProxyApi.EmulationApi;
+    eventBreakpointsAgent(): ProtocolProxyApi.EventBreakpointsApi;
     heapProfilerAgent(): ProtocolProxyApi.HeapProfilerApi;
     indexedDBAgent(): ProtocolProxyApi.IndexedDBApi;
     inputAgent(): ProtocolProxyApi.InputApi;
@@ -192,8 +185,8 @@ export declare class TargetBase {
      * name, because if `Domain` allows multiple domains, the type is unsound.
      */
     private unregisterDispatcher;
+    registerAccessibilityDispatcher(dispatcher: ProtocolProxyApi.AccessibilityDispatcher): void;
     registerAnimationDispatcher(dispatcher: ProtocolProxyApi.AnimationDispatcher): void;
-    registerApplicationCacheDispatcher(dispatcher: ProtocolProxyApi.ApplicationCacheDispatcher): void;
     registerAuditsDispatcher(dispatcher: ProtocolProxyApi.AuditsDispatcher): void;
     registerCSSDispatcher(dispatcher: ProtocolProxyApi.CSSDispatcher): void;
     registerDatabaseDispatcher(dispatcher: ProtocolProxyApi.DatabaseDispatcher): void;
@@ -221,18 +214,20 @@ export declare class TargetBase {
     getNeedsNodeJSPatching(): boolean;
 }
 /**
- * This is a class that serves as the prototype for a domains agents (every target
- * has it's own set of agents). The InspectorBackend keeps an instance of this class
- * per domain, and each TargetBase creates its agents (via Object.create) and installs
+ * This is a class that serves as the prototype for a domains #agents (every target
+ * has it's own set of #agents). The InspectorBackend keeps an instance of this class
+ * per domain, and each TargetBase creates its #agents (via Object.create) and installs
  * this instance as prototype.
  *
  * The reasons this is done is so that on the prototypes we can install the implementations
  * of the invoke_enable, etc. methods that the front-end uses.
  */
 declare class _AgentPrototype {
-    private replyArgs;
-    private readonly domain;
-    private target;
+    replyArgs: {
+        [x: string]: string[];
+    };
+    readonly domain: string;
+    target: TargetBase;
     constructor(domain: string);
     registerCommand(methodName: UnqualifiedName, parameters: CommandParameter[], replyArgs: string[]): void;
     private prepareParameters;

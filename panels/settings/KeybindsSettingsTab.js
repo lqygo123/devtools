@@ -222,6 +222,9 @@ export class KeybindsSettingsTab extends UI.Widget.VBox {
         const items = [];
         let currentCategory;
         actions.forEach(action => {
+            if (action.id() === 'elements.toggle-element-search') {
+                return;
+            }
             if (currentCategory !== action.category()) {
                 items.push(action.category());
             }

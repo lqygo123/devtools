@@ -4,7 +4,6 @@ import { Issue, IssueCategory, IssueKind } from './Issue.js';
 import type { MarkdownIssueDescription } from './MarkdownIssueDescription.js';
 export declare enum IssueCode {
     InsecurePrivateNetwork = "CorsIssue::InsecurePrivateNetwork",
-    InsecurePrivateNetworkPreflight = "CorsIssue::InsecurePrivateNetworkPreflight",
     InvalidHeaderValues = "CorsIssue::InvalidHeaders",
     WildcardOriginNotAllowed = "CorsIssue::WildcardOriginWithCredentials",
     PreflightResponseInvalid = "CorsIssue::PreflightResponseInvalid",
@@ -17,11 +16,13 @@ export declare enum IssueCode {
     CorsDisabledScheme = "CorsIssue::CorsDisabledScheme",
     PreflightMissingAllowExternal = "CorsIssue::PreflightMissingAllowExternal",
     PreflightInvalidAllowExternal = "CorsIssue::PreflightInvalidAllowExternal",
-    InvalidResponse = "CorsIssue::InvalidResponse",
-    NoCorsRedirectModeNotFollow = "CorsIssue::NoCorsRedirectModeNotFollow"
+    NoCorsRedirectModeNotFollow = "CorsIssue::NoCorsRedirectModeNotFollow",
+    InvalidPrivateNetworkAccess = "CorsIssue::InvalidPrivateNetworkAccess",
+    UnexpectedPrivateNetworkAccess = "CorsIssue::UnexpectedPrivateNetworkAccess",
+    PreflightAllowPrivateNetworkError = "CorsIssue::PreflightAllowPrivateNetworkError"
 }
 export declare class CorsIssue extends Issue<IssueCode> {
-    private issueDetails;
+    #private;
     constructor(issueDetails: Protocol.Audits.CorsIssueDetails, issuesModel: SDK.IssuesModel.IssuesModel, issueId: Protocol.Audits.IssueId | undefined);
     getCategory(): IssueCategory;
     details(): Protocol.Audits.CorsIssueDetails;

@@ -1,14 +1,5 @@
 export declare class CSSMetadata {
-    private readonly values;
-    private readonly longhands;
-    private readonly shorthands;
-    private readonly inherited;
-    private readonly svgProperties;
-    private readonly propertyValues;
-    private readonly aliasesFor;
-    private valuesSet;
-    private readonly nameValuePresetsInternal;
-    private readonly nameValuePresetsIncludingSVG;
+    #private;
     constructor(properties: CSSPropertyDefinition[], aliasesFor: Map<string, string>);
     private static sortPrefixesToEnd;
     allProperties(): string[];
@@ -47,7 +38,7 @@ export declare const URLRegex: RegExp;
  *    "a a ."
  *
  * 'grid', 'grid-template', e.g.
- *    [track-name] "a a ." minmax(50px, auto) [track-name]
+ *    [track-#name] "a a ." minmax(50px, auto) [track-#name]
  */
 export declare const GridAreaRowRegex: RegExp;
 export declare function cssMetadata(): CSSMetadata;

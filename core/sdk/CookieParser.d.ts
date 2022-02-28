@@ -1,12 +1,6 @@
 import { Cookie } from './Cookie.js';
 export declare class CookieParser {
-    private readonly domain;
-    private cookiesInternal;
-    private input;
-    private originalInputLength;
-    private lastCookie?;
-    private lastCookieLine?;
-    private lastCookiePosition?;
+    #private;
     constructor(domain?: string);
     static parseSetCookie(header: string | undefined, domain?: string): Cookie[] | null;
     cookies(): Cookie[];

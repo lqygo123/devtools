@@ -13,10 +13,6 @@ Sources.BreakpointEditDialog.LogpointPrefix = SourcesModule.BreakpointEditDialog
 Sources.BreakpointEditDialog._LogpointSuffix = SourcesModule.BreakpointEditDialog.LogpointSuffix;
 Sources.BreakpointEditDialog.BreakpointType = SourcesModule.BreakpointEditDialog.BreakpointType;
 /** @constructor */
-Sources.CSSPlugin = SourcesModule.CSSPlugin.CSSPlugin;
-Sources.CSSPlugin.maxSwatchProcessingLength = SourcesModule.CSSPlugin.maxSwatchProcessingLength;
-Sources.CSSPlugin.SwatchBookmark = SourcesModule.CSSPlugin.SwatchBookmark;
-/** @constructor */
 Sources.CallStackSidebarPane = SourcesModule.CallStackSidebarPane.CallStackSidebarPane;
 Sources.CallStackSidebarPane._elementSymbol = SourcesModule.CallStackSidebarPane.elementSymbol;
 Sources.CallStackSidebarPane._defaultMaxAsyncStackChainDepth =
@@ -48,13 +44,6 @@ Sources.FilteredUISourceCodeListProvider =
     SourcesModule.FilteredUISourceCodeListProvider.FilteredUISourceCodeListProvider;
 /** @constructor */
 Sources.GoToLineQuickOpen = SourcesModule.GoToLineQuickOpen.GoToLineQuickOpen;
-/** @constructor */
-Sources.GutterDiffPlugin = SourcesModule.GutterDiffPlugin.GutterDiffPlugin;
-/** @constructor */
-Sources.GutterDiffPlugin.GutterDecoration = SourcesModule.GutterDiffPlugin.GutterDecoration;
-Sources.GutterDiffPlugin.DiffGutterType = SourcesModule.GutterDiffPlugin.DiffGutterType;
-/** @constructor */
-Sources.GutterDiffPlugin.ContextMenuProvider = SourcesModule.GutterDiffPlugin.ContextMenuProvider;
 /** @constructor */
 Sources.InplaceFormatterEditorAction = SourcesModule.InplaceFormatterEditorAction.InplaceFormatterEditorAction;
 /** @constructor */

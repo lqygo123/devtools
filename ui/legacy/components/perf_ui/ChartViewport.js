@@ -5,6 +5,7 @@ import * as Common from '../../../../core/common/common.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as UI from '../../legacy.js';
+import chartViewPortStyles from './chartViewport.css.legacy.js';
 import { MinimalTimeWindowMs } from './FlameChart.js';
 export class ChartViewport extends UI.Widget.VBox {
     delegate;
@@ -40,7 +41,7 @@ export class ChartViewport extends UI.Widget.VBox {
     cancelWindowTimesAnimation;
     constructor(delegate) {
         super();
-        this.registerRequiredCSS('ui/legacy/components/perf_ui/chartViewport.css');
+        this.registerRequiredCSS(chartViewPortStyles);
         this.delegate = delegate;
         this.viewportElement = this.contentElement.createChild('div', 'fill');
         this.viewportElement.addEventListener('mousemove', this.updateCursorPosition.bind(this), false);

@@ -1,6 +1,6 @@
 import * as Common from '../../../../core/common/common.js';
 import * as UI from '../../legacy.js';
-export declare class DataGridImpl<T> extends Common.ObjectWrapper.ObjectWrapper {
+export declare class DataGridImpl<T> extends Common.ObjectWrapper.ObjectWrapper<EventTypes<T>> {
     element: HTMLDivElement;
     private displayName;
     private editCallback;
@@ -61,7 +61,7 @@ export declare class DataGridImpl<T> extends Common.ObjectWrapper.ObjectWrapper 
     removeColumn(columnId: string): void;
     setCellClass(cellClass: string): void;
     private refreshHeader;
-    protected setVerticalPadding(top: number, bottom: number): void;
+    protected setVerticalPadding(top: number, bottom: number, isConstructorTime?: boolean): void;
     protected setRootNode(rootNode: DataGridNode<T>): void;
     rootNode(): DataGridNode<T>;
     private ondblclick;
@@ -126,6 +126,13 @@ export declare enum Events {
     SortingChanged = "SortingChanged",
     PaddingChanged = "PaddingChanged"
 }
+export declare type EventTypes<T> = {
+    [Events.SelectedNode]: DataGridNode<T>;
+    [Events.DeselectedNode]: void;
+    [Events.OpenedNode]: DataGridNode<T>;
+    [Events.SortingChanged]: void;
+    [Events.PaddingChanged]: void;
+};
 export declare enum Order {
     Ascending = "sort-ascending",
     Descending = "sort-descending"
@@ -148,7 +155,7 @@ export declare enum ResizeMethod {
 export declare type DataGridData = {
     [key: string]: any;
 };
-export declare class DataGridNode<T> extends Common.ObjectWrapper.ObjectWrapper {
+export declare class DataGridNode<T> {
     elementInternal: Element | null;
     expandedInternal: boolean;
     private selectedInternal;
@@ -247,9 +254,9 @@ export declare class DataGridWidget<T> extends UI.Widget.VBox {
 export interface Parameters {
     displayName: string;
     columns: ColumnDescriptor[];
-    editCallback?: ((arg0: any, arg1: string, arg2: any, arg3: any) => any);
-    deleteCallback?: ((arg0: any) => any);
-    refreshCallback?: (() => any);
+    editCallback?: ((arg0: any, arg1: string, arg2: any, arg3: any) => void);
+    deleteCallback?: ((arg0: any) => void);
+    refreshCallback?: (() => void);
 }
 export interface ColumnDescriptor {
     id: string;

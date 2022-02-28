@@ -7,7 +7,6 @@
         "cssOverview.css.js",
         "cssOverviewCompletedView.css.js",
         "cssOverviewProcessingView.css.js",
-        "cssOverviewSidebarPanel.css.js",
-        "cssOverviewStartView.css.js"
+        "cssOverviewSidebarPanel.css.js"
     ]
 }

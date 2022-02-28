@@ -35,20 +35,20 @@ export class Wrapper extends UI.Widget.VBox {
     }
 }
 export class LinearMemoryInspectorPaneImpl extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
-    tabbedPane;
-    tabIdToInspectorView;
+    #tabbedPane;
+    #tabIdToInspectorView;
     constructor() {
         super(false);
         const placeholder = document.createElement('div');
         placeholder.textContent = i18nString(UIStrings.noOpenInspections);
         placeholder.style.display = 'flex';
-        this.tabbedPane = new UI.TabbedPane.TabbedPane();
-        this.tabbedPane.setPlaceholderElement(placeholder);
-        this.tabbedPane.setCloseableTabs(true);
-        this.tabbedPane.setAllowTabReorder(true, true);
-        this.tabbedPane.addEventListener(UI.TabbedPane.Events.TabClosed, this.tabClosed, this);
-        this.tabbedPane.show(this.contentElement);
-        this.tabIdToInspectorView = new Map();
+        this.#tabbedPane = new UI.TabbedPane.TabbedPane();
+        this.#tabbedPane.setPlaceholderElement(placeholder);
+        this.#tabbedPane.setCloseableTabs(true);
+        this.#tabbedPane.setAllowTabReorder(true, true);
+        this.#tabbedPane.addEventListener(UI.TabbedPane.Events.TabClosed, this.#tabClosed, this);
+        this.#tabbedPane.show(this.contentElement);
+        this.#tabIdToInspectorView = new Map();
     }
     static instance() {
         if (!inspectorInstance) {
@@ -58,15 +58,15 @@ export class LinearMemoryInspectorPaneImpl extends Common.ObjectWrapper.eventMix
     }
     create(tabId, title, arrayWrapper, address) {
         const inspectorView = new LinearMemoryInspectorView(arrayWrapper, address);
-        this.tabIdToInspectorView.set(tabId, inspectorView);
-        this.tabbedPane.appendTab(tabId, title, inspectorView, undefined, false, true);
-        this.tabbedPane.selectTab(tabId);
+        this.#tabIdToInspectorView.set(tabId, inspectorView);
+        this.#tabbedPane.appendTab(tabId, title, inspectorView, undefined, false, true);
+        this.#tabbedPane.selectTab(tabId);
     }
     close(tabId) {
-        this.tabbedPane.closeTab(tabId, false);
+        this.#tabbedPane.closeTab(tabId, false);
     }
     reveal(tabId, address) {
-        const view = this.tabIdToInspectorView.get(tabId);
+        const view = this.#tabIdToInspectorView.get(tabId);
         if (!view) {
             throw new Error(`No linear memory inspector view for given tab id: ${tabId}`);
         }
@@ -74,46 +74,46 @@ export class LinearMemoryInspectorPaneImpl extends Common.ObjectWrapper.eventMix
             view.updateAddress(address);
         }
         this.refreshView(tabId);
-        this.tabbedPane.selectTab(tabId);
+        this.#tabbedPane.selectTab(tabId);
     }
     refreshView(tabId) {
-        const view = this.tabIdToInspectorView.get(tabId);
+        const view = this.#tabIdToInspectorView.get(tabId);
         if (!view) {
             throw new Error(`View for specified tab id does not exist: ${tabId}`);
         }
         view.refreshData();
     }
-    tabClosed(event) {
-        const tabId = event.data.tabId;
-        this.tabIdToInspectorView.delete(tabId);
-        this.dispatchEventToListeners('view-closed', tabId);
+    #tabClosed(event) {
+        const { tabId } = event.data;
+        this.#tabIdToInspectorView.delete(tabId);
+        this.dispatchEventToListeners("ViewClosed" /* ViewClosed */, tabId);
     }
 }
 class LinearMemoryInspectorView extends UI.Widget.VBox {
-    memoryWrapper;
-    address;
-    inspector;
+    #memoryWrapper;
+    #address;
+    #inspector;
     firstTimeOpen;
     constructor(memoryWrapper, address = 0) {
         super(false);
         if (address < 0 || address >= memoryWrapper.length()) {
             throw new Error('Requested address is out of bounds.');
         }
-        this.memoryWrapper = memoryWrapper;
-        this.address = address;
-        this.inspector = new LinearMemoryInspector();
-        this.inspector.addEventListener('memoryrequest', (event) => {
-            this.memoryRequested(event);
+        this.#memoryWrapper = memoryWrapper;
+        this.#address = address;
+        this.#inspector = new LinearMemoryInspector();
+        this.#inspector.addEventListener('memoryrequest', (event) => {
+            this.#memoryRequested(event);
         });
-        this.inspector.addEventListener('addresschanged', (event) => {
+        this.#inspector.addEventListener('addresschanged', (event) => {
             this.updateAddress(event.data);
         });
-        this.inspector.addEventListener('settingschanged', (event) => {
+        this.#inspector.addEventListener('settingschanged', (event) => {
             // Stop event from bubbling up, since no element further up needs the event.
             event.stopPropagation();
             this.saveSettings(event.data);
         });
-        this.contentElement.appendChild(this.inspector);
+        this.contentElement.appendChild(this.#inspector);
         this.firstTimeOpen = true;
     }
     wasShown() {
@@ -123,13 +123,13 @@ class LinearMemoryInspectorView extends UI.Widget.VBox {
         LinearMemoryInspectorController.instance().saveSettings(settings);
     }
     updateAddress(address) {
-        if (address < 0 || address >= this.memoryWrapper.length()) {
+        if (address < 0 || address >= this.#memoryWrapper.length()) {
             throw new Error('Requested address is out of bounds.');
         }
-        this.address = address;
+        this.#address = address;
     }
     refreshData() {
-        LinearMemoryInspectorController.getMemoryForAddress(this.memoryWrapper, this.address).then(({ memory, offset }) => {
+        void LinearMemoryInspectorController.getMemoryForAddress(this.#memoryWrapper, this.#address).then(({ memory, offset, }) => {
             let valueTypes;
             let valueTypeModes;
             let endianness;
@@ -140,28 +140,28 @@ class LinearMemoryInspectorView extends UI.Widget.VBox {
                 endianness = settings.endianness;
                 this.firstTimeOpen = false;
             }
-            this.inspector.data = {
+            this.#inspector.data = {
                 memory,
-                address: this.address,
+                address: this.#address,
                 memoryOffset: offset,
-                outerMemoryLength: this.memoryWrapper.length(),
+                outerMemoryLength: this.#memoryWrapper.length(),
                 valueTypes,
                 valueTypeModes,
                 endianness,
             };
         });
     }
-    memoryRequested(event) {
+    #memoryRequested(event) {
         const { start, end, address } = event.data;
         if (address < start || address >= end) {
             throw new Error('Requested address is out of bounds.');
         }
-        LinearMemoryInspectorController.getMemoryRange(this.memoryWrapper, start, end).then(memory => {
-            this.inspector.data = {
+        void LinearMemoryInspectorController.getMemoryRange(this.#memoryWrapper, start, end).then(memory => {
+            this.#inspector.data = {
                 memory: memory,
                 address: address,
                 memoryOffset: start,
-                outerMemoryLength: this.memoryWrapper.length(),
+                outerMemoryLength: this.#memoryWrapper.length(),
             };
         });
     }

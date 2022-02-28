@@ -3,7 +3,7 @@ import type * as SDK from '../../core/sdk/sdk.js';
 import { Issue, IssueCategory, IssueKind } from './Issue.js';
 import type { MarkdownIssueDescription } from './MarkdownIssueDescription.js';
 export declare class WasmCrossOriginModuleSharingIssue extends Issue<Protocol.Audits.InspectorIssueCode.WasmCrossOriginModuleSharingIssue> {
-    private issueDetails;
+    #private;
     constructor(issueDetails: Protocol.Audits.WasmCrossOriginModuleSharingIssueDetails, issuesModel: SDK.IssuesModel.IssuesModel);
     getCategory(): IssueCategory;
     details(): Protocol.Audits.WasmCrossOriginModuleSharingIssueDetails;

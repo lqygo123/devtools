@@ -3,9 +3,7 @@ import type * as Protocol from '../../generated/protocol.js';
 import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export declare class ScreenCaptureModel extends SDKModel<void> implements ProtocolProxyApi.PageDispatcher {
-    private readonly agent;
-    private onScreencastFrame;
-    private onScreencastVisibilityChanged;
+    #private;
     constructor(target: Target);
     startScreencast(format: Protocol.Page.StartScreencastRequestFormat, quality: number, maxWidth: number | undefined, maxHeight: number | undefined, everyNthFrame: number | undefined, onFrame: (arg0: Protocol.binary, arg1: Protocol.Page.ScreencastFrameMetadata) => void, onVisibilityChanged: (arg0: boolean) => void): void;
     stopScreencast(): void;

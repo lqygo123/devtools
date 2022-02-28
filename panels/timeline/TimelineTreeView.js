@@ -254,7 +254,7 @@ export class TimelineTreeView extends UI.Widget.VBox {
         const textFilterUI = new UI.Toolbar.ToolbarInput(i18nString(UIStrings.filter), this.getToolbarInputAccessiblePlaceHolder());
         textFilterUI.addEventListener(UI.Toolbar.ToolbarInput.Event.TextChanged, () => {
             const searchQuery = textFilterUI.value();
-            this.textFilterInternal.setRegExp(searchQuery ? createPlainTextSearchRegex(searchQuery, 'i') : null);
+            this.textFilterInternal.setRegExp(searchQuery ? Platform.StringUtilities.createPlainTextSearchRegex(searchQuery, 'i') : null);
             this.refreshTree();
         }, this);
         this.textFilterUI = textFilterUI;
@@ -279,7 +279,7 @@ export class TimelineTreeView extends UI.Widget.VBox {
         if (!frame) {
             return null;
         }
-        return this.linkifier.maybeLinkifyConsoleCallFrame(target, frame);
+        return this.linkifier.maybeLinkifyConsoleCallFrame(target, frame, { showColumnNumber: true, inlineFrameIndex: 0 });
     }
     selectProfileNode(treeNode, suppressSelectedEvent) {
         const pathToRoot = [];
@@ -456,7 +456,7 @@ export class TimelineTreeView extends UI.Widget.VBox {
             return;
         }
         const searchRegex = searchConfig.toSearchRegex();
-        this.searchResults = this.root.searchTree(event => TimelineUIUtils.testContentMatching(event, searchRegex));
+        this.searchResults = this.root.searchTree(event => TimelineUIUtils.testContentMatching(event, searchRegex.regex));
         this.searchableView.updateSearchMatchesCount(this.searchResults.length);
     }
     jumpToNextSearchResult() {
@@ -573,6 +573,7 @@ export class GridNode extends DataGrid.SortableDataGrid.SortableDataGridNode {
         }
         const cell = this.createTD(columnId);
         cell.className = 'numeric-column';
+        cell.setAttribute('title', i18nString(UIStrings.fms, { PH1: value.toFixed(4) }));
         const textDiv = cell.createChild('div');
         textDiv.createChild('span').textContent = i18nString(UIStrings.fms, { PH1: value.toFixed(1) });
         if (showPercents && this.treeView.exposePercentages()) {

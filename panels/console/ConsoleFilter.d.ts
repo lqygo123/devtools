@@ -1,6 +1,6 @@
 import * as SDK from '../../core/sdk/sdk.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
-import type { ConsoleViewMessage } from './ConsoleViewMessage.js';
+import type { ConsoleGroupViewMessage, ConsoleViewMessage } from './ConsoleViewMessage.js';
 export declare type LevelsMask = {
     [x: string]: boolean;
 };
@@ -15,6 +15,8 @@ export declare class ConsoleFilter {
     static singleLevelMask(level: string): LevelsMask;
     clone(): ConsoleFilter;
     shouldBeVisible(viewMessage: ConsoleViewMessage): boolean;
+    parentGroupHasMatch(viewMessage: ConsoleGroupViewMessage | null): boolean;
+    applyFilter(viewMessage: ConsoleViewMessage): boolean;
 }
 export declare enum FilterType {
     Context = "context",

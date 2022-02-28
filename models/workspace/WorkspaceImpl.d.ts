@@ -64,7 +64,7 @@ export declare class ProjectStore {
     uiSourceCodes(): UISourceCode[];
     renameUISourceCode(uiSourceCode: UISourceCode, newName: string): void;
 }
-export declare class WorkspaceImpl extends Common.ObjectWrapper.ObjectWrapper {
+export declare class WorkspaceImpl extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
     private projectsInternal;
     private hasResourceContentTrackingExtensionsInternal;
     private constructor();

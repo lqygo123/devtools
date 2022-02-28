@@ -5,6 +5,7 @@ import * as Common from '../../../../core/common/common.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as UI from '../../legacy.js';
 import { ColorSwatch } from './ColorSwatch.js';
+import swatchPopoverStyles from './swatchPopover.css.js';
 export class SwatchPopoverHelper extends Common.ObjectWrapper.ObjectWrapper {
     popover;
     hideProxy;
@@ -18,7 +19,6 @@ export class SwatchPopoverHelper extends Common.ObjectWrapper.ObjectWrapper {
     constructor() {
         super();
         this.popover = new UI.GlassPane.GlassPane();
-        this.popover.registerRequiredCSS('ui/legacy/components/inline_editor/swatchPopover.css');
         this.popover.setSizeBehavior("MeasureContent" /* MeasureContent */);
         this.popover.setMarginBehavior("Arrow" /* Arrow */);
         this.popover.element.addEventListener('mousedown', e => e.consume(), false);
@@ -35,8 +35,11 @@ export class SwatchPopoverHelper extends Common.ObjectWrapper.ObjectWrapper {
         }
         this.hideProxy();
     }
-    isShowing() {
-        return this.popover.isShowing();
+    setAnchorElement(anchorElement) {
+        this.anchorElement = anchorElement;
+    }
+    isShowing(view) {
+        return this.popover.isShowing() && ((view && this.view === view) || !view);
     }
     show(view, anchorElement, hiddenCallback) {
         if (this.popover.isShowing()) {
@@ -46,6 +49,7 @@ export class SwatchPopoverHelper extends Common.ObjectWrapper.ObjectWrapper {
             // Reopen the picker for another anchor element.
             this.hide(true);
         }
+        this.popover.registerCSSFiles([swatchPopoverStyles]);
         this.dispatchEventToListeners(Events.WillShowPopover);
         this.isHidden = false;
         this.anchorElement = anchorElement;

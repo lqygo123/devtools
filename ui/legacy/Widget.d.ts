@@ -1,11 +1,10 @@
-import * as Common from '../../core/common/common.js';
 import { Constraints } from './Geometry.js';
 export declare class WidgetElement extends HTMLDivElement {
     __widget: Widget | null;
     __widgetCounter: number | null;
     constructor();
 }
-export declare class Widget extends Common.ObjectWrapper.ObjectWrapper {
+export declare class Widget {
     element: WidgetElement;
     contentElement: HTMLDivElement;
     private shadowRoot;
@@ -63,7 +62,9 @@ export declare class Widget extends Common.ObjectWrapper.ObjectWrapper {
     restoreScrollPositions(): void;
     doResize(): void;
     doLayout(): void;
-    registerRequiredCSS(cssFile: string): void;
+    registerRequiredCSS(cssFile: {
+        cssContent: string;
+    }): void;
     registerCSSFiles(cssFiles: CSSStyleSheet[]): void;
     printWidgetHierarchy(): void;
     private collectWidgetHierarchy;

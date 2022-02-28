@@ -37,12 +37,12 @@ export class ProfileNode {
     }
 }
 export class ProfileTreeModel {
-    targetInternal;
+    #targetInternal;
     root;
     total;
     maxDepth;
     constructor(target) {
-        this.targetInternal = target || null;
+        this.#targetInternal = target || null;
     }
     initialize(root) {
         this.root = root;
@@ -89,7 +89,7 @@ export class ProfileTreeModel {
         return root.total;
     }
     target() {
-        return this.targetInternal;
+        return this.#targetInternal;
     }
 }
 //# sourceMappingURL=ProfileTreeModel.js.map

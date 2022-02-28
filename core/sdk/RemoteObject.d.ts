@@ -1,4 +1,4 @@
-import type * as Protocol from '../../generated/protocol.js';
+import * as Protocol from '../../generated/protocol.js';
 import type { DebuggerModel, FunctionDetails } from './DebuggerModel.js';
 import type { RuntimeModel } from './RuntimeModel.js';
 export declare class RemoteObject {
@@ -7,6 +7,7 @@ export declare class RemoteObject {
      */
     static fromLocalObject(value: any): RemoteObject;
     static type(remoteObject: RemoteObject): string;
+    static isNullOrUndefined(remoteObject: RemoteObject | null | undefined): boolean;
     static arrayNameFromDescription(description: string): string;
     static arrayLength(object: RemoteObject | Protocol.Runtime.RemoteObject | Protocol.Runtime.ObjectPreview): number;
     static arrayBufferByteLength(object: RemoteObject | Protocol.Runtime.RemoteObject | Protocol.Runtime.ObjectPreview): number;
@@ -38,18 +39,9 @@ export declare class RemoteObject {
     isNode(): boolean;
 }
 export declare class RemoteObjectImpl extends RemoteObject {
+    #private;
     runtimeModelInternal: RuntimeModel;
-    private readonly runtimeAgent;
-    private readonly typeInternal;
-    private readonly subtypeInternal;
-    private objectIdInternal;
-    private descriptionInternal;
     hasChildrenInternal: boolean;
-    private readonly previewInternal;
-    private readonly unserializableValueInternal;
-    private readonly valueInternal;
-    private readonly customPreviewInternal;
-    private readonly classNameInternal;
     constructor(runtimeModel: RuntimeModel, objectId: Protocol.Runtime.RemoteObjectId | undefined, type: string, subtype: string | undefined, value: any, unserializableValue?: string, description?: string, preview?: Protocol.Runtime.ObjectPreview, customPreview?: Protocol.Runtime.CustomPreview, className?: string);
     customPreview(): Protocol.Runtime.CustomPreview | null;
     get objectId(): Protocol.Runtime.RemoteObjectId | undefined;
@@ -79,8 +71,7 @@ export declare class RemoteObjectImpl extends RemoteObject {
     isNode(): boolean;
 }
 export declare class ScopeRemoteObject extends RemoteObjectImpl {
-    private scopeRef;
-    private savedScopeProperties;
+    #private;
     constructor(runtimeModel: RuntimeModel, objectId: Protocol.Runtime.RemoteObjectId | undefined, scopeRef: ScopeRef, type: string, subtype: string | undefined, value: any, unserializableValue?: string, description?: string, preview?: Protocol.Runtime.ObjectPreview);
     doGetProperties(ownProperties: boolean, accessorPropertiesOnly: boolean, _generatePreview: boolean): Promise<GetPropertiesResult>;
     doSetObjectPropertyValue(result: Protocol.Runtime.RemoteObject, argumentName: Protocol.Runtime.CallArgument): Promise<string | undefined>;
@@ -108,9 +99,8 @@ export declare class RemoteObjectProperty {
     isAccessorProperty(): boolean;
 }
 export declare class LocalJSONObject extends RemoteObject {
+    #private;
     valueInternal: any;
-    private cachedDescription;
-    private cachedChildren;
     constructor(value: any);
     get objectId(): Protocol.Runtime.RemoteObjectId | undefined;
     get value(): any;
@@ -129,14 +119,14 @@ export declare class LocalJSONObject extends RemoteObject {
     callFunctionJSON<T>(functionDeclaration: (this: Object, ...arg1: unknown[]) => T, args: Protocol.Runtime.CallArgument[] | undefined): Promise<T>;
 }
 export declare class RemoteArrayBuffer {
-    private readonly objectInternal;
+    #private;
     constructor(object: RemoteObject);
     byteLength(): number;
     bytes(start?: any, end?: any): Promise<number[]>;
     object(): RemoteObject;
 }
 export declare class RemoteArray {
-    private readonly objectInternal;
+    #private;
     constructor(object: RemoteObject);
     static objectAsArray(object: RemoteObject | null): RemoteArray;
     static createFromRemoteObjects(objects: RemoteObject[]): Promise<RemoteArray>;
@@ -146,7 +136,7 @@ export declare class RemoteArray {
     object(): RemoteObject;
 }
 export declare class RemoteFunction {
-    private readonly objectInternal;
+    #private;
     constructor(object: RemoteObject);
     static objectAsFunction(object: RemoteObject | null): RemoteFunction;
     targetFunction(): Promise<RemoteObject>;

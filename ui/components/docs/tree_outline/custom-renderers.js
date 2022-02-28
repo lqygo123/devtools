@@ -44,6 +44,6 @@ const component = new TreeOutline.TreeOutline.TreeOutline();
 component.data = data;
 document.getElementById('container')?.appendChild(component);
 document.getElementById('recursively-expand')?.addEventListener('click', () => {
-    component.expandRecursively();
+    void component.expandRecursively();
 });
 //# sourceMappingURL=custom-renderers.js.map

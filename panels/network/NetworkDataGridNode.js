@@ -225,6 +225,11 @@ const UIStrings = {
     *@description Text in Network Data Grid Node of the Network panel
     */
     webBundle: '(Web Bundle)',
+    /**
+    *@description Tooltip text for subtitles of Time cells in Network request rows. Latency is the time difference
+    * between the time a response to a network request is received and the time the request is started.
+    */
+    timeSubtitleTooltipText: 'Latency (response received time - start time)',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/network/NetworkDataGridNode.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -232,73 +237,10 @@ const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 // eslint-disable-next-line rulesdir/const_enum
 export var Events;
 (function (Events) {
+    // RequestSelected might fire twice for the same "activation"
     Events["RequestSelected"] = "RequestSelected";
     Events["RequestActivated"] = "RequestActivated";
 })(Events || (Events = {}));
-export class NetworkLogViewInterface {
-    async onLoadFromFile(file) {
-    }
-    setRecording(recording) {
-    }
-    setWindow(start, end) {
-    }
-    resetFocus() {
-    }
-    columnExtensionResolved() {
-    }
-    hoveredNode() {
-        throw new Error('not implemented');
-    }
-    scheduleRefresh() {
-    }
-    addFilmStripFrames(times) {
-    }
-    selectFilmStripFrame(time) {
-    }
-    clearFilmStripFrame() {
-    }
-    timeCalculator() {
-        throw new Error('not implemented');
-    }
-    calculator() {
-        throw new Error('not implemented');
-    }
-    setCalculator(x) {
-    }
-    flatNodesList() {
-        throw new Error('not implemented');
-    }
-    updateNodeBackground() {
-    }
-    updateNodeSelectedClass(isSelected) {
-    }
-    stylesChanged() {
-    }
-    setTextFilterValue(filterString) {
-    }
-    rowHeight() {
-        throw new Error('not implemented');
-    }
-    switchViewMode(gridMode) {
-    }
-    handleContextMenuForRequest(contextMenu, request) {
-    }
-    async exportAll() {
-    }
-    revealAndHighlightRequest(request) {
-    }
-    selectRequest(request) {
-    }
-    removeAllNodeHighlights() {
-    }
-    modelAdded(model) {
-    }
-    modelRemoved(model) {
-    }
-    linkifier() {
-        throw new Error('not implemented');
-    }
-}
 export class NetworkNode extends DataGrid.SortableDataGrid.SortableDataGridNode {
     parentViewInternal;
     isHovered;
@@ -888,8 +830,6 @@ export class NetworkRequestNode extends NetworkNode {
     }
     select(supressSelectedEvent) {
         super.select(supressSelectedEvent);
-        // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.parentView().dispatchEventToListeners(Events.RequestSelected, this.requestInternal);
     }
     highlightMatchedSubstring(regexp) {
@@ -936,9 +876,10 @@ export class NetworkRequestNode extends NetworkNode {
             cell.style.setProperty('padding-left', leftPadding);
             this.nameCell = cell;
             cell.addEventListener('dblclick', this.openInNewTab.bind(this), false);
-            cell.addEventListener('click', () => {
-                // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            cell.addEventListener('mousedown', () => {
+                // When the request panel isn't visible yet, firing the RequestActivated event
+                // doesn't make it visible if no request is selected. So we'll select it first.
+                this.select();
                 this.parentView().dispatchEventToListeners(Events.RequestActivated, { showPanel: true });
             });
             let iconElement;
@@ -946,7 +887,7 @@ export class NetworkRequestNode extends NetworkNode {
                 const previewImage = document.createElement('img');
                 previewImage.classList.add('image-network-icon-preview');
                 previewImage.alt = this.requestInternal.resourceType().title();
-                this.requestInternal.populateImageSource(previewImage);
+                void this.requestInternal.populateImageSource(previewImage);
                 iconElement = document.createElement('div');
                 iconElement.classList.add('image');
                 iconElement.appendChild(previewImage);
@@ -981,11 +922,9 @@ export class NetworkRequestNode extends NetworkNode {
             const networkManager = SDK.NetworkManager.NetworkManager.forRequest(this.requestInternal);
             UI.UIUtils.createTextChild(cell, networkManager ? networkManager.target().decorateLabel(name) : name);
             this.appendSubtitle(cell, this.requestInternal.path());
-            UI.Tooltip.Tooltip.install(cell, this.requestInternal.url());
         }
         else if (text) {
             UI.UIUtils.createTextChild(cell, text);
-            UI.Tooltip.Tooltip.install(cell, text);
         }
     }
     renderStatusCell(cell) {
@@ -1067,8 +1006,6 @@ export class NetworkRequestNode extends NetworkNode {
             }
             if (displayShowHeadersLink) {
                 this.setTextAndTitleAsLink(cell, i18nString(UIStrings.blockeds, { PH1: reason }), i18nString(UIStrings.blockedTooltip), () => {
-                    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     this.parentView().dispatchEventToListeners(Events.RequestActivated, {
                         showPanel: true,
                         tab: NetworkForward.UIRequestLocation.UIRequestTabs.Headers,
@@ -1223,7 +1160,7 @@ export class NetworkRequestNode extends NetworkNode {
     renderTimeCell(cell) {
         if (this.requestInternal.duration > 0) {
             this.setTextAndTitle(cell, i18n.TimeUtilities.secondsToString(this.requestInternal.duration));
-            this.appendSubtitle(cell, i18n.TimeUtilities.secondsToString(this.requestInternal.latency));
+            this.appendSubtitle(cell, i18n.TimeUtilities.secondsToString(this.requestInternal.latency), false, i18nString(UIStrings.timeSubtitleTooltipText));
         }
         else if (this.requestInternal.preserved) {
             this.setTextAndTitle(cell, i18nString(UIStrings.unknown), i18nString(UIStrings.unknownExplanation));
@@ -1233,13 +1170,16 @@ export class NetworkRequestNode extends NetworkNode {
             this.setTextAndTitle(cell, i18nString(UIStrings.pending));
         }
     }
-    appendSubtitle(cellElement, subtitleText, showInlineWhenSelected = false) {
+    appendSubtitle(cellElement, subtitleText, showInlineWhenSelected = false, tooltipText = '') {
         const subtitleElement = document.createElement('div');
         subtitleElement.classList.add('network-cell-subtitle');
         if (showInlineWhenSelected) {
             subtitleElement.classList.add('network-cell-subtitle-show-inline-when-selected');
         }
         subtitleElement.textContent = subtitleText;
+        if (tooltipText) {
+            UI.Tooltip.Tooltip.install(subtitleElement, tooltipText);
+        }
         cellElement.appendChild(subtitleElement);
     }
 }
@@ -1265,10 +1205,9 @@ export class NetworkGroupNode extends NetworkNode {
     select(supressSelectedEvent) {
         super.select(supressSelectedEvent);
         const firstChildNode = this.traverseNextNode(false, undefined, true);
-        if (firstChildNode && firstChildNode.request()) {
-            // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            this.parentView().dispatchEventToListeners(Events.RequestSelected, firstChildNode.request());
+        const request = firstChildNode?.request();
+        if (request) {
+            this.parentView().dispatchEventToListeners(Events.RequestSelected, request);
         }
     }
 }

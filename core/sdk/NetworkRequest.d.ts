@@ -17,90 +17,17 @@ export declare enum MIME_TYPE {
     EVENTSTREAM = "text/event-stream"
 }
 export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements TextUtils.ContentProvider.ContentProvider {
-    private requestIdInternal;
-    private backendRequestIdInternal?;
-    private readonly documentURLInternal;
-    private readonly frameIdInternal;
-    private readonly loaderIdInternal;
-    private readonly initiatorInternal;
-    private redirectSourceInternal;
-    private preflightRequestInternal;
-    private preflightInitiatorRequestInternal;
-    private isRedirectInternal;
-    private redirectDestinationInternal;
-    private issueTimeInternal;
-    private startTimeInternal;
-    private endTimeInternal;
-    private blockedReasonInternal;
-    private corsErrorStatusInternal;
+    #private;
     statusCode: number;
     statusText: string;
     requestMethod: string;
     requestTime: number;
     protocol: string;
     mixedContentType: Protocol.Security.MixedContentType;
-    private initialPriorityInternal;
-    private currentPriority;
-    private signedExchangeInfoInternal;
-    private webBundleInfoInternal;
-    private webBundleInnerRequestInfoInternal;
-    private resourceTypeInternal;
-    private contentDataInternal;
-    private readonly framesInternal;
-    private readonly eventSourceMessagesInternal;
-    private responseHeaderValues;
-    private responseHeadersTextInternal;
-    private requestHeadersInternal;
-    private requestHeaderValues;
-    private remoteAddressInternal;
-    private remoteAddressSpaceInternal;
-    private referrerPolicyInternal;
-    private securityStateInternal;
-    private securityDetailsInternal;
     connectionId: string;
     connectionReused: boolean;
     hasNetworkData: boolean;
-    private formParametersPromise;
-    private requestFormDataPromise;
-    private hasExtraRequestInfoInternal;
-    private hasExtraResponseInfoInternal;
-    private blockedRequestCookiesInternal;
-    private includedRequestCookiesInternal;
-    private blockedResponseCookiesInternal;
     localizedFailDescription: string | null;
-    private urlInternal;
-    private responseReceivedTimeInternal;
-    private transferSizeInternal;
-    private finishedInternal;
-    private failedInternal;
-    private canceledInternal;
-    private preservedInternal;
-    private mimeTypeInternal;
-    private parsedURLInternal;
-    private nameInternal;
-    private pathInternal;
-    private clientSecurityStateInternal;
-    private trustTokenParamsInternal;
-    private trustTokenOperationDoneEventInternal;
-    private responseCacheStorageCacheName?;
-    private serviceWorkerResponseSourceInternal?;
-    private wallIssueTime?;
-    private responseRetrievalTime?;
-    private resourceSizeInternal?;
-    private fromMemoryCache?;
-    private fromDiskCache?;
-    private fromPrefetchCacheInternal?;
-    private fetchedViaServiceWorkerInternal?;
-    private timingInternal?;
-    private requestHeadersTextInternal?;
-    private responseHeadersInternal?;
-    private sortedResponseHeadersInternal?;
-    private responseCookiesInternal?;
-    private serverTimingsInternal?;
-    private queryStringInternal?;
-    private parsedQueryParameters?;
-    private contentDataProvider?;
-    private isSameSiteInternal;
     private constructor();
     static create(backendRequestId: Protocol.Network.RequestId, url: string, documentURL: string, frameId: Protocol.Page.FrameId | null, loaderId: Protocol.Network.LoaderId | null, initiator: Protocol.Network.Initiator | null): NetworkRequest;
     static createForWebSocket(backendRequestId: Protocol.Network.RequestId, requestURL: string, initiator?: Protocol.Network.Initiator): NetworkRequest;
@@ -119,7 +46,7 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     remoteAddress(): string;
     remoteAddressSpace(): Protocol.Network.IPAddressSpace;
     /**
-     * The cache name of the CacheStorage from where the response is served via
+     * The cache #name of the CacheStorage from where the response is served via
      * the ServiceWorker.
      */
     getResponseCacheStorageCacheName(): string | undefined;
@@ -171,6 +98,7 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     cachedInMemory(): boolean;
     fromPrefetchCache(): boolean;
     setFromMemoryCache(): void;
+    get fromDiskCache(): boolean | undefined;
     setFromDiskCache(): void;
     setFromPrefetchCache(): void;
     /**
@@ -235,12 +163,12 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     /**
      * Parses multipart/form-data; boundary=boundaryString request bodies -
      * --boundaryString
-     * Content-Disposition: form-data; name="field-name"; filename="r.gif"
+     * Content-Disposition: form-data; #name="field-#name"; filename="r.gif"
      * Content-Type: application/octet-stream
      *
      * optionalValue
      * --boundaryString
-     * Content-Disposition: form-data; name="field-name-2"
+     * Content-Disposition: form-data; #name="field-#name-2"
      *
      * optionalValue2
      * --boundaryString--

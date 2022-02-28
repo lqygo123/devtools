@@ -5,9 +5,9 @@ import webAudioStyles from './webAudio.css.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import * as GraphVisualizer from './graph_visualizer/graph_visualizer.js';
 import { ContextDetailBuilder, ContextSummaryBuilder } from './AudioContextContentBuilder.js';
 import { AudioContextSelector } from './AudioContextSelector.js';
-import { GraphManager } from './graph_visualizer/GraphManager.js';
 import { WebAudioModel } from './WebAudioModel.js';
 const UIStrings = {
     /**
@@ -39,7 +39,7 @@ export class WebAudioView extends UI.ThrottledWidget.ThrottledWidget {
         this.contentContainer = this.contentElement.createChild('div', 'web-audio-content-container vbox flex-auto');
         // Creates the detail view.
         this.detailViewContainer = this.contentContainer.createChild('div', 'web-audio-details-container vbox flex-auto');
-        this.graphManager = new GraphManager();
+        this.graphManager = new GraphVisualizer.GraphManager.GraphManager();
         // Creates the landing page.
         this.landingPage = new UI.Widget.VBox();
         this.landingPage.contentElement.classList.add('web-audio-landing-page', 'fill');
@@ -56,7 +56,7 @@ export class WebAudioView extends UI.ThrottledWidget.ThrottledWidget {
             if (context) {
                 this.updateDetailView(context);
             }
-            this.doUpdate();
+            void this.doUpdate();
         });
         SDK.TargetManager.TargetManager.instance().observeModels(WebAudioModel, this);
     }

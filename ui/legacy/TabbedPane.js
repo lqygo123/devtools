@@ -27,6 +27,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as IconButton from '../components/icon_button/icon_button.js';
@@ -39,6 +40,7 @@ import { Tooltip } from './Tooltip.js';
 import { installDragHandle, invokeOnceAfterBatchUpdate } from './UIUtils.js';
 import { VBox } from './Widget.js';
 import { ZoomManager } from './ZoomManager.js';
+import tabbedPaneStyles from './tabbedPane.css.legacy.js';
 const UIStrings = {
     /**
     *@description The aria label for the button to open more tabs at the right tabbed pane in Elements tools
@@ -65,10 +67,14 @@ const UIStrings = {
     *@description Text on a menu option to close all the drawers except Console when right click on a drawer title
     */
     closeAll: 'Close all',
+    /**
+    *@description Indicates that a tab contains a preview feature (i.e., a beta / experimental feature).
+    */
+    previewFeature: 'Preview feature',
 };
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/TabbedPane.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-export class TabbedPane extends VBox {
+export class TabbedPane extends Common.ObjectWrapper.eventMixin(VBox) {
     headerElementInternal;
     headerContentsElement;
     tabSlider;
@@ -100,7 +106,7 @@ export class TabbedPane extends VBox {
     automaticReorder;
     constructor() {
         super(true);
-        this.registerRequiredCSS('ui/legacy/tabbedPane.css');
+        this.registerRequiredCSS(tabbedPaneStyles);
         this.element.classList.add('tabbed-pane');
         this.contentElement.classList.add('tabbed-pane-shadow');
         this.contentElement.tabIndex = -1;
@@ -197,9 +203,9 @@ export class TabbedPane extends VBox {
         }
         this.delegate = delegate;
     }
-    appendTab(id, tabTitle, view, tabTooltip, userGesture, isCloseable, index) {
+    appendTab(id, tabTitle, view, tabTooltip, userGesture, isCloseable, isPreviewFeature, index) {
         const closeable = typeof isCloseable === 'boolean' ? isCloseable : Boolean(this.closeableTabs);
-        const tab = new TabbedPaneTab(this, id, tabTitle, closeable, view, tabTooltip);
+        const tab = new TabbedPaneTab(this, id, tabTitle, closeable, Boolean(isPreviewFeature), view, tabTooltip);
         tab.setDelegate(this.delegate);
         console.assert(!this.tabsById.has(id), `Tabbed pane already contains a tab with id '${id}'`);
         this.tabsById.set(id, tab);
@@ -219,6 +225,9 @@ export class TabbedPane extends VBox {
         this.closeTabs([id], userGesture);
     }
     closeTabs(ids, userGesture) {
+        if (ids.length === 0) {
+            return;
+        }
         const focused = this.hasFocus();
         for (let i = 0; i < ids.length; ++i) {
             this.innerCloseTab(ids[i], userGesture);
@@ -555,7 +564,7 @@ export class TabbedPane extends VBox {
                 menu.defaultSection().appendItem(tab.title, this.dropDownMenuItemSelected.bind(this, tab));
             }
         }
-        menu.show();
+        void menu.show();
     }
     dropDownKeydown(event) {
         if (isEnterOrSpaceKey(event)) {
@@ -840,6 +849,7 @@ export var Events;
 })(Events || (Events = {}));
 export class TabbedPaneTab {
     closeable;
+    previewFeature = false;
     tabbedPane;
     idInternal;
     titleInternal;
@@ -854,8 +864,9 @@ export class TabbedPaneTab {
     delegate;
     titleElement;
     dragStartX;
-    constructor(tabbedPane, id, title, closeable, view, tooltip) {
+    constructor(tabbedPane, id, title, closeable, previewFeature, view, tooltip) {
         this.closeable = closeable;
+        this.previewFeature = previewFeature;
         this.tabbedPane = tabbedPane;
         this.idInternal = id;
         this.titleInternal = title;
@@ -961,6 +972,11 @@ export class TabbedPaneTab {
         if (!measuring) {
             this.titleElement = titleElement;
         }
+        if (this.previewFeature) {
+            const previewIcon = this.createPreviewIcon();
+            tabElement.appendChild(previewIcon);
+            tabElement.classList.add('preview');
+        }
         if (this.closeable) {
             const closeIcon = this.createCloseIconButton();
             tabElement.appendChild(closeIcon);
@@ -995,6 +1011,20 @@ export class TabbedPaneTab {
         closeIconContainer.setAttribute('title', i18nString(UIStrings.closeS, { PH1: this.title }));
         closeIconContainer.setAttribute('aria-label', i18nString(UIStrings.closeS, { PH1: this.title }));
         return closeIconContainer;
+    }
+    createPreviewIcon() {
+        const previewIcon = document.createElement('div');
+        previewIcon.classList.add('preview-icon');
+        const closeIcon = new IconButton.Icon.Icon();
+        closeIcon.data = {
+            iconName: 'ic_preview_feature',
+            color: 'var(--override-tabbed-pane-preview-icon-color)',
+            width: '14px',
+        };
+        previewIcon.appendChild(closeIcon);
+        previewIcon.setAttribute('title', i18nString(UIStrings.previewFeature));
+        previewIcon.setAttribute('aria-label', i18nString(UIStrings.previewFeature));
+        return previewIcon;
     }
     isCloseIconClicked(element) {
         return element?.classList.contains('tabbed-pane-close-button') ||
@@ -1055,7 +1085,7 @@ export class TabbedPaneTab {
         if (this.delegate) {
             this.delegate.onContextMenu(this.id, contextMenu);
         }
-        contextMenu.show();
+        void contextMenu.show();
     }
     startTabDragging(ev) {
         const event = ev;

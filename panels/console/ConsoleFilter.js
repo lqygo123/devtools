@@ -50,12 +50,24 @@ export class ConsoleFilter {
             return false;
         }
         if (message.type === SDK.ConsoleModel.FrontendMessageType.Command ||
-            message.type === SDK.ConsoleModel.FrontendMessageType.Result) {
+            message.type === SDK.ConsoleModel.FrontendMessageType.Result ||
+            message.type === "endGroup" /* EndGroup */) {
             return true;
         }
         if (message.level && !this.levelsMask[message.level]) {
             return false;
         }
+        return this.applyFilter(viewMessage) || this.parentGroupHasMatch(viewMessage.consoleGroup());
+    }
+    // A message is visible if there is a match in any of the parent groups' titles.
+    parentGroupHasMatch(viewMessage) {
+        if (viewMessage === null) {
+            return false;
+        }
+        return this.applyFilter(viewMessage) || this.parentGroupHasMatch(viewMessage.consoleGroup());
+    }
+    applyFilter(viewMessage) {
+        const message = viewMessage.consoleMessage();
         for (const filter of this.parsedFilters) {
             if (!filter.key) {
                 if (filter.regex && viewMessage.matchesFilterRegex(filter.regex) === filter.negative) {

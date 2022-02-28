@@ -5,11 +5,7 @@ import { RuntimeModel } from './RuntimeModel.js';
 import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export declare class HeapProfilerModel extends SDKModel<EventTypes> {
-    private enabled;
-    private readonly heapProfilerAgent;
-    private readonly memoryAgent;
-    private readonly runtimeModelInternal;
-    private samplingProfilerDepth;
+    #private;
     constructor(target: Target);
     debuggerModel(): DebuggerModel;
     runtimeModel(): RuntimeModel;

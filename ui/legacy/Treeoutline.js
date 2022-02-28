@@ -33,11 +33,13 @@
 import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as ARIAUtils from './ARIAUtils.js';
+import * as ThemeSupport from './theme_support/theme_support.js';
 import * as Utils from './utils/utils.js';
 import { InplaceEditor } from './InplaceEditor.js';
 import { Keys } from './KeyboardShortcut.js';
 import { Tooltip } from './Tooltip.js';
 import { deepElementFromPoint, enclosingNodeOrSelfWithNodeNameInArray, isEditing } from './UIUtils.js';
+import treeoutlineStyles from './treeoutline.css.legacy.js';
 const nodeToParentTreeElementMap = new WeakMap();
 // TODO(crbug.com/1167717): Make this a const enum again
 // eslint-disable-next-line rulesdir/const_enum
@@ -60,7 +62,7 @@ export class TreeOutline extends Common.ObjectWrapper.ObjectWrapper {
     showSelectionOnKeyboardFocus;
     focusable;
     element;
-    useLightSelectionColorInternal;
+    useLightSelectionColor;
     treeElementToScrollIntoView;
     centerUponScrollIntoView;
     constructor() {
@@ -78,7 +80,7 @@ export class TreeOutline extends Common.ObjectWrapper.ObjectWrapper {
         this.setFocusable(true);
         this.element = this.contentElement;
         ARIAUtils.markAsTree(this.element);
-        this.useLightSelectionColorInternal = false;
+        this.useLightSelectionColor = false;
         this.treeElementToScrollIntoView = null;
         this.centerUponScrollIntoView = false;
     }
@@ -167,8 +169,11 @@ export class TreeOutline extends Common.ObjectWrapper.ObjectWrapper {
             this.contentElement.focus();
         }
     }
-    useLightSelectionColor() {
-        this.useLightSelectionColorInternal = true;
+    setUseLightSelectionColor(flag) {
+        this.useLightSelectionColor = flag;
+    }
+    getUseLightSelectionColor() {
+        return this.useLightSelectionColor;
     }
     bindTreeElement(element) {
         if (element.treeOutline) {
@@ -342,13 +347,14 @@ export class TreeOutlineInShadow extends TreeOutline {
         super();
         this.contentElement.classList.add('tree-outline');
         this.element = document.createElement('div');
-        this.shadowRoot = Utils.createShadowRootWithCoreStyles(this.element, { cssFile: 'ui/legacy/treeoutline.css', delegatesFocus: undefined });
+        this.shadowRoot =
+            Utils.createShadowRootWithCoreStyles(this.element, { cssFile: treeoutlineStyles, delegatesFocus: undefined });
         this.disclosureElement = this.shadowRoot.createChild('div', 'tree-outline-disclosure');
         this.disclosureElement.appendChild(this.contentElement);
         this.renderSelection = true;
     }
     registerRequiredCSS(cssFile) {
-        Utils.appendStyle(this.shadowRoot, cssFile);
+        ThemeSupport.ThemeSupport.instance().appendStyle(this.shadowRoot, cssFile);
     }
     registerCSSFiles(cssFiles) {
         this.shadowRoot.adoptedStyleSheets = this.shadowRoot.adoptedStyleSheets.concat(cssFiles);
@@ -734,6 +740,9 @@ export class TreeElement {
             ARIAUtils.setExpanded(this.listItemNode, false);
         }
     }
+    isCollapsible() {
+        return this.collapsible;
+    }
     setCollapsible(collapsible) {
         if (this.collapsible === collapsible) {
             return;
@@ -799,7 +808,7 @@ export class TreeElement {
         }
         else {
             if (event.altKey) {
-                this.expandRecursively();
+                void this.expandRecursively();
             }
             else {
                 this.expand();
@@ -882,7 +891,7 @@ export class TreeElement {
         // sure the expanded flag is true before calling those functions. This prevents the possibility
         // of an infinite loop if onpopulate were to call expand.
         this.expanded = true;
-        this.populateIfNeeded();
+        void this.populateIfNeeded();
         this.listItemNode.classList.add('expanded');
         this.childrenListNode.classList.add('expanded');
         ARIAUtils.setExpanded(this.listItemNode, true);
@@ -943,7 +952,7 @@ export class TreeElement {
         }
         if (!this.expanded) {
             if (altKey) {
-                this.expandRecursively();
+                void this.expandRecursively();
             }
             else {
                 this.expand();
@@ -1041,7 +1050,7 @@ export class TreeElement {
         }
     }
     onFocus() {
-        if (!this.treeOutline || this.treeOutline.useLightSelectionColor()) {
+        if (!this.treeOutline || this.treeOutline.getUseLightSelectionColor()) {
             return;
         }
         if (!this.treeOutline.contentElement.classList.contains('hide-selection-when-blurred')) {
@@ -1049,7 +1058,7 @@ export class TreeElement {
         }
     }
     onBlur() {
-        if (!this.treeOutline || this.treeOutline.useLightSelectionColor()) {
+        if (!this.treeOutline || this.treeOutline.getUseLightSelectionColor()) {
             return;
         }
         if (!this.treeOutline.contentElement.classList.contains('hide-selection-when-blurred')) {
@@ -1110,7 +1119,7 @@ export class TreeElement {
     }
     traverseNextTreeElement(skipUnrevealed, stayWithin, dontPopulate, info) {
         if (!dontPopulate) {
-            this.populateIfNeeded();
+            void this.populateIfNeeded();
         }
         if (info) {
             info.depthChange = 0;
@@ -1146,13 +1155,13 @@ export class TreeElement {
     traversePreviousTreeElement(skipUnrevealed, dontPopulate) {
         let element = skipUnrevealed ? (this.revealed() ? this.previousSibling : null) : this.previousSibling;
         if (!dontPopulate && element) {
-            element.populateIfNeeded();
+            void element.populateIfNeeded();
         }
         while (element &&
             (skipUnrevealed ? (element.revealed() && element.expanded ? element.lastChild() : null) :
                 element.lastChild())) {
             if (!dontPopulate) {
-                element.populateIfNeeded();
+                void element.populateIfNeeded();
             }
             element =
                 (skipUnrevealed ? (element.revealed() && element.expanded ? element.lastChild() : null) :

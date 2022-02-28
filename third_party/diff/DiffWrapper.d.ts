@@ -1,3 +1,15 @@
+declare global {
+    class diff_match_patch {
+        diff_main(text1: string, text2: string): Array<{
+            0: number;
+            1: string;
+        }>;
+        diff_cleanupSemantic(diff: Array<{
+            0: number;
+            1: string;
+        }>): void;
+    }
+}
 export declare const DiffWrapper: {
     charDiff: (text1: string, text2: string, cleanup?: boolean | undefined) => {
         0: number;

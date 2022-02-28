@@ -1,10 +1,10 @@
+import * as EventListeners from '../event_listeners/event_listeners.js';
 import * as UI from '../../ui/legacy/legacy.js';
 export declare class ObjectEventListenersSidebarPane extends UI.Widget.VBox implements UI.Toolbar.ItemsProvider {
-    private readonly refreshButton;
-    private readonly eventListenersView;
-    private lastRequestedContext?;
+    #private;
     private constructor();
     static instance(): ObjectEventListenersSidebarPane;
+    get eventListenersView(): EventListeners.EventListenersView.EventListenersView;
     toolbarItems(): UI.Toolbar.ToolbarItem[];
     update(): void;
     wasShown(): void;

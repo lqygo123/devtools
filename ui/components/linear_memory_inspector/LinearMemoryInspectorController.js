@@ -12,12 +12,12 @@ const MEMORY_TRANSFER_MIN_CHUNK_SIZE = 1000;
 export const ACCEPTED_MEMORY_TYPES = ['webassemblymemory', 'typedarray', 'dataview', 'arraybuffer'];
 let controllerInstance;
 export class RemoteArrayBufferWrapper {
-    remoteArrayBuffer;
+    #remoteArrayBuffer;
     constructor(arrayBuffer) {
-        this.remoteArrayBuffer = arrayBuffer;
+        this.#remoteArrayBuffer = arrayBuffer;
     }
     length() {
-        return this.remoteArrayBuffer.byteLength();
+        return this.#remoteArrayBuffer.byteLength();
     }
     async getRange(start, end) {
         const newEnd = Math.min(end, this.length());
@@ -25,7 +25,7 @@ export class RemoteArrayBufferWrapper {
             console.error(`Requesting invalid range of memory: (${start}, ${end})`);
             return new Uint8Array(0);
         }
-        const array = await this.remoteArrayBuffer.bytes(start, newEnd);
+        const array = await this.#remoteArrayBuffer.bytes(start, newEnd);
         return new Uint8Array(array);
     }
 }
@@ -47,22 +47,22 @@ async function getBufferFromObject(obj) {
     return new SDK.RemoteObject.RemoteArrayBuffer(obj);
 }
 export class LinearMemoryInspectorController extends SDK.TargetManager.SDKModelObserver {
-    paneInstance = LinearMemoryInspectorPaneImpl.instance();
-    bufferIdToRemoteObject = new Map();
-    settings;
+    #paneInstance = LinearMemoryInspectorPaneImpl.instance();
+    #bufferIdToRemoteObject = new Map();
+    #settings;
     constructor() {
         super();
         SDK.TargetManager.TargetManager.instance().observeModels(SDK.RuntimeModel.RuntimeModel, this);
-        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DebuggerModel.DebuggerModel, SDK.DebuggerModel.Events.GlobalObjectCleared, this.onGlobalObjectClear, this);
-        this.paneInstance.addEventListener("ViewClosed" /* ViewClosed */, this.viewClosed.bind(this));
-        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DebuggerModel.DebuggerModel, SDK.DebuggerModel.Events.DebuggerPaused, this.onDebuggerPause, this);
+        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DebuggerModel.DebuggerModel, SDK.DebuggerModel.Events.GlobalObjectCleared, this.#onGlobalObjectClear, this);
+        this.#paneInstance.addEventListener("ViewClosed" /* ViewClosed */, this.#viewClosed.bind(this));
+        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DebuggerModel.DebuggerModel, SDK.DebuggerModel.Events.DebuggerPaused, this.#onDebuggerPause, this);
         const defaultValueTypeModes = getDefaultValueTypeMapping();
         const defaultSettings = {
             valueTypes: Array.from(defaultValueTypeModes.keys()),
             valueTypeModes: Array.from(defaultValueTypeModes),
             endianness: "Little Endian" /* Little */,
         };
-        this.settings = Common.Settings.Settings.instance().createSetting('lmiInterpreterSettings', defaultSettings);
+        this.#settings = Common.Settings.Settings.instance().createSetting('lmiInterpreterSettings', defaultSettings);
     }
     static instance() {
         if (controllerInstance) {
@@ -94,10 +94,10 @@ export class LinearMemoryInspectorController extends SDK.TargetManager.SDKModelO
     saveSettings(data) {
         const valueTypes = Array.from(data.valueTypes);
         const modes = [...data.modes];
-        this.settings.set({ valueTypes, valueTypeModes: modes, endianness: data.endianness });
+        this.#settings.set({ valueTypes, valueTypeModes: modes, endianness: data.endianness });
     }
     loadSettings() {
-        const settings = this.settings.get();
+        const settings = this.#settings.get();
         return {
             valueTypes: new Set(settings.valueTypes),
             modes: new Map(settings.valueTypeModes),
@@ -130,42 +130,42 @@ export class LinearMemoryInspectorController extends SDK.TargetManager.SDKModelO
         }
         const memoryProperty = internalProperties?.find(({ name }) => name === '[[WebAssemblyMemory]]');
         const memory = memoryProperty?.value;
-        if (this.bufferIdToRemoteObject.has(id)) {
-            this.paneInstance.reveal(id, address);
-            UI.ViewManager.ViewManager.instance().showView('linear-memory-inspector');
+        if (this.#bufferIdToRemoteObject.has(id)) {
+            this.#paneInstance.reveal(id, address);
+            void UI.ViewManager.ViewManager.instance().showView('linear-memory-inspector');
             return;
         }
         const title = String(memory ? memory.description : buffer.object().description);
-        this.bufferIdToRemoteObject.set(id, buffer.object());
+        this.#bufferIdToRemoteObject.set(id, buffer.object());
         const arrayBufferWrapper = new RemoteArrayBufferWrapper(buffer);
-        this.paneInstance.create(id, title, arrayBufferWrapper, address);
-        UI.ViewManager.ViewManager.instance().showView('linear-memory-inspector');
+        this.#paneInstance.create(id, title, arrayBufferWrapper, address);
+        void UI.ViewManager.ViewManager.instance().showView('linear-memory-inspector');
     }
     modelRemoved(model) {
-        for (const [bufferId, remoteObject] of this.bufferIdToRemoteObject) {
+        for (const [bufferId, remoteObject] of this.#bufferIdToRemoteObject) {
             if (model === remoteObject.runtimeModel()) {
-                this.bufferIdToRemoteObject.delete(bufferId);
-                this.paneInstance.close(bufferId);
+                this.#bufferIdToRemoteObject.delete(bufferId);
+                this.#paneInstance.close(bufferId);
             }
         }
     }
-    onDebuggerPause(event) {
+    #onDebuggerPause(event) {
         const debuggerModel = event.data;
-        for (const [bufferId, remoteObject] of this.bufferIdToRemoteObject) {
+        for (const [bufferId, remoteObject] of this.#bufferIdToRemoteObject) {
             if (debuggerModel.runtimeModel() === remoteObject.runtimeModel()) {
-                this.paneInstance.refreshView(bufferId);
+                this.#paneInstance.refreshView(bufferId);
             }
         }
     }
-    onGlobalObjectClear(event) {
+    #onGlobalObjectClear(event) {
         this.modelRemoved(event.data.runtimeModel());
     }
-    viewClosed({ data: bufferId }) {
-        const remoteObj = this.bufferIdToRemoteObject.get(bufferId);
+    #viewClosed({ data: bufferId }) {
+        const remoteObj = this.#bufferIdToRemoteObject.get(bufferId);
         if (remoteObj) {
             remoteObj.release();
         }
-        this.bufferIdToRemoteObject.delete(bufferId);
+        this.#bufferIdToRemoteObject.delete(bufferId);
     }
 }
 //# sourceMappingURL=LinearMemoryInspectorController.js.map

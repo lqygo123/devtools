@@ -158,6 +158,9 @@ export class MainView extends UI.Panel.PanelWithSidebar {
     }
     eventsAdded(event) {
         for (const ev of event.data.events) {
+            // TODO(crbug.com/1228674): The conversion from Protocol.Media.PlayerEvent to PlayerEvent happens implicitly
+            // by augmenting the protocol type with some additional property in various places. This needs to be cleaned up
+            // in a conversion function that takes the protocol type and produces the PlayerEvent type.
             this.onEvent(event.data.playerId, ev);
         }
     }
@@ -207,8 +210,7 @@ export class MainView extends UI.Panel.PanelWithSidebar {
         this.detailPanels.get(playerID)?.onEvent(event);
     }
     playersCreated(event) {
-        const playerlist = event.data;
-        for (const playerID of playerlist) {
+        for (const playerID of event.data) {
             this.onPlayerCreated(playerID);
         }
     }

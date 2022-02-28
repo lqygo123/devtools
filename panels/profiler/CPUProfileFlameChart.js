@@ -29,6 +29,7 @@
  */
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
+import * as Platform from '../../core/platform/platform.js';
 import * as PerfUI from '../../ui/legacy/components/perf_ui/perf_ui.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import * as i18n from '../../core/i18n/i18n.js';
@@ -116,7 +117,7 @@ export class ProfileFlameChartDataProvider {
         return this.entryNodes.length;
     }
 }
-export class CPUProfileFlameChart extends UI.Widget.VBox {
+export class CPUProfileFlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
     searchableView;
     overviewPane;
     mainPane;
@@ -139,7 +140,7 @@ export class CPUProfileFlameChart extends UI.Widget.VBox {
         this.mainPane.addEventListener(PerfUI.FlameChart.Events.EntryInvoked, this.onEntryInvoked, this);
         this.entrySelected = false;
         this.mainPane.addEventListener(PerfUI.FlameChart.Events.CanvasFocused, this.onEntrySelected, this);
-        this.overviewPane.addEventListener(PerfUI.OverviewGrid.Events.WindowChanged, this.onWindowChanged, this);
+        this.overviewPane.addEventListener("WindowChanged" /* WindowChanged */, this.onWindowChanged, this);
         this.dataProvider = dataProvider;
         this.searchResults = [];
     }
@@ -147,8 +148,7 @@ export class CPUProfileFlameChart extends UI.Widget.VBox {
         this.mainPane.focus();
     }
     onWindowChanged(event) {
-        const windowLeft = event.data.windowTimeLeft;
-        const windowRight = event.data.windowTimeRight;
+        const { windowTimeLeft: windowLeft, windowTimeRight: windowRight } = event.data;
         this.mainPane.setWindowTimes(windowLeft, windowRight, /* animate */ true);
     }
     selectRange(timeLeft, timeRight) {
@@ -179,7 +179,7 @@ export class CPUProfileFlameChart extends UI.Widget.VBox {
         this.mainPane.update();
     }
     performSearch(searchConfig, _shouldJump, jumpBackwards) {
-        const matcher = createPlainTextSearchRegex(searchConfig.query, searchConfig.caseSensitive ? '' : 'i');
+        const matcher = Platform.StringUtilities.createPlainTextSearchRegex(searchConfig.query, searchConfig.caseSensitive ? '' : 'i');
         const selectedEntryIndex = this.searchResultIndex !== -1 ? this.searchResults[this.searchResultIndex] : -1;
         this.searchResults = [];
         const entriesCount = this.dataProvider.entryNodesLength();
@@ -256,7 +256,7 @@ export class OverviewCalculator {
         return this.maximumBoundaries - this.minimumBoundaries;
     }
 }
-export class OverviewPane extends UI.Widget.VBox {
+export class OverviewPane extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
     overviewContainer;
     overviewCalculator;
     overviewGrid;
@@ -276,7 +276,7 @@ export class OverviewPane extends UI.Widget.VBox {
             this.overviewContainer.createChild('canvas', 'cpu-profile-flame-chart-overview-canvas');
         this.overviewContainer.appendChild(this.overviewGrid.element);
         this.dataProvider = dataProvider;
-        this.overviewGrid.addEventListener(PerfUI.OverviewGrid.Events.WindowChanged, this.onWindowChanged, this);
+        this.overviewGrid.addEventListener(PerfUI.OverviewGrid.Events.WindowChangedWithPosition, this.onWindowChanged, this);
     }
     windowChanged(windowStartTime, windowEndTime) {
         this.selectRange(windowStartTime, windowEndTime);
@@ -294,7 +294,7 @@ export class OverviewPane extends UI.Widget.VBox {
         const windowPosition = { windowTimeLeft: event.data.rawStartValue, windowTimeRight: event.data.rawEndValue };
         this.windowTimeLeft = windowPosition.windowTimeLeft;
         this.windowTimeRight = windowPosition.windowTimeRight;
-        this.dispatchEventToListeners(PerfUI.OverviewGrid.Events.WindowChanged, windowPosition);
+        this.dispatchEventToListeners("WindowChanged" /* WindowChanged */, windowPosition);
     }
     timelineData() {
         return this.dataProvider.timelineData();

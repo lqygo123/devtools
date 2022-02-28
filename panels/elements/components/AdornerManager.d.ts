@@ -27,15 +27,11 @@ interface SettingStore<Setting> {
     set(setting: Setting): void;
 }
 export declare class AdornerManager {
-    private adornerSettings;
-    private settingStore;
+    #private;
     constructor(settingStore: SettingStore<AdornerSetting[]>);
     updateSettings(settings: AdornerSettingsMap): void;
     getSettings(): Readonly<AdornerSettingsMap>;
     isAdornerEnabled(adornerText: string): boolean;
-    private persistCurrentSettings;
-    private loadSettings;
-    private syncSettings;
 }
 export declare const AdornerCategoryOrder: Map<AdornerCategories, number>;
 export declare function compareAdornerNamesByCategory(nameA: string, nameB: string): number;

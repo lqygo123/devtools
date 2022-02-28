@@ -14,24 +14,8 @@ import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 import { SourceMapManager } from './SourceMapManager.js';
 export declare class CSSModel extends SDKModel<EventTypes> {
-    private isEnabledInternal;
-    private cachedMatchedCascadeNode;
-    private cachedMatchedCascadePromise;
-    private readonly domModelInternal;
-    private readonly sourceMapManagerInternal;
-    agent: ProtocolProxyApi.CSSApi;
-    private readonly styleLoader;
-    private readonly resourceTreeModel;
-    private styleSheetIdToHeader;
-    private readonly styleSheetIdsForURL;
-    private readonly originalStyleSheetTextInternal;
-    private isRuleUsageTrackingEnabled;
-    private readonly fontFacesInternal;
-    private cssPropertyTracker;
-    private isCSSPropertyTrackingEnabled;
-    private isTrackingRequestPending;
-    private readonly trackedCSSProperties;
-    private readonly stylePollingThrottler;
+    #private;
+    readonly agent: ProtocolProxyApi.CSSApi;
     constructor(target: Target);
     headersForSourceURL(sourceURL: string): CSSStyleSheetHeader[];
     createRawLocationsByURL(sourceURL: string, lineNumber: number, columnNumber?: number | undefined): CSSLocation[];
@@ -79,6 +63,7 @@ export declare class CSSModel extends SDKModel<EventTypes> {
     getStyleSheetIdsForURL(url: string): Protocol.CSS.StyleSheetId[];
     setStyleSheetText(styleSheetId: Protocol.CSS.StyleSheetId, newText: string, majorChange: boolean): Promise<string | null>;
     getStyleSheetText(styleSheetId: Protocol.CSS.StyleSheetId): Promise<string | null>;
+    private onMainFrameNavigated;
     private resetStyleSheets;
     private resetFontFaces;
     suspendModel(): Promise<void>;
@@ -129,7 +114,7 @@ export declare class Edit {
     constructor(styleSheetId: string, oldRange: TextUtils.TextRange.TextRange, newText: string, payload: Object | null);
 }
 export declare class CSSLocation {
-    private readonly cssModelInternal;
+    #private;
     styleSheetId: Protocol.CSS.StyleSheetId;
     url: string;
     lineNumber: number;
@@ -143,9 +128,8 @@ export declare class InlineStyleResult {
     attributesStyle: CSSStyleDeclaration | null;
     constructor(inlineStyle: CSSStyleDeclaration | null, attributesStyle: CSSStyleDeclaration | null);
 }
-export declare class CSSPropertyTracker extends Common.ObjectWrapper.ObjectWrapper {
-    private readonly cssModel;
-    private readonly properties;
+export declare class CSSPropertyTracker extends Common.ObjectWrapper.ObjectWrapper<CSSPropertyTrackerEventTypes> {
+    #private;
     constructor(cssModel: CSSModel, propertiesToTrack: Protocol.CSS.CSSComputedStyleProperty[]);
     start(): void;
     stop(): void;
@@ -154,6 +138,9 @@ export declare class CSSPropertyTracker extends Common.ObjectWrapper.ObjectWrapp
 export declare enum CSSPropertyTrackerEvents {
     TrackedCSSPropertiesUpdated = "TrackedCSSPropertiesUpdated"
 }
+export declare type CSSPropertyTrackerEventTypes = {
+    [CSSPropertyTrackerEvents.TrackedCSSPropertiesUpdated]: (DOMNode | null)[];
+};
 export interface ContrastInfo {
     backgroundColors: string[] | null;
     computedFontSize: string;

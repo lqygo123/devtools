@@ -35,20 +35,20 @@ import { NetworkProject } from './NetworkProject.js';
 import { metadataForURL } from './ResourceUtils.js';
 const uiSourceCodeToStyleMap = new WeakMap();
 export class StylesSourceMapping {
-    cssModel;
-    project;
-    styleFiles;
-    eventListeners;
+    #cssModel;
+    #project;
+    #styleFiles;
+    #eventListeners;
     constructor(cssModel, workspace) {
-        this.cssModel = cssModel;
-        const target = this.cssModel.target();
-        this.project = new ContentProviderBasedProject(workspace, 'css:' + target.id(), Workspace.Workspace.projectTypes.Network, '', false /* isServiceProject */);
-        NetworkProject.setTargetForProject(this.project, target);
-        this.styleFiles = new Map();
-        this.eventListeners = [
-            this.cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetAdded, this.styleSheetAdded, this),
-            this.cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetRemoved, this.styleSheetRemoved, this),
-            this.cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetChanged, this.styleSheetChanged, this),
+        this.#cssModel = cssModel;
+        const target = this.#cssModel.target();
+        this.#project = new ContentProviderBasedProject(workspace, 'css:' + target.id(), Workspace.Workspace.projectTypes.Network, '', false /* isServiceProject */);
+        NetworkProject.setTargetForProject(this.#project, target);
+        this.#styleFiles = new Map();
+        this.#eventListeners = [
+            this.#cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetAdded, this.styleSheetAdded, this),
+            this.#cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetRemoved, this.styleSheetRemoved, this),
+            this.#cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetChanged, this.styleSheetChanged, this),
         ];
     }
     rawLocationToUILocation(rawLocation) {
@@ -56,7 +56,7 @@ export class StylesSourceMapping {
         if (!header || !this.acceptsHeader(header)) {
             return null;
         }
-        const styleFile = this.styleFiles.get(header.resourceURL());
+        const styleFile = this.#styleFiles.get(header.resourceURL());
         if (!styleFile) {
             return null;
         }
@@ -84,7 +84,7 @@ export class StylesSourceMapping {
             let lineNumber = uiLocation.lineNumber;
             let columnNumber = uiLocation.columnNumber;
             if (header.isInline && header.hasSourceURL) {
-                // TODO(crbug.com/1153123): Revisit the `columnNumber || 0` and also preserve `undefined` for source maps?
+                // TODO(crbug.com/1153123): Revisit the `#columnNumber || 0` and also preserve `undefined` for source maps?
                 columnNumber = header.columnNumberInSource(lineNumber, uiLocation.columnNumber || 0);
                 lineNumber = header.lineNumberInSource(lineNumber);
             }
@@ -110,10 +110,10 @@ export class StylesSourceMapping {
             return;
         }
         const url = header.resourceURL();
-        let styleFile = this.styleFiles.get(url);
+        let styleFile = this.#styleFiles.get(url);
         if (!styleFile) {
-            styleFile = new StyleFile(this.cssModel, this.project, header);
-            this.styleFiles.set(url, styleFile);
+            styleFile = new StyleFile(this.#cssModel, this.#project, header);
+            this.#styleFiles.set(url, styleFile);
         }
         else {
             styleFile.addHeader(header);
@@ -125,11 +125,11 @@ export class StylesSourceMapping {
             return;
         }
         const url = header.resourceURL();
-        const styleFile = this.styleFiles.get(url);
+        const styleFile = this.#styleFiles.get(url);
         if (styleFile) {
             if (styleFile.getHeaders().size === 1) {
                 styleFile.dispose();
-                this.styleFiles.delete(url);
+                this.#styleFiles.delete(url);
             }
             else {
                 styleFile.removeHeader(header);
@@ -137,51 +137,51 @@ export class StylesSourceMapping {
         }
     }
     styleSheetChanged(event) {
-        const header = this.cssModel.styleSheetHeaderForId(event.data.styleSheetId);
+        const header = this.#cssModel.styleSheetHeaderForId(event.data.styleSheetId);
         if (!header || !this.acceptsHeader(header)) {
             return;
         }
-        const styleFile = this.styleFiles.get(header.resourceURL());
+        const styleFile = this.#styleFiles.get(header.resourceURL());
         if (styleFile) {
             styleFile.styleSheetChanged(header);
         }
     }
     dispose() {
-        for (const styleFile of this.styleFiles.values()) {
+        for (const styleFile of this.#styleFiles.values()) {
             styleFile.dispose();
         }
-        this.styleFiles.clear();
-        Common.EventTarget.removeEventListeners(this.eventListeners);
-        this.project.removeProject();
+        this.#styleFiles.clear();
+        Common.EventTarget.removeEventListeners(this.#eventListeners);
+        this.#project.removeProject();
     }
 }
 export class StyleFile {
-    cssModel;
-    project;
+    #cssModel;
+    #project;
     headers;
     uiSourceCode;
-    eventListeners;
-    throttler;
-    terminated;
-    isAddingRevision;
-    isUpdatingHeaders;
+    #eventListeners;
+    #throttler;
+    #terminated;
+    #isAddingRevision;
+    #isUpdatingHeaders;
     constructor(cssModel, project, header) {
-        this.cssModel = cssModel;
-        this.project = project;
+        this.#cssModel = cssModel;
+        this.#project = project;
         this.headers = new Set([header]);
         const target = cssModel.target();
         const url = header.resourceURL();
         const metadata = metadataForURL(target, header.frameId, url);
-        this.uiSourceCode = this.project.createUISourceCode(url, header.contentType());
+        this.uiSourceCode = this.#project.createUISourceCode(url, header.contentType());
         uiSourceCodeToStyleMap.set(this.uiSourceCode, this);
         NetworkProject.setInitialFrameAttribution(this.uiSourceCode, header.frameId);
-        this.project.addUISourceCodeWithProvider(this.uiSourceCode, this, metadata, 'text/css');
-        this.eventListeners = [
+        this.#project.addUISourceCodeWithProvider(this.uiSourceCode, this, metadata, 'text/css');
+        this.#eventListeners = [
             this.uiSourceCode.addEventListener(Workspace.UISourceCode.Events.WorkingCopyChanged, this.workingCopyChanged, this),
             this.uiSourceCode.addEventListener(Workspace.UISourceCode.Events.WorkingCopyCommitted, this.workingCopyCommitted, this),
         ];
-        this.throttler = new Common.Throttler.Throttler(StyleFile.updateTimeout);
-        this.terminated = false;
+        this.#throttler = new Common.Throttler.Throttler(StyleFile.updateTimeout);
+        this.#terminated = false;
     }
     addHeader(header) {
         this.headers.add(header);
@@ -193,28 +193,28 @@ export class StyleFile {
     }
     styleSheetChanged(header) {
         console.assert(this.headers.has(header));
-        if (this.isUpdatingHeaders || !this.headers.has(header)) {
+        if (this.#isUpdatingHeaders || !this.headers.has(header)) {
             return;
         }
         const mirrorContentBound = this.mirrorContent.bind(this, header, true /* majorChange */);
-        this.throttler.schedule(mirrorContentBound, false /* asSoonAsPossible */);
+        void this.#throttler.schedule(mirrorContentBound, false /* asSoonAsPossible */);
     }
     workingCopyCommitted() {
-        if (this.isAddingRevision) {
+        if (this.#isAddingRevision) {
             return;
         }
         const mirrorContentBound = this.mirrorContent.bind(this, this.uiSourceCode, true /* majorChange */);
-        this.throttler.schedule(mirrorContentBound, true /* asSoonAsPossible */);
+        void this.#throttler.schedule(mirrorContentBound, true /* asSoonAsPossible */);
     }
     workingCopyChanged() {
-        if (this.isAddingRevision) {
+        if (this.#isAddingRevision) {
             return;
         }
         const mirrorContentBound = this.mirrorContent.bind(this, this.uiSourceCode, false /* majorChange */);
-        this.throttler.schedule(mirrorContentBound, false /* asSoonAsPossible */);
+        void this.#throttler.schedule(mirrorContentBound, false /* asSoonAsPossible */);
     }
     async mirrorContent(fromProvider, majorChange) {
-        if (this.terminated) {
+        if (this.#terminated) {
             this.styleFileSyncedForTest();
             return;
         }
@@ -226,37 +226,37 @@ export class StyleFile {
             const deferredContent = await fromProvider.requestContent();
             newContent = deferredContent.content;
         }
-        if (newContent === null || this.terminated) {
+        if (newContent === null || this.#terminated) {
             this.styleFileSyncedForTest();
             return;
         }
         if (fromProvider !== this.uiSourceCode) {
-            this.isAddingRevision = true;
+            this.#isAddingRevision = true;
             this.uiSourceCode.addRevision(newContent);
-            this.isAddingRevision = false;
+            this.#isAddingRevision = false;
         }
-        this.isUpdatingHeaders = true;
+        this.#isUpdatingHeaders = true;
         const promises = [];
         for (const header of this.headers) {
             if (header === fromProvider) {
                 continue;
             }
-            promises.push(this.cssModel.setStyleSheetText(header.id, newContent, majorChange));
+            promises.push(this.#cssModel.setStyleSheetText(header.id, newContent, majorChange));
         }
         // ------ ASYNC ------
         await Promise.all(promises);
-        this.isUpdatingHeaders = false;
+        this.#isUpdatingHeaders = false;
         this.styleFileSyncedForTest();
     }
     styleFileSyncedForTest() {
     }
     dispose() {
-        if (this.terminated) {
+        if (this.#terminated) {
             return;
         }
-        this.terminated = true;
-        this.project.removeFile(this.uiSourceCode.url());
-        Common.EventTarget.removeEventListeners(this.eventListeners);
+        this.#terminated = true;
+        this.#project.removeFile(this.uiSourceCode.url());
+        Common.EventTarget.removeEventListeners(this.#eventListeners);
     }
     contentURL() {
         console.assert(this.headers.size > 0);

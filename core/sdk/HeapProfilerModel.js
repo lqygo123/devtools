@@ -5,92 +5,90 @@ import { RuntimeModel } from './RuntimeModel.js';
 import { Capability } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export class HeapProfilerModel extends SDKModel {
-    enabled;
-    heapProfilerAgent;
-    memoryAgent;
-    runtimeModelInternal;
-    samplingProfilerDepth;
+    #enabled;
+    #heapProfilerAgent;
+    #runtimeModelInternal;
+    #samplingProfilerDepth;
     constructor(target) {
         super(target);
         target.registerHeapProfilerDispatcher(new HeapProfilerDispatcher(this));
-        this.enabled = false;
-        this.heapProfilerAgent = target.heapProfilerAgent();
-        this.memoryAgent = target.memoryAgent();
-        this.runtimeModelInternal = target.model(RuntimeModel);
-        this.samplingProfilerDepth = 0;
+        this.#enabled = false;
+        this.#heapProfilerAgent = target.heapProfilerAgent();
+        this.#runtimeModelInternal = target.model(RuntimeModel);
+        this.#samplingProfilerDepth = 0;
     }
     debuggerModel() {
-        return this.runtimeModelInternal.debuggerModel();
+        return this.#runtimeModelInternal.debuggerModel();
     }
     runtimeModel() {
-        return this.runtimeModelInternal;
+        return this.#runtimeModelInternal;
     }
     async enable() {
-        if (this.enabled) {
+        if (this.#enabled) {
             return;
         }
-        this.enabled = true;
-        await this.heapProfilerAgent.invoke_enable();
+        this.#enabled = true;
+        await this.#heapProfilerAgent.invoke_enable();
     }
     async startSampling(samplingRateInBytes) {
-        if (this.samplingProfilerDepth++) {
+        if (this.#samplingProfilerDepth++) {
             return false;
         }
         const defaultSamplingIntervalInBytes = 16384;
-        const response = await this.heapProfilerAgent.invoke_startSampling({ samplingInterval: samplingRateInBytes || defaultSamplingIntervalInBytes });
+        const response = await this.#heapProfilerAgent.invoke_startSampling({ samplingInterval: samplingRateInBytes || defaultSamplingIntervalInBytes });
         return Boolean(response.getError());
     }
     async stopSampling() {
-        if (!this.samplingProfilerDepth) {
+        if (!this.#samplingProfilerDepth) {
             throw new Error('Sampling profiler is not running.');
         }
-        if (--this.samplingProfilerDepth) {
+        if (--this.#samplingProfilerDepth) {
             return this.getSamplingProfile();
         }
-        const response = await this.heapProfilerAgent.invoke_stopSampling();
+        const response = await this.#heapProfilerAgent.invoke_stopSampling();
         if (response.getError()) {
             return null;
         }
         return response.profile;
     }
     async getSamplingProfile() {
-        const response = await this.heapProfilerAgent.invoke_getSamplingProfile();
+        const response = await this.#heapProfilerAgent.invoke_getSamplingProfile();
         if (response.getError()) {
             return null;
         }
         return response.profile;
     }
     async collectGarbage() {
-        const response = await this.heapProfilerAgent.invoke_collectGarbage();
+        const response = await this.#heapProfilerAgent.invoke_collectGarbage();
         return Boolean(response.getError());
     }
     async snapshotObjectIdForObjectId(objectId) {
-        const response = await this.heapProfilerAgent.invoke_getHeapObjectId({ objectId });
+        const response = await this.#heapProfilerAgent.invoke_getHeapObjectId({ objectId });
         if (response.getError()) {
             return null;
         }
         return response.heapSnapshotObjectId;
     }
     async objectForSnapshotObjectId(snapshotObjectId, objectGroupName) {
-        const result = await this.heapProfilerAgent.invoke_getObjectByHeapObjectId({ objectId: snapshotObjectId, objectGroup: objectGroupName });
+        const result = await this.#heapProfilerAgent.invoke_getObjectByHeapObjectId({ objectId: snapshotObjectId, objectGroup: objectGroupName });
         if (result.getError()) {
             return null;
         }
-        return this.runtimeModelInternal.createRemoteObject(result.result);
+        return this.#runtimeModelInternal.createRemoteObject(result.result);
     }
     async addInspectedHeapObject(snapshotObjectId) {
-        const response = await this.heapProfilerAgent.invoke_addInspectedHeapObject({ heapObjectId: snapshotObjectId });
+        const response = await this.#heapProfilerAgent.invoke_addInspectedHeapObject({ heapObjectId: snapshotObjectId });
         return Boolean(response.getError());
     }
     async takeHeapSnapshot(heapSnapshotOptions) {
-        await this.heapProfilerAgent.invoke_takeHeapSnapshot(heapSnapshotOptions);
+        await this.#heapProfilerAgent.invoke_takeHeapSnapshot(heapSnapshotOptions);
     }
     async startTrackingHeapObjects(recordAllocationStacks) {
-        const response = await this.heapProfilerAgent.invoke_startTrackingHeapObjects({ trackAllocations: recordAllocationStacks });
+        const response = await this.#heapProfilerAgent.invoke_startTrackingHeapObjects({ trackAllocations: recordAllocationStacks });
         return Boolean(response.getError());
     }
     async stopTrackingHeapObjects(reportProgress) {
-        const response = await this.heapProfilerAgent.invoke_stopTrackingHeapObjects({ reportProgress });
+        const response = await this.#heapProfilerAgent.invoke_stopTrackingHeapObjects({ reportProgress });
         return Boolean(response.getError());
     }
     heapStatsUpdate(samples) {
@@ -120,24 +118,24 @@ export var Events;
     Events["ResetProfiles"] = "ResetProfiles";
 })(Events || (Events = {}));
 class HeapProfilerDispatcher {
-    heapProfilerModel;
+    #heapProfilerModel;
     constructor(model) {
-        this.heapProfilerModel = model;
+        this.#heapProfilerModel = model;
     }
     heapStatsUpdate({ statsUpdate }) {
-        this.heapProfilerModel.heapStatsUpdate(statsUpdate);
+        this.#heapProfilerModel.heapStatsUpdate(statsUpdate);
     }
     lastSeenObjectId({ lastSeenObjectId, timestamp }) {
-        this.heapProfilerModel.lastSeenObjectId(lastSeenObjectId, timestamp);
+        this.#heapProfilerModel.lastSeenObjectId(lastSeenObjectId, timestamp);
     }
     addHeapSnapshotChunk({ chunk }) {
-        this.heapProfilerModel.addHeapSnapshotChunk(chunk);
+        this.#heapProfilerModel.addHeapSnapshotChunk(chunk);
     }
     reportHeapSnapshotProgress({ done, total, finished }) {
-        this.heapProfilerModel.reportHeapSnapshotProgress(done, total, finished);
+        this.#heapProfilerModel.reportHeapSnapshotProgress(done, total, finished);
     }
     resetProfiles() {
-        this.heapProfilerModel.resetProfiles();
+        this.#heapProfilerModel.resetProfiles();
     }
 }
 SDKModel.register(HeapProfilerModel, { capabilities: Capability.JS, autostart: false });

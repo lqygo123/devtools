@@ -3,52 +3,50 @@
 // found in the LICENSE file.
 import * as UI from '../../ui/legacy/legacy.js';
 export class ComboBoxOfCheckBoxes extends UI.Toolbar.ToolbarButton {
-    options = new Array();
-    headers = new Array();
-    onOptionClicked = () => { };
+    #options = new Array();
+    #headers = new Array();
+    #onOptionClicked = () => { };
     constructor(title) {
         super(title);
         this.turnIntoSelect();
-        this.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.showLevelContextMenu.bind(this));
+        this.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.#showLevelContextMenu.bind(this));
         UI.ARIAUtils.markAsMenuButton(this.element);
     }
     addOption(option, value, defaultEnabled) {
-        this.options.push({ 'title': option, 'value': value, default: defaultEnabled, 'enabled': defaultEnabled });
+        this.#options.push({ 'title': option, 'value': value, default: defaultEnabled, 'enabled': defaultEnabled });
     }
     setOptionEnabled(index, enabled) {
-        const option = this.options[index];
+        const option = this.#options[index];
         if (!option) {
             return;
         }
         option.enabled = enabled;
-        this.onOptionClicked();
+        this.#onOptionClicked();
     }
     addHeader(headerName, callback) {
-        this.headers.push({ title: headerName, callback: callback });
+        this.#headers.push({ title: headerName, callback: callback });
     }
     setOnOptionClicked(onOptionClicked) {
-        this.onOptionClicked = onOptionClicked;
+        this.#onOptionClicked = onOptionClicked;
     }
     getOptions() {
-        return this.options;
+        return this.#options;
     }
-    showLevelContextMenu(event) {
-        const mouseEvent = /** @type {!Event} */ (event.data);
+    #showLevelContextMenu({ data: mouseEvent }) {
         const contextMenu = new UI.ContextMenu.ContextMenu(mouseEvent, {
             useSoftMenu: true,
             x: this.element.totalOffsetLeft(),
-            y: this.element.totalOffsetTop() +
-                /** @type {!HTMLElement} */ (this.element).offsetHeight,
+            y: this.element.totalOffsetTop() + this.element.offsetHeight,
         });
-        for (const { title, callback } of this.headers) {
+        for (const { title, callback } of this.#headers) {
             contextMenu.headerSection().appendCheckboxItem(title, () => callback());
         }
-        for (const [index, { title, enabled }] of this.options.entries()) {
+        for (const [index, { title, enabled }] of this.#options.entries()) {
             contextMenu.defaultSection().appendCheckboxItem(title, () => {
                 this.setOptionEnabled(index, !enabled);
             }, enabled);
         }
-        contextMenu.show();
+        void contextMenu.show();
     }
 }
 //# sourceMappingURL=ComboBoxOfCheckBoxes.js.map

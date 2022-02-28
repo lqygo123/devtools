@@ -8,14 +8,7 @@ import { RuntimeModel } from './RuntimeModel.js';
 import type { Target } from './Target.js';
 import type { Observer } from './TargetManager.js';
 export declare class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements Observer {
-    private messagesInternal;
-    private readonly messageByExceptionId;
-    private warningsInternal;
-    private errorsInternal;
-    private violationsInternal;
-    private pageLoadSequenceNumber;
-    private readonly targetListeners;
-    private consoleGroupMessageStack;
+    #private;
     private constructor();
     static instance(opts?: {
         forceNew: boolean | null;
@@ -78,11 +71,10 @@ export interface ConsoleMessageDetails {
     workerId?: string;
     context?: string;
     affectedResources?: AffectedResources;
-    groupParent?: ConsoleMessage;
-    groupChildren?: ConsoleMessage[];
+    category?: Protocol.Log.LogEntryCategory;
 }
 export declare class ConsoleMessage {
-    private readonly runtimeModelInternal;
+    #private;
     source: MessageSource;
     level: Protocol.Log.LogEntryLevel | null;
     messageText: string;
@@ -93,16 +85,10 @@ export declare class ConsoleMessage {
     parameters: (string | RemoteObject | Protocol.Runtime.RemoteObject)[] | undefined;
     stackTrace: Protocol.Runtime.StackTrace | undefined;
     timestamp: number;
-    private executionContextId;
     scriptId?: Protocol.Runtime.ScriptId;
     workerId?: string;
     context?: string;
-    private originatingConsoleMessage;
-    private pageLoadSequenceNumber?;
-    private exceptionId?;
-    private affectedResources?;
-    groupParent?: ConsoleMessage;
-    groupChildren?: Array<ConsoleMessage>;
+    category?: Protocol.Log.LogEntryCategory;
     constructor(runtimeModel: RuntimeModel | null, source: MessageSource, level: Protocol.Log.LogEntryLevel | null, messageText: string, details?: ConsoleMessageDetails);
     getAffectedResources(): AffectedResources | undefined;
     setPageLoadSequenceNumber(pageLoadSequenceNumber: number): void;
@@ -121,7 +107,6 @@ export declare class ConsoleMessage {
     isGroupable(): boolean;
     groupCategoryKey(): string;
     isEqual(msg: ConsoleMessage | null): boolean;
-    private isEqualStackTraces;
 }
 export declare type MessageSource = Protocol.Log.LogEntrySource | FrontendMessageSource;
 export declare type MessageLevel = Protocol.Log.LogEntryLevel;

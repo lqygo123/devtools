@@ -18,7 +18,7 @@ export class MediaModel extends SDK.SDKModel.SDKModel {
         await this.agent.invoke_enable();
     }
     ensureEnabled() {
-        this.agent.invoke_enable();
+        void this.agent.invoke_enable();
         this.enabled = true;
     }
     playerPropertiesChanged(event) {

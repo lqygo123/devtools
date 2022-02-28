@@ -37,6 +37,8 @@ export class LogManager {
             stackTrace: entry.stackTrace,
             timestamp: entry.timestamp,
             workerId: entry.workerId,
+            category: entry.category,
+            affectedResources: entry.networkRequestId ? { requestId: entry.networkRequestId } : undefined,
         };
         const consoleMessage = new SDK.ConsoleModel.ConsoleMessage(target.model(SDK.RuntimeModel.RuntimeModel), entry.source, entry.level, entry.text, details);
         if (entry.networkRequestId) {
@@ -51,7 +53,7 @@ export class LogManager {
             if (SDK.TargetManager.TargetManager.instance().targetById(workerId)) {
                 return;
             }
-            setTimeout(() => {
+            window.setTimeout(() => {
                 if (!SDK.TargetManager.TargetManager.instance().targetById(workerId)) {
                     SDK.ConsoleModel.ConsoleModel.instance().addMessage(consoleMessage);
                 }

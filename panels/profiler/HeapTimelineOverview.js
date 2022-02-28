@@ -1,11 +1,12 @@
 // Copyright 2018 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as PerfUI from '../../ui/legacy/components/perf_ui/perf_ui.js';
 import * as UI from '../../ui/legacy/legacy.js';
-export class HeapTimelineOverview extends UI.Widget.VBox {
+export class HeapTimelineOverview extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
     overviewCalculator;
     overviewContainer;
     overviewGrid;
@@ -171,14 +172,14 @@ export class HeapTimelineOverview extends UI.Widget.VBox {
     }
     onWindowChanged() {
         if (!this.updateGridTimerId) {
-            this.updateGridTimerId = setTimeout(this.updateGrid.bind(this), 10);
+            this.updateGridTimerId = window.setTimeout(this.updateGrid.bind(this), 10);
         }
     }
     scheduleUpdate() {
         if (this.updateTimerId) {
             return;
         }
-        this.updateTimerId = setTimeout(this.update.bind(this), 10);
+        this.updateTimerId = window.setTimeout(this.update.bind(this), 10);
     }
     updateBoundaries() {
         this.windowLeft = this.overviewGrid.windowLeft();
@@ -211,15 +212,14 @@ export class HeapTimelineOverview extends UI.Widget.VBox {
         const minIndex = Platform.ArrayUtilities.lowerBound(timestamps, timeLeft, Platform.ArrayUtilities.DEFAULT_COMPARATOR);
         const maxIndex = Platform.ArrayUtilities.upperBound(timestamps, timeRight, Platform.ArrayUtilities.DEFAULT_COMPARATOR);
         let size = 0;
-        for (let i = minIndex; i <= maxIndex; ++i) {
+        for (let i = minIndex; i < maxIndex; ++i) {
             size += sizes[i];
         }
         const minId = minIndex > 0 ? ids[minIndex - 1] : 0;
         const maxId = maxIndex < ids.length ? ids[maxIndex] : Infinity;
-        this.dispatchEventToListeners(IdsRangeChanged, { minId, maxId, size });
+        this.dispatchEventToListeners("IdsRangeChanged" /* IdsRangeChanged */, { minId, maxId, size });
     }
 }
-export const IdsRangeChanged = Symbol('IdsRangeChanged');
 export class SmoothScale {
     lastUpdate;
     currentScale;

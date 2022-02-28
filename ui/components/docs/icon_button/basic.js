@@ -9,16 +9,16 @@ function appendComponent(data) {
 }
 appendComponent({
     clickHandler: () => { },
-    groups: [{ iconName: 'feedback_thin_16x16_icon', iconColor: 'black', text: '1 item' }],
+    groups: [{ iconName: 'survey_feedback_icon', iconColor: 'black', text: '1 item' }],
 });
 appendComponent({
     clickHandler: () => { },
-    groups: [{ iconName: 'feedback_thin_16x16_icon', iconColor: 'black', text: '1 item' }],
+    groups: [{ iconName: 'survey_feedback_icon', iconColor: 'black', text: '1 item' }],
 });
 appendComponent({
     clickHandler: () => { },
     groups: [
-        { iconName: 'feedback_thin_16x16_icon', iconColor: 'blue', text: 'Test' },
+        { iconName: 'survey_feedback_icon', iconColor: 'blue', text: 'Test' },
         { iconName: 'warning_icon', iconColor: '', text: '1' },
     ],
 });

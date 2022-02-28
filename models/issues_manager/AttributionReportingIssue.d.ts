@@ -11,8 +11,13 @@ export declare const enum IssueCode {
     AttributionSourceUntrustworthyOrigin = "AttributionReportingIssue::AttributionSourceUntrustworthyOrigin",
     AttributionUntrustworthyFrameOrigin = "AttributionReportingIssue::AttributionUntrustworthyFrameOrigin",
     AttributionUntrustworthyOrigin = "AttributionReportingIssue::AttributionUntrustworthyOrigin",
-    AttributionTriggerDataTooLarge = "AttrubtionReportingIssue::AttributionTriggerDataTooLarge",
-    AttributionEventSourceTriggerDataTooLarge = "AttrubtionReportingIssue::AttributionEventSourceTriggerDataTooLarge"
+    AttributionTriggerDataTooLarge = "AttributionReportingIssue::AttributionTriggerDataTooLarge",
+    AttributionEventSourceTriggerDataTooLarge = "AttributionReportingIssue::AttributionEventSourceTriggerDataTooLarge",
+    InvalidAttributionSourceExpiry = "AttributionReportingIssue::InvalidAttributionSourceExpiry",
+    InvalidAttributionSourcePriority = "AttributionReportingIssue::InvalidAttributionSourcePriority",
+    InvalidEventSourceTriggerData = "AttributionReportingIssue::InvalidEventSourceTriggerData",
+    InvalidTriggerPriority = "AttributionReportingIssue::InvalidTriggerPriority",
+    InvalidTriggerDedupKey = "AttributionReportingIssue::InvalidTriggerDedupKey"
 }
 export declare class AttributionReportingIssue extends Issue<IssueCode> {
     issueDetails: Readonly<Protocol.Audits.AttributionReportingIssueDetails>;

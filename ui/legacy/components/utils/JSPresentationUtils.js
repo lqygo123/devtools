@@ -71,7 +71,7 @@ function populateContextMenu(link, event) {
         }
     }
     contextMenu.appendApplicableItems(event);
-    contextMenu.show();
+    void contextMenu.show();
 }
 export function buildStackTraceRows(stackTrace, target, linkifier, tabStops, updateCallback) {
     const stackTraceRows = [];
@@ -80,11 +80,11 @@ export function buildStackTraceRows(stackTrace, target, linkifier, tabStops, upd
         const throttler = new Common.Throttler.Throttler(100);
         linkifier.setLiveLocationUpdateCallback(() => throttler.schedule(async () => updateHiddenRows(updateCallback, stackTraceRows)));
     }
-    function buildStackTraceRowsHelper(stackTrace, asyncFlag) {
+    function buildStackTraceRowsHelper(stackTrace, previousCallFrames = undefined) {
         let asyncRow = null;
-        if (asyncFlag) {
+        if (previousCallFrames) {
             asyncRow = {
-                asyncDescription: UI.UIUtils.asyncStackTraceLabel(stackTrace.description),
+                asyncDescription: UI.UIUtils.asyncStackTraceLabel(stackTrace.description, previousCallFrames),
                 ignoreListHide: false,
                 rowCountHide: false,
             };
@@ -116,17 +116,17 @@ export function buildStackTraceRows(stackTrace, target, linkifier, tabStops, upd
             }
             stackTraceRows.push({ functionName, link, ignoreListHide, rowCountHide });
         }
-        if (asyncFlag && asyncRow && hiddenCallFrames > 0 && hiddenCallFrames === stackTrace.callFrames.length) {
+        if (asyncRow && hiddenCallFrames > 0 && hiddenCallFrames === stackTrace.callFrames.length) {
             stackTraceRows[1].rowCountHide ? asyncRow.rowCountHide = true : asyncRow.ignoreListHide = true;
         }
     }
-    buildStackTraceRowsHelper(stackTrace, false);
-    let asyncStackTrace = stackTrace.parent;
-    while (asyncStackTrace) {
+    buildStackTraceRowsHelper(stackTrace);
+    let previousCallFrames = stackTrace.callFrames;
+    for (let asyncStackTrace = stackTrace.parent; asyncStackTrace; asyncStackTrace = asyncStackTrace.parent) {
         if (asyncStackTrace.callFrames.length) {
-            buildStackTraceRowsHelper(asyncStackTrace, true);
+            buildStackTraceRowsHelper(asyncStackTrace, previousCallFrames);
         }
-        asyncStackTrace = asyncStackTrace.parent;
+        previousCallFrames = asyncStackTrace.callFrames;
     }
     return stackTraceRows;
 }

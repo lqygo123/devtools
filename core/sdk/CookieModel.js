@@ -8,29 +8,29 @@ import { ResourceTreeModel } from './ResourceTreeModel.js';
 import { Capability } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export class CookieModel extends SDKModel {
-    blockedCookies;
-    cookieToBlockedReasons;
+    #blockedCookies;
+    #cookieToBlockedReasons;
     constructor(target) {
         super(target);
-        this.blockedCookies = new Map();
-        this.cookieToBlockedReasons = new Map();
+        this.#blockedCookies = new Map();
+        this.#cookieToBlockedReasons = new Map();
     }
     addBlockedCookie(cookie, blockedReasons) {
         const key = cookie.key();
-        const previousCookie = this.blockedCookies.get(key);
-        this.blockedCookies.set(key, cookie);
+        const previousCookie = this.#blockedCookies.get(key);
+        this.#blockedCookies.set(key, cookie);
         if (blockedReasons) {
-            this.cookieToBlockedReasons.set(cookie, blockedReasons);
+            this.#cookieToBlockedReasons.set(cookie, blockedReasons);
         }
         else {
-            this.cookieToBlockedReasons.delete(cookie);
+            this.#cookieToBlockedReasons.delete(cookie);
         }
         if (previousCookie) {
-            this.cookieToBlockedReasons.delete(previousCookie);
+            this.#cookieToBlockedReasons.delete(previousCookie);
         }
     }
     getCookieToBlockedReasonsMap() {
-        return this.cookieToBlockedReasons;
+        return this.#cookieToBlockedReasons;
     }
     async getCookies(urls) {
         const response = await this.target().networkAgent().invoke_getCookies({ urls });
@@ -38,7 +38,7 @@ export class CookieModel extends SDKModel {
             return [];
         }
         const normalCookies = response.cookies.map(Cookie.fromProtocolCookie);
-        return normalCookies.concat(Array.from(this.blockedCookies.values()));
+        return normalCookies.concat(Array.from(this.#blockedCookies.values()));
     }
     async deleteCookie(cookie) {
         await this.deleteCookies([cookie]);
@@ -78,6 +78,7 @@ export class CookieModel extends SDKModel {
             expires,
             priority: cookie.priority(),
             sameParty: cookie.sameParty(),
+            partitionKey: cookie.partitionKey(),
             sourceScheme: enabled ? cookie.sourceScheme() : preserveUnset(cookie.sourceScheme()),
             sourcePort: enabled ? cookie.sourcePort() : undefined,
         };
@@ -113,8 +114,8 @@ export class CookieModel extends SDKModel {
     }
     async deleteCookies(cookies) {
         const networkAgent = this.target().networkAgent();
-        this.blockedCookies.clear();
-        this.cookieToBlockedReasons.clear();
+        this.#blockedCookies.clear();
+        this.#cookieToBlockedReasons.clear();
         await Promise.all(cookies.map(cookie => networkAgent.invoke_deleteCookies({ name: cookie.name(), url: undefined, domain: cookie.domain(), path: cookie.path() })));
     }
 }

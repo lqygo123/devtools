@@ -4,12 +4,12 @@ import * as UI from '../../ui/legacy/legacy.js';
 import { ElementsTreeElement } from './ElementsTreeElement.js';
 import type { MarkerDecoratorRegistration } from './MarkerDecorator.js';
 declare const ElementsTreeOutline_base: (new (...args: any[]) => {
-    "__#1@#events": Common.ObjectWrapper.ObjectWrapper<ElementsTreeOutline.EventTypes>;
-    addEventListener<T extends keyof ElementsTreeOutline.EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<ElementsTreeOutline.EventTypes, T>>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<ElementsTreeOutline.EventTypes, T>;
-    once<T_1 extends keyof ElementsTreeOutline.EventTypes>(eventType: T_1): Promise<Common.EventTarget.EventPayload<ElementsTreeOutline.EventTypes, T_1>>;
-    removeEventListener<T_2 extends keyof ElementsTreeOutline.EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<ElementsTreeOutline.EventTypes, T_2>>) => void, thisObject?: Object | undefined): void;
+    "__#6@#events": Common.ObjectWrapper.ObjectWrapper<ElementsTreeOutline.EventTypes>;
+    addEventListener<T extends keyof ElementsTreeOutline.EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<ElementsTreeOutline.EventTypes[T]>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<ElementsTreeOutline.EventTypes, T>;
+    once<T_1 extends keyof ElementsTreeOutline.EventTypes>(eventType: T_1): Promise<ElementsTreeOutline.EventTypes[T_1]>;
+    removeEventListener<T_2 extends keyof ElementsTreeOutline.EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<ElementsTreeOutline.EventTypes[T_2]>) => void, thisObject?: Object | undefined): void;
     hasEventListeners(eventType: keyof ElementsTreeOutline.EventTypes): boolean;
-    dispatchEventToListeners<T_3 extends keyof ElementsTreeOutline.EventTypes>(eventType: import("../../core/platform/typescript-utilities.js").NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<Common.EventTarget.EventPayload<ElementsTreeOutline.EventTypes, T_3>>): void;
+    dispatchEventToListeners<T_3 extends keyof ElementsTreeOutline.EventTypes>(eventType: import("../../core/platform/typescript-utilities.js").NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<ElementsTreeOutline.EventTypes, T_3>): void;
 }) & typeof UI.TreeOutline.TreeOutline;
 export declare class ElementsTreeOutline extends ElementsTreeOutline_base {
     treeElementByNode: WeakMap<SDK.DOMModel.DOMNode, ElementsTreeElement>;
@@ -182,7 +182,6 @@ export interface MultilineEditorController {
     cancel: () => void;
     commit: () => void;
     resize: () => void;
-    editor: UI.TextEditor.TextEditor;
 }
 export interface ClipboardData {
     node: SDK.DOMModel.DOMNode;

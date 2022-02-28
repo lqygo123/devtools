@@ -1,8 +1,7 @@
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Workspace from '../workspace/workspace.js';
 export declare class ResourceMapping implements SDK.TargetManager.SDKModelObserver<SDK.ResourceTreeModel.ResourceTreeModel> {
-    private readonly workspace;
-    private readonly modelToInfo;
+    #private;
     private constructor();
     static instance(opts?: {
         forceNew: boolean | null;
@@ -16,5 +15,5 @@ export declare class ResourceMapping implements SDK.TargetManager.SDKModelObserv
     jsLocationToUILocation(jsLocation: SDK.DebuggerModel.Location): Workspace.UISourceCode.UILocation | null;
     uiLocationToJSLocations(uiSourceCode: Workspace.UISourceCode.UISourceCode, lineNumber: number, columnNumber: number): SDK.DebuggerModel.Location[];
     uiLocationToCSSLocations(uiLocation: Workspace.UISourceCode.UILocation): SDK.CSSModel.CSSLocation[];
-    private resetForTest;
+    resetForTest(target: SDK.Target.Target): void;
 }

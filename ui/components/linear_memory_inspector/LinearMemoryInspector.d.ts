@@ -34,38 +34,10 @@ export declare class SettingsChangedEvent extends Event {
     constructor(settings: Settings);
 }
 export declare class LinearMemoryInspector extends HTMLElement {
+    #private;
     static readonly litTagName: import("../../lit-html/static.js").Static;
-    private readonly shadow;
-    private readonly history;
-    private memory;
-    private memoryOffset;
-    private outerMemoryLength;
-    private address;
-    private currentNavigatorMode;
-    private currentNavigatorAddressLine;
-    private numBytesPerPage;
-    private valueTypeModes;
-    private valueTypes;
-    private endianness;
     connectedCallback(): void;
     set data(data: LinearMemoryInspectorData);
-    private render;
-    private onJumpToPointerAddress;
-    private onRefreshRequest;
-    private onByteSelected;
-    private createSettings;
-    private onEndiannessChanged;
-    private isValidAddress;
-    private onAddressChange;
-    private onValueTypeToggled;
-    private onValueTypeModeChanged;
-    private navigateHistory;
-    private navigatePage;
-    private jumpToAddress;
-    private getPageRangeForAddress;
-    private resize;
-    private update;
-    private setAddress;
 }
 declare global {
     interface HTMLElementTagNameMap {

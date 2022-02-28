@@ -1,10 +1,7 @@
 import * as ProtocolClient from '../protocol_client/protocol_client.js';
 export declare class MainConnection implements ProtocolClient.InspectorBackend.Connection {
+    #private;
     onMessage: ((arg0: (Object | string)) => void) | null;
-    private onDisconnect;
-    private messageBuffer;
-    private messageSize;
-    private readonly eventListeners;
     constructor();
     setOnMessage(onMessage: (arg0: (Object | string)) => void): void;
     setOnDisconnect(onDisconnect: (arg0: string) => void): void;
@@ -14,12 +11,8 @@ export declare class MainConnection implements ProtocolClient.InspectorBackend.C
     disconnect(): Promise<void>;
 }
 export declare class WebSocketConnection implements ProtocolClient.InspectorBackend.Connection {
-    private socket;
+    #private;
     onMessage: ((arg0: (Object | string)) => void) | null;
-    private onDisconnect;
-    private onWebSocketDisconnect;
-    private connected;
-    private messages;
     constructor(url: string, onWebSocketDisconnect: () => void);
     setOnMessage(onMessage: (arg0: (Object | string)) => void): void;
     setOnDisconnect(onDisconnect: (arg0: string) => void): void;
@@ -31,8 +24,8 @@ export declare class WebSocketConnection implements ProtocolClient.InspectorBack
     disconnect(): Promise<void>;
 }
 export declare class StubConnection implements ProtocolClient.InspectorBackend.Connection {
+    #private;
     onMessage: ((arg0: (Object | string)) => void) | null;
-    private onDisconnect;
     constructor();
     setOnMessage(onMessage: (arg0: (Object | string)) => void): void;
     setOnDisconnect(onDisconnect: (arg0: string) => void): void;
@@ -41,10 +34,8 @@ export declare class StubConnection implements ProtocolClient.InspectorBackend.C
     disconnect(): Promise<void>;
 }
 export declare class ParallelConnection implements ProtocolClient.InspectorBackend.Connection {
-    private readonly connection;
-    private sessionId;
+    #private;
     onMessage: ((arg0: Object) => void) | null;
-    private onDisconnect;
     constructor(connection: ProtocolClient.InspectorBackend.Connection, sessionId: string);
     setOnMessage(onMessage: (arg0: Object) => void): void;
     setOnDisconnect(onDisconnect: (arg0: string) => void): void;

@@ -3,8 +3,7 @@ import { Cookie } from './Cookie.js';
 import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export declare class CookieModel extends SDKModel<void> {
-    private readonly blockedCookies;
-    private readonly cookieToBlockedReasons;
+    #private;
     constructor(target: Target);
     addBlockedCookie(cookie: Cookie, blockedReasons: BlockedReason[] | null): void;
     getCookieToBlockedReasonsMap(): ReadonlyMap<Cookie, BlockedReason[]>;

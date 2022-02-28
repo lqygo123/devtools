@@ -33,6 +33,7 @@
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import * as CodeHighlighter from '../../ui/components/code_highlighter/code_highlighter.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { linkifyDeferredNodeReference } from './DOMLinkifier.js';
 import { ElementsPanel } from './ElementsPanel.js';
@@ -93,7 +94,7 @@ export class ElementsTreeOutline extends Common.ObjectWrapper.eventMixin(UI.Tree
         super();
         this.treeElementByNode = new WeakMap();
         const shadowContainer = document.createElement('div');
-        this.shadowRoot = UI.Utils.createShadowRootWithCoreStyles(shadowContainer, { cssFile: [elementsTreeOutlineStyles], delegatesFocus: undefined });
+        this.shadowRoot = UI.Utils.createShadowRootWithCoreStyles(shadowContainer, { cssFile: [elementsTreeOutlineStyles, CodeHighlighter.Style.default], delegatesFocus: undefined });
         const outlineDisclosureElement = this.shadowRoot.createChild('div', 'elements-disclosure');
         this.elementInternal = this.element;
         this.elementInternal.classList.add('elements-tree-outline', 'source-code');
@@ -145,7 +146,7 @@ export class ElementsTreeOutline extends Common.ObjectWrapper.eventMixin(UI.Tree
         this.decoratorExtensions = null;
         this.showHTMLCommentsSetting = Common.Settings.Settings.instance().moduleSetting('showHTMLComments');
         this.showHTMLCommentsSetting.addChangeListener(this.onShowHTMLCommentsChange.bind(this));
-        this.useLightSelectionColor();
+        this.setUseLightSelectionColor(true);
     }
     static forDOMModel(domModel) {
         return elementsTreeOutlineByDOMModel.get(domModel) || null;
@@ -229,7 +230,7 @@ export class ElementsTreeOutline extends Common.ObjectWrapper.eventMixin(UI.Tree
         if (isCut && (node.isShadowRoot() || node.ancestorUserAgentShadowRoot())) {
             return;
         }
-        node.copyNode();
+        void node.copyNode();
         this.setClipboardData({ node: node, isCut: isCut });
     }
     canPaste(targetNode) {
@@ -390,7 +391,7 @@ export class ElementsTreeOutline extends Common.ObjectWrapper.eventMixin(UI.Tree
             // The text node might have been inlined if it was short, so try to find the parent element.
             treeElement = this.lookUpTreeElement(node.parentNode);
         }
-        return /** @type {?ElementsTreeElement} */ treeElement;
+        return treeElement;
     }
     lookUpTreeElement(node) {
         if (!node) {
@@ -417,7 +418,7 @@ export class ElementsTreeOutline extends Common.ObjectWrapper.eventMixin(UI.Tree
             const child = ancestors[i - 1] || node;
             const treeElement = this.treeElementByNode.get(ancestors[i]);
             if (treeElement) {
-                treeElement.onpopulate(); // fill the cache with the children of treeElement
+                void treeElement.onpopulate(); // fill the cache with the children of treeElement
                 if (child.index && child.index >= treeElement.expandedChildrenLimit()) {
                     this.setExpandedChildrenLimit(treeElement, child.index + 1);
                 }
@@ -461,7 +462,7 @@ export class ElementsTreeOutline extends Common.ObjectWrapper.eventMixin(UI.Tree
         // items extend at least to the right edge of the outer <ol> container.
         // In the no-word-wrap mode the outer <ol> may be wider than the tree container
         // (and partially hidden), in which case we are left to use only its right boundary.
-        const x = scrollContainer.totalOffsetLeft() + scrollContainer.offsetWidth - 36;
+        const x = scrollContainer.totalOffsetLeft() + scrollContainer.offsetWidth - 18;
         const y = event.pageY;
         // Our list items have 1-pixel cracks between them vertically. We avoid
         // the cracks by checking slightly above and slightly below the mouse
@@ -508,7 +509,7 @@ export class ElementsTreeOutline extends Common.ObjectWrapper.eventMixin(UI.Tree
         this.setHoverEffect(element);
         this.highlightTreeElement(element, !UI.KeyboardShortcut.KeyboardShortcut.eventHasEitherCtrlOrMeta(event));
     }
-    highlightTreeElement(element, showInfo) {
+  highlightTreeElement(element, showInfo) {
         if (element instanceof ElementsTreeElement) {
             element.node().domModel().overlayModel().highlightInOverlay({ node: element.node(), selectorList: undefined }, 'all', showInfo);
             return;
@@ -666,7 +667,7 @@ export class ElementsTreeOutline extends Common.ObjectWrapper.eventMixin(UI.Tree
             ElementsPanel.instance().showAdornerSettingsPane();
         });
         contextMenu.appendApplicableItems(treeElement.node());
-        contextMenu.show();
+        void contextMenu.show();
     }
     async saveNodeToTempVariable(node) {
         const remoteObjectForConsole = await node.resolveToObject();
@@ -1000,7 +1001,7 @@ export class ElementsTreeOutline extends Common.ObjectWrapper.eventMixin(UI.Tree
         if (index >= treeElement.expandedChildrenLimit()) {
             this.setExpandedChildrenLimit(treeElement, index + 1);
         }
-        return /** @type {!ElementsTreeElement} */ treeElement.childAt(index);
+        return treeElement.childAt(index);
     }
     visibleChildren(node) {
         let visibleChildren = ElementsTreeElement.visibleShadowRoots(node);

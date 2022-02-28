@@ -27,6 +27,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+// TODO(crbug.com/1253323): All casts to UrlString will be removed from this file when migration to branded types is complete.
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
@@ -73,6 +74,7 @@ export class IsolatedFileSystem extends PlatformFileSystem {
     initialGitFoldersInternal;
     fileLocks;
     constructor(manager, path, embedderPath, domFileSystem, type) {
+        // TODO(crbug.com/1253323): Cast to UrlString will be removed when migration to branded types is complete.
         super(path, type);
         this.manager = manager;
         this.embedderPathInternal = embedderPath;
@@ -151,7 +153,7 @@ export class IsolatedFileSystem extends PlatformFileSystem {
                             this.initialGitFoldersInternal.add(parentFolder);
                         }
                         if (this.isFileExcluded(entry.fullPath + '/')) {
-                            this.excludedEmbedderFolders.push(Common.ParsedURL.ParsedURL.urlToPlatformPath(this.path() + entry.fullPath, Host.Platform.isWin()));
+                            this.excludedEmbedderFolders.push(Common.ParsedURL.ParsedURL.capFilePrefix(this.path() + entry.fullPath, Host.Platform.isWin()));
                             continue;
                         }
                         ++pendingRequests;
@@ -307,7 +309,7 @@ export class IsolatedFileSystem extends PlatformFileSystem {
             this.domFileSystem.root.getFile(path, { create: true }, fileEntryLoaded.bind(this), errorHandler.bind(this));
             return promise;
         };
-        this.serializedFileOperation(path, innerSetFileContent);
+        void this.serializedFileOperation(path, innerSetFileContent);
         function fileEntryLoaded(entry) {
             entry.createWriter(fileWriterCreated.bind(this), errorHandler.bind(this));
         }
@@ -442,7 +444,7 @@ export class IsolatedFileSystem extends PlatformFileSystem {
             const requestId = this.manager.registerCallback(innerCallback);
             Host.InspectorFrontendHost.InspectorFrontendHostInstance.searchInPath(requestId, this.embedderPathInternal, query);
             function innerCallback(files) {
-                resolve(files.map(path => Common.ParsedURL.ParsedURL.platformPathToURL(path)));
+                resolve(files.map(path => Common.ParsedURL.ParsedURL.rawPathToUrlString(path)));
                 progress.incrementWorked(1);
             }
         });
@@ -476,7 +478,7 @@ export class IsolatedFileSystem extends PlatformFileSystem {
             Common.ResourceType.resourceTypes.Document;
     }
     tooltipForURL(url) {
-        const path = Platform.StringUtilities.trimMiddle(Common.ParsedURL.ParsedURL.urlToPlatformPath(url, Host.Platform.isWin()), 150);
+        const path = Platform.StringUtilities.trimMiddle(Common.ParsedURL.ParsedURL.capFilePrefix(url, Host.Platform.isWin()), 150);
         return i18nString(UIStrings.linkedToS, { PH1: path });
     }
     supportsAutomapping() {

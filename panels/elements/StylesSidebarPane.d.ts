@@ -11,12 +11,12 @@ import { ElementsSidebarPane } from './ElementsSidebarPane.js';
 import type { Context } from './StylePropertyTreeElement.js';
 import { StylePropertyTreeElement } from './StylePropertyTreeElement.js';
 declare const StylesSidebarPane_base: (new (...args: any[]) => {
-    "__#1@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<EventTypes, T>>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<Common.EventTarget.EventPayload<EventTypes, T_1>>;
-    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<Common.EventTarget.EventPayload<EventTypes, T_2>>) => void, thisObject?: Object | undefined): void;
+    "__#6@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T]>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<EventTypes[T_1]>;
+    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2]>) => void, thisObject?: Object | undefined): void;
     hasEventListeners(eventType: keyof EventTypes): boolean;
-    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<Common.EventTarget.EventPayload<EventTypes, T_3>>): void;
+    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
 }) & typeof ElementsSidebarPane;
 export declare class StylesSidebarPane extends StylesSidebarPane_base {
     private currentToolbarPane;
@@ -150,7 +150,11 @@ export declare class StylePropertiesSection {
     private hoverableSelectorsMode;
     private isHiddenInternal;
     private queryListElement;
-    constructor(parentPane: StylesSidebarPane, matchedStyles: SDK.CSSMatchedStyles.CSSMatchedStyles, style: SDK.CSSStyleDeclaration.CSSStyleDeclaration);
+    nextEditorTriggerButtonIdx: number;
+    private sectionIdx;
+    constructor(parentPane: StylesSidebarPane, matchedStyles: SDK.CSSMatchedStyles.CSSMatchedStyles, style: SDK.CSSStyleDeclaration.CSSStyleDeclaration, sectionIdx: number);
+    setSectionIdx(sectionIdx: number): void;
+    getSectionIdx(): number;
     registerFontProperty(treeElement: StylePropertyTreeElement): void;
     resetToolbars(): void;
     static createRuleOriginNode(matchedStyles: SDK.CSSMatchedStyles.CSSMatchedStyles, linkifier: Components.Linkifier.Linkifier, rule: SDK.CSSRule.CSSRule | null): Node;
@@ -188,7 +192,7 @@ export declare class StylePropertiesSection {
     refreshUpdate(editedTreeElement: StylePropertyTreeElement): void;
     updateVarFunctions(editedTreeElement: StylePropertyTreeElement): void;
     update(full: boolean): void;
-    private showAllItems;
+    showAllItems(event?: Event): void;
     onpopulate(): void;
     isPropertyOverloaded(property: SDK.CSSProperty.CSSProperty): boolean;
     updateFilter(): boolean;
@@ -235,7 +239,7 @@ export declare class BlankStylePropertiesSection extends StylePropertiesSection 
     private normal;
     private readonly ruleLocation;
     private readonly styleSheetId;
-    constructor(stylesPane: StylesSidebarPane, matchedStyles: SDK.CSSMatchedStyles.CSSMatchedStyles, defaultSelectorText: string, styleSheetId: Protocol.CSS.StyleSheetId, ruleLocation: TextUtils.TextRange.TextRange, insertAfterStyle: SDK.CSSStyleDeclaration.CSSStyleDeclaration);
+    constructor(stylesPane: StylesSidebarPane, matchedStyles: SDK.CSSMatchedStyles.CSSMatchedStyles, defaultSelectorText: string, styleSheetId: Protocol.CSS.StyleSheetId, ruleLocation: TextUtils.TextRange.TextRange, insertAfterStyle: SDK.CSSStyleDeclaration.CSSStyleDeclaration, sectionIdx: number);
     private actualRuleLocation;
     private rulePrefix;
     get isBlank(): boolean;
@@ -244,7 +248,7 @@ export declare class BlankStylePropertiesSection extends StylePropertiesSection 
     private makeNormal;
 }
 export declare class KeyframePropertiesSection extends StylePropertiesSection {
-    constructor(stylesPane: StylesSidebarPane, matchedStyles: SDK.CSSMatchedStyles.CSSMatchedStyles, style: SDK.CSSStyleDeclaration.CSSStyleDeclaration);
+    constructor(stylesPane: StylesSidebarPane, matchedStyles: SDK.CSSMatchedStyles.CSSMatchedStyles, style: SDK.CSSStyleDeclaration.CSSStyleDeclaration, sectionIdx: number);
     headerText(): string;
     setHeaderText(rule: SDK.CSSRule.CSSRule, newContent: string): Promise<void>;
     isPropertyInherited(_propertyName: string): boolean;

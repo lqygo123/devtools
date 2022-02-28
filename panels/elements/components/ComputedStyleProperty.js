@@ -7,33 +7,33 @@ import computedStylePropertyStyles from './computedStyleProperty.css.js';
 const { render, html } = LitHtml;
 export class ComputedStyleProperty extends HTMLElement {
     static litTagName = LitHtml.literal `devtools-computed-style-property`;
-    shadow = this.attachShadow({ mode: 'open' });
-    inherited = false;
-    traceable = false;
-    onNavigateToSource = () => { };
+    #shadow = this.attachShadow({ mode: 'open' });
+    #inherited = false;
+    #traceable = false;
+    #onNavigateToSource = () => { };
     connectedCallback() {
-        this.shadow.adoptedStyleSheets = [computedStylePropertyStyles];
+        this.#shadow.adoptedStyleSheets = [computedStylePropertyStyles];
     }
     set data(data) {
-        this.inherited = data.inherited;
-        this.traceable = data.traceable;
-        this.onNavigateToSource = data.onNavigateToSource;
-        this.render();
+        this.#inherited = data.inherited;
+        this.#traceable = data.traceable;
+        this.#onNavigateToSource = data.onNavigateToSource;
+        this.#render();
     }
-    render() {
+    #render() {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
         render(html `
-      <div class="computed-style-property ${this.inherited ? 'inherited' : ''}">
+      <div class="computed-style-property ${this.#inherited ? 'inherited' : ''}">
         <slot name="property-name"></slot>
         <span class="hidden" aria-hidden="false">: </span>
-        ${this.traceable ?
-            html `<span class="goto" @click=${this.onNavigateToSource}></span>` :
+        ${this.#traceable ?
+            html `<span class="goto" @click=${this.#onNavigateToSource}></span>` :
             null}
         <slot name="property-value"></slot>
         <span class="hidden" aria-hidden="false">;</span>
       </div>
-    `, this.shadow, {
+    `, this.#shadow, {
             host: this,
         });
         // clang-format on

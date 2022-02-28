@@ -26,7 +26,7 @@ export declare class CPUProfileType extends ProfileType {
     buttonClicked(): boolean;
     get treeItemTitle(): Common.UIString.LocalizedString;
     get description(): Common.UIString.LocalizedString;
-    consoleProfileFinished(event: Common.EventTarget.EventTargetEvent<SDK.CPUProfilerModel.ProfileFinishedData>): void;
+    consoleProfileFinished(data: SDK.CPUProfilerModel.ProfileFinishedData): void;
     startRecordingProfile(): void;
     stopRecordingProfile(): Promise<void>;
     createProfileLoadedFromFile(title: string): ProfileHeader;

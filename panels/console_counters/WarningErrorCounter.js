@@ -55,7 +55,7 @@ export class WarningErrorCounter {
         this.issueCounter.data = {
             clickHandler: () => {
                 Host.userMetrics.issuesPanelOpenedFrom(Host.UserMetrics.IssueOpener.StatusBarIssuesCounter);
-                UI.ViewManager.ViewManager.instance().showView('issues-pane');
+                void UI.ViewManager.ViewManager.instance().showView('issues-pane');
             },
             issuesManager,
             displayMode: "OnlyMostImportant" /* OnlyMostImportant */,
@@ -86,7 +86,7 @@ export class WarningErrorCounter {
     }
     update() {
         this.updatingForTest = true;
-        this.throttler.schedule(this.updateThrottled.bind(this));
+        void this.throttler.schedule(this.updateThrottled.bind(this));
     }
     get titlesForTesting() {
         const button = this.consoleCounter.shadowRoot?.querySelector('button');

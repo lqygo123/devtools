@@ -165,15 +165,7 @@ export class Linkifier {
             Linkifier.unbindUILocation(anchor);
             const fallback = info.fallback;
             if (fallback) {
-                // @ts-ignore
-                anchor.href = fallback.href;
-                UI.Tooltip.Tooltip.install(anchor, fallback.title);
-                anchor.className = fallback.className;
-                anchor.textContent = fallback.textContent;
-                const fallbackInfo = infoByAnchor.get(fallback);
-                if (fallbackInfo) {
-                    infoByAnchor.set(anchor, fallbackInfo);
-                }
+                anchor.replaceWith(fallback);
             }
         }
     }
@@ -183,6 +175,7 @@ export class Linkifier {
             lineNumber,
             maxLength: this.maxLength,
             columnNumber: options ? options.columnNumber : undefined,
+            showColumnNumber: Boolean(options?.showColumnNumber),
             className: options ? options.className : undefined,
             tabStop: options ? options.tabStop : undefined,
             inlineFrameIndex: options ? options.inlineFrameIndex : 0,
@@ -201,18 +194,11 @@ export class Linkifier {
         if (!debuggerModel) {
             return fallbackAnchor;
         }
-        let rawLocation;
-        if (scriptId) {
-            rawLocation = debuggerModel.createRawLocationByScriptId(scriptId, lineNumber || 0, columnNumber, linkifyURLOptions.inlineFrameIndex);
-        }
-        // The function createRawLocationByScriptId will always return a raw location. Normally
-        // we rely on the live location that is created from it to update missing information
-        // to create the link. If we, however, already have a similar script with the same source url,
-        // use that one.
-        if (!rawLocation?.script()) {
-            rawLocation = debuggerModel.createRawLocationByURL(sourceURL, lineNumber || 0, columnNumber, linkifyURLOptions.inlineFrameIndex) ||
-                rawLocation;
-        }
+        // Prefer createRawLocationByScriptId() here, since it will always produce a correct
+        // link, since the script ID is unique. Only fall back to createRawLocationByURL()
+        // when all we have is an URL, which is not guaranteed to be unique.
+        const rawLocation = scriptId ? debuggerModel.createRawLocationByScriptId(scriptId, lineNumber || 0, columnNumber, linkifyURLOptions.inlineFrameIndex) :
+            debuggerModel.createRawLocationByURL(sourceURL, lineNumber || 0, columnNumber, linkifyURLOptions.inlineFrameIndex);
         if (!rawLocation) {
             return fallbackAnchor;
         }
@@ -227,31 +213,28 @@ export class Linkifier {
         // Not initialising the anchor element with 'zero width space' (\u200b) causes a crash
         // in the layout engine.
         // TODO(szuend): Remove comment and workaround once the crash is fixed.
-        const anchor = Linkifier.createLink(fallbackAnchor && fallbackAnchor.textContent ? fallbackAnchor.textContent : '\u200b', className, createLinkOptions);
-        const info = Linkifier.linkInfo(anchor);
-        if (!info) {
-            return fallbackAnchor;
-        }
-        info.enableDecorator = this.useLinkDecorator;
-        info.fallback = fallbackAnchor;
+        const { link, linkInfo } = Linkifier.createLink(fallbackAnchor && fallbackAnchor.textContent ? fallbackAnchor.textContent : '\u200b', className, createLinkOptions);
+        linkInfo.enableDecorator = this.useLinkDecorator;
+        linkInfo.fallback = fallbackAnchor;
         const pool = this.locationPoolByTarget.get(rawLocation.debuggerModel.target());
         if (!pool) {
             return fallbackAnchor;
         }
+        const linkDisplayOptions = { showColumnNumber: linkifyURLOptions.showColumnNumber };
         const currentOnLiveLocationUpdate = this.onLiveLocationUpdate;
-        Bindings.DebuggerWorkspaceBinding.DebuggerWorkspaceBinding.instance()
-            .createLiveLocation(rawLocation, this.updateAnchor.bind(this, anchor), pool)
+        void Bindings.DebuggerWorkspaceBinding.DebuggerWorkspaceBinding.instance()
+            .createLiveLocation(rawLocation, this.updateAnchor.bind(this, link, linkDisplayOptions), pool)
             .then(liveLocation => {
             if (liveLocation) {
-                info.liveLocation = liveLocation;
+                linkInfo.liveLocation = liveLocation;
                 // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
                 // @ts-expect-error
                 currentOnLiveLocationUpdate();
             }
         });
         const anchors = this.anchorsByTarget.get(rawLocation.debuggerModel.target());
-        anchors.push(anchor);
-        return anchor;
+        anchors.push(link);
+        return link;
     }
     linkifyScriptLocation(target, scriptId, sourceURL, lineNumber, options) {
         const scriptLink = this.maybeLinkifyScriptLocation(target, scriptId, sourceURL, lineNumber, options);
@@ -260,6 +243,7 @@ export class Linkifier {
             maxLength: this.maxLength,
             className: options ? options.className : undefined,
             columnNumber: options ? options.columnNumber : undefined,
+            showColumnNumber: Boolean(options?.showColumnNumber),
             inlineFrameIndex: options ? options.inlineFrameIndex : 0,
             tabStop: options ? options.tabStop : undefined,
             text: undefined,
@@ -279,63 +263,58 @@ export class Linkifier {
     maybeLinkifyConsoleCallFrame(target, callFrame, options) {
         const linkifyOptions = {
             columnNumber: callFrame.columnNumber,
+            showColumnNumber: Boolean(options?.showColumnNumber),
             inlineFrameIndex: options ? options.inlineFrameIndex : 0,
             tabStop: options ? options.tabStop : undefined,
             className: options ? options.className : undefined,
         };
         return this.maybeLinkifyScriptLocation(target, callFrame.scriptId, callFrame.url, callFrame.lineNumber, linkifyOptions);
     }
-    linkifyStackTraceTopFrame(target, stackTrace, classes) {
-        console.assert(Boolean(stackTrace.callFrames) && Boolean(stackTrace.callFrames.length));
-        const topFrame = stackTrace.callFrames[0];
-        const fallbackAnchor = Linkifier.linkifyURL(topFrame.url, {
-            className: classes,
-            lineNumber: topFrame.lineNumber,
-            columnNumber: topFrame.columnNumber,
+    linkifyStackTraceTopFrame(target, stackTrace, className) {
+        console.assert(stackTrace.callFrames.length > 0);
+        const { url, lineNumber, columnNumber } = stackTrace.callFrames[0];
+        const fallbackAnchor = Linkifier.linkifyURL(url, {
+            className,
+            lineNumber,
+            columnNumber,
+            showColumnNumber: false,
             inlineFrameIndex: 0,
             maxLength: this.maxLength,
             text: undefined,
-            preventClick: undefined,
+            preventClick: true,
             tabStop: undefined,
             bypassURLTrimming: undefined,
         });
-        if (target.isDisposed()) {
+        // The contract is that disposed targets don't have a LiveLocationPool
+        // associated, whereas all active targets have one such pool. This ensures
+        // that the fallbackAnchor is only ever used when the target was disposed.
+        const pool = this.locationPoolByTarget.get(target);
+        if (!pool) {
+            console.assert(target.isDisposed());
             return fallbackAnchor;
         }
+        console.assert(!target.isDisposed());
+        // All targets that can report stack traces also have a debugger model.
         const debuggerModel = target.model(SDK.DebuggerModel.DebuggerModel);
-        if (!debuggerModel) {
-            return fallbackAnchor;
-        }
-        const rawLocations = debuggerModel.createRawLocationsByStackTrace(stackTrace);
-        if (rawLocations.length === 0) {
-            return fallbackAnchor;
-        }
         // Not initialising the anchor element with 'zero width space' (\u200b) causes a crash
         // in the layout engine.
         // TODO(szuend): Remove comment and workaround once the crash is fixed.
-        const anchor = Linkifier.createLink('\u200b', classes || '');
-        const info = Linkifier.linkInfo(anchor);
-        if (!info) {
-            return fallbackAnchor;
-        }
-        info.enableDecorator = this.useLinkDecorator;
-        info.fallback = fallbackAnchor;
-        const pool = this.locationPoolByTarget.get(target);
-        if (!pool) {
-            return fallbackAnchor;
-        }
+        const { link, linkInfo } = Linkifier.createLink('\u200b', className ?? '');
+        linkInfo.enableDecorator = this.useLinkDecorator;
+        linkInfo.fallback = fallbackAnchor;
+        const linkDisplayOptions = { showColumnNumber: false };
         const currentOnLiveLocationUpdate = this.onLiveLocationUpdate;
-        Bindings.DebuggerWorkspaceBinding.DebuggerWorkspaceBinding.instance()
-            .createStackTraceTopFrameLiveLocation(rawLocations, this.updateAnchor.bind(this, anchor), pool)
+        void Bindings.DebuggerWorkspaceBinding.DebuggerWorkspaceBinding.instance()
+            .createStackTraceTopFrameLiveLocation(debuggerModel.createRawLocationsByStackTrace(stackTrace), this.updateAnchor.bind(this, link, linkDisplayOptions), pool)
             .then(liveLocation => {
-            info.liveLocation = liveLocation;
+            linkInfo.liveLocation = liveLocation;
             // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
             // @ts-expect-error
             currentOnLiveLocationUpdate();
         });
         const anchors = this.anchorsByTarget.get(target);
-        anchors.push(anchor);
-        return anchor;
+        anchors.push(link);
+        return link;
     }
     linkifyCSSLocation(rawLocation, classes) {
         const createLinkOptions = {
@@ -349,28 +328,25 @@ export class Linkifier {
         // Not initialising the anchor element with 'zero width space' (\u200b) causes a crash
         // in the layout engine.
         // TODO(szuend): Remove comment and workaround once the crash is fixed.
-        const anchor = Linkifier.createLink('\u200b', classes || '', createLinkOptions);
-        const info = Linkifier.linkInfo(anchor);
-        if (!info) {
-            return anchor;
-        }
-        info.enableDecorator = this.useLinkDecorator;
+        const { link, linkInfo } = Linkifier.createLink('\u200b', classes || '', createLinkOptions);
+        linkInfo.enableDecorator = this.useLinkDecorator;
         const pool = this.locationPoolByTarget.get(rawLocation.cssModel().target());
         if (!pool) {
-            return anchor;
+            return link;
         }
+        const linkDisplayOptions = { showColumnNumber: false };
         const currentOnLiveLocationUpdate = this.onLiveLocationUpdate;
-        Bindings.CSSWorkspaceBinding.CSSWorkspaceBinding.instance()
-            .createLiveLocation(rawLocation, this.updateAnchor.bind(this, anchor), pool)
+        void Bindings.CSSWorkspaceBinding.CSSWorkspaceBinding.instance()
+            .createLiveLocation(rawLocation, this.updateAnchor.bind(this, link, linkDisplayOptions), pool)
             .then(liveLocation => {
-            info.liveLocation = liveLocation;
+            linkInfo.liveLocation = liveLocation;
             // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
             // @ts-expect-error
             currentOnLiveLocationUpdate();
         });
         const anchors = this.anchorsByTarget.get(rawLocation.cssModel().target());
-        anchors.push(anchor);
-        return anchor;
+        anchors.push(link);
+        return link;
     }
     reset() {
         // Create a copy of {keys} so {targetRemoved} can safely modify the map.
@@ -387,7 +363,7 @@ export class Linkifier {
         SDK.TargetManager.TargetManager.instance().unobserveTargets(this);
         instances.delete(this);
     }
-    async updateAnchor(anchor, liveLocation) {
+    async updateAnchor(anchor, options, liveLocation) {
         Linkifier.unbindUILocation(anchor);
         const uiLocation = await liveLocation.uiLocation();
         if (!uiLocation) {
@@ -396,7 +372,7 @@ export class Linkifier {
                 if (header && header.ownerNode) {
                     anchor.addEventListener('click', event => {
                         event.consume(true);
-                        Common.Revealer.reveal(header.ownerNode || null);
+                        void Common.Revealer.reveal(header.ownerNode || null);
                     }, false);
                     // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
                     // This workaround is needed to make stylelint happy
@@ -407,7 +383,7 @@ export class Linkifier {
             return;
         }
         Linkifier.bindUILocation(anchor, uiLocation);
-        const text = uiLocation.linkText(true /* skipTrim */);
+        const text = uiLocation.linkText(true /* skipTrim */, options.showColumnNumber);
         Linkifier.setTrimmedText(anchor, text, this.maxLength);
         let titleText = uiLocation.uiSourceCode.url();
         if (uiLocation.uiSourceCode.mimeType() === 'application/wasm') {
@@ -417,8 +393,11 @@ export class Linkifier {
                 titleText += `:0x${uiLocation.columnNumber.toString(16)}`;
             }
         }
-        else if (typeof uiLocation.lineNumber === 'number') {
+        else {
             titleText += ':' + (uiLocation.lineNumber + 1);
+            if (options.showColumnNumber && typeof uiLocation.columnNumber === 'number') {
+                titleText += ':' + (uiLocation.columnNumber + 1);
+            }
         }
         UI.Tooltip.Tooltip.install(anchor, titleText);
         anchor.classList.toggle('ignore-list-link', await liveLocation.isIgnoreListed());
@@ -451,6 +430,7 @@ export class Linkifier {
             className: undefined,
             lineNumber: undefined,
             columnNumber: undefined,
+            showColumnNumber: false,
             inlineFrameIndex: 0,
             preventClick: undefined,
             maxLength: undefined,
@@ -461,6 +441,7 @@ export class Linkifier {
         const className = options.className || '';
         const lineNumber = options.lineNumber;
         const columnNumber = options.columnNumber;
+        const showColumnNumber = options.showColumnNumber;
         const preventClick = options.preventClick;
         const maxLength = options.maxLength || UI.UIUtils.MaxLengthForDisplayedURLs;
         const bypassURLTrimming = options.bypassURLTrimming;
@@ -475,19 +456,18 @@ export class Linkifier {
         let linkText = text || Bindings.ResourceUtils.displayNameForURL(url);
         if (typeof lineNumber === 'number' && !text) {
             linkText += ':' + (lineNumber + 1);
+            if (showColumnNumber && typeof columnNumber === 'number') {
+                linkText += ':' + (columnNumber + 1);
+            }
         }
         const title = linkText !== url ? url : '';
         const linkOptions = { maxLength, title, href: url, preventClick, tabStop: options.tabStop, bypassURLTrimming };
-        const link = Linkifier.createLink(linkText, className, linkOptions);
-        const info = Linkifier.linkInfo(link);
-        if (!info) {
-            return link;
-        }
+        const { link, linkInfo } = Linkifier.createLink(linkText, className, linkOptions);
         if (lineNumber) {
-            info.lineNumber = lineNumber;
+            linkInfo.lineNumber = lineNumber;
         }
         if (columnNumber) {
-            info.columnNumber = columnNumber;
+            linkInfo.columnNumber = columnNumber;
         }
         return link;
     }
@@ -500,11 +480,7 @@ export class Linkifier {
             tabStop: undefined,
             bypassURLTrimming: undefined,
         };
-        const link = Linkifier.createLink(text, className || '', createLinkOptions);
-        const linkInfo = Linkifier.linkInfo(link);
-        if (!linkInfo) {
-            return link;
-        }
+        const { link, linkInfo } = Linkifier.createLink(text, className || '', createLinkOptions);
         linkInfo.revealable = revealable;
         return link;
     }
@@ -572,7 +548,7 @@ export class Linkifier {
         }
         UI.ARIAUtils.markAsLink(link);
         link.tabIndex = tabStop ? 0 : -1;
-        return link;
+        return { link, linkInfo };
     }
     static setTrimmedText(link, text, maxLength) {
         link.removeChildren();
@@ -621,7 +597,7 @@ export class Linkifier {
         return textByAnchor.get(node) || node.textContent || '';
     }
     static linkInfo(link) {
-        return /** @type {?_LinkInfo} */ link ? infoByAnchor.get(link) || null : null;
+        return link ? infoByAnchor.get(link) || null : null;
     }
     static handleClick(event) {
         const link = event.currentTarget;
@@ -640,7 +616,7 @@ export class Linkifier {
     static invokeFirstAction(linkInfo) {
         const actions = Linkifier.linkActions(linkInfo);
         if (actions.length) {
-            actions[0].handler.call(null);
+            void actions[0].handler.call(null);
             return true;
         }
         return false;
@@ -725,7 +701,7 @@ export class Linkifier {
             });
         }
         if (uiLocation && uiLocation.uiSourceCode) {
-            const contentProvider = /** @type {!Workspace.UISourceCode.UISourceCode} */ uiLocation.uiSourceCode;
+            const contentProvider = uiLocation.uiSourceCode;
             result.push({
                 section: 'clipboard',
                 title: UI.UIUtils.copyFileNameLabel(),

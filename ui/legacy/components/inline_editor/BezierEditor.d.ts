@@ -1,5 +1,15 @@
+import * as Common from '../../../../core/common/common.js';
+import * as Platform from '../../../../core/platform/platform.js';
 import * as UI from '../../legacy.js';
-export declare class BezierEditor extends UI.Widget.VBox {
+declare const BezierEditor_base: (new (...args: any[]) => {
+    "__#6@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends Events.BezierChanged>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T]>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T_1 extends Events.BezierChanged>(eventType: T_1): Promise<EventTypes[T_1]>;
+    removeEventListener<T_2 extends Events.BezierChanged>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2]>) => void, thisObject?: Object | undefined): void;
+    hasEventListeners(eventType: Events.BezierChanged): boolean;
+    dispatchEventToListeners<T_3 extends Events.BezierChanged>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+}) & typeof UI.Widget.VBox;
+export declare class BezierEditor extends BezierEditor_base {
     private bezierInternal;
     private previewElement;
     private readonly previewOnion;
@@ -36,6 +46,9 @@ export declare class BezierEditor extends UI.Widget.VBox {
 export declare enum Events {
     BezierChanged = "BezierChanged"
 }
+export declare type EventTypes = {
+    [Events.BezierChanged]: string;
+};
 export declare const Presets: {
     name: string;
     value: string;
@@ -48,3 +61,4 @@ export interface PresetCategory {
     icon: Element;
     presetIndex: number;
 }
+export {};

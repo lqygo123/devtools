@@ -43,5 +43,6 @@ import * as PropertiesWidget from './PropertiesWidget.js';
 import * as StyleEditorWidget from './StyleEditorWidget.js';
 import * as StylePropertyHighlighter from './StylePropertyHighlighter.js';
 import * as StylePropertyTreeElement from './StylePropertyTreeElement.js';
+import * as StylePropertyUtils from './StylePropertyUtils.js';
 import * as StylesSidebarPane from './StylesSidebarPane.js';
-export { ClassesPaneWidget, ColorSwatchPopoverIcon, ComputedStyleModel, ComputedStyleWidget, DOMLinkifier, DOMPath, ElementsPanel, ElementsSidebarPane, ElementStatePaneWidget, ElementsTreeElement, ElementsTreeElementHighlighter, ElementsTreeOutline, EventListenersWidget, InspectElementModeController, LayoutSidebarPane, MarkerDecorator, MetricsSidebarPane, NodeStackTraceWidget, PlatformFontsWidget, PropertiesWidget, StyleEditorWidget, StylePropertyHighlighter, StylePropertyTreeElement, StylesSidebarPane, };
+export { ClassesPaneWidget, ColorSwatchPopoverIcon, ComputedStyleModel, ComputedStyleWidget, DOMLinkifier, DOMPath, ElementsPanel, ElementsSidebarPane, ElementStatePaneWidget, ElementsTreeElement, ElementsTreeElementHighlighter, ElementsTreeOutline, EventListenersWidget, InspectElementModeController, LayoutSidebarPane, MarkerDecorator, MetricsSidebarPane, NodeStackTraceWidget, PlatformFontsWidget, PropertiesWidget, StyleEditorWidget, StylePropertyHighlighter, StylePropertyTreeElement, StylePropertyUtils, StylesSidebarPane, };

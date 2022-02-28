@@ -10,17 +10,17 @@ import { SDKModel } from './SDKModel.js';
  * wants to preserve issues for targets (e.g. iframes) that are already gone as well.
  */
 export class IssuesModel extends SDKModel {
-    disposed = false;
-    enabled = false;
+    #disposed = false;
+    #enabled = false;
     constructor(target) {
         super(target);
-        this.ensureEnabled();
+        void this.ensureEnabled();
     }
     async ensureEnabled() {
-        if (this.enabled) {
+        if (this.#enabled) {
             return;
         }
-        this.enabled = true;
+        this.#enabled = true;
         this.target().registerAuditsDispatcher(this);
         const auditsAgent = this.target().auditsAgent();
         await auditsAgent.invoke_enable();
@@ -30,10 +30,10 @@ export class IssuesModel extends SDKModel {
     }
     dispose() {
         super.dispose();
-        this.disposed = true;
+        this.#disposed = true;
     }
     getTargetIfNotDisposed() {
-        if (!this.disposed) {
+        if (!this.#disposed) {
             return this.target();
         }
         return null;

@@ -12,6 +12,7 @@ export declare class DeviceModeWrapper extends UI.Widget.VBox {
         inspectedPagePlaceholder: InspectedPagePlaceholder | null;
     }): DeviceModeWrapper;
     toggleDeviceMode(): void;
+    isDeviceModeOn(): boolean;
     captureScreenshot(fullSize?: boolean, clip?: Protocol.Page.Viewport): boolean;
     private screenshotRequestedFromOverlay;
     private update;

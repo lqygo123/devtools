@@ -1,12 +1,10 @@
+import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import type * as Workspace from '../workspace/workspace.js';
 import type { LiveLocation as LiveLocationInterface, LiveLocationPool } from './LiveLocation.js';
 import { LiveLocationWithPool } from './LiveLocation.js';
 export declare class CSSWorkspaceBinding implements SDK.TargetManager.SDKModelObserver<SDK.CSSModel.CSSModel> {
-    private readonly workspace;
-    private readonly modelToInfo;
-    private readonly sourceMappings;
-    private readonly liveLocationPromises;
+    #private;
     private constructor();
     static instance(opts?: {
         forceNew: boolean | null;
@@ -14,6 +12,7 @@ export declare class CSSWorkspaceBinding implements SDK.TargetManager.SDKModelOb
         workspace: Workspace.Workspace.WorkspaceImpl | null;
     }): CSSWorkspaceBinding;
     static removeInstance(): void;
+    get modelToInfo(): Map<SDK.CSSModel.CSSModel, ModelInfo>;
     private getCSSModelInfo;
     modelAdded(cssModel: SDK.CSSModel.CSSModel): void;
     modelRemoved(cssModel: SDK.CSSModel.CSSModel): void;
@@ -30,20 +29,14 @@ export declare class CSSWorkspaceBinding implements SDK.TargetManager.SDKModelOb
     uiLocationToRawLocations(uiLocation: Workspace.UISourceCode.UILocation): SDK.CSSModel.CSSLocation[];
     addSourceMapping(sourceMapping: SourceMapping): void;
 }
-/**
- * @interface
- */
 export interface SourceMapping {
     rawLocationToUILocation(rawLocation: SDK.CSSModel.CSSLocation): Workspace.UISourceCode.UILocation | null;
     uiLocationToRawLocations(uiLocation: Workspace.UISourceCode.UILocation): SDK.CSSModel.CSSLocation[];
 }
 export declare class ModelInfo {
-    private readonly eventListeners;
-    private stylesSourceMapping;
-    private sassSourceMapping;
-    private readonly locations;
-    private readonly unboundLocations;
+    #private;
     constructor(cssModel: SDK.CSSModel.CSSModel, workspace: Workspace.Workspace.WorkspaceImpl);
+    get locations(): Platform.MapUtilities.Multimap<SDK.CSSStyleSheetHeader.CSSStyleSheetHeader, LiveLocation>;
     createLiveLocation(rawLocation: SDK.CSSModel.CSSLocation, updateDelegate: (arg0: LiveLocationInterface) => Promise<void>, locationPool: LiveLocationPool): Promise<LiveLocation>;
     disposeLocation(location: LiveLocation): void;
     updateLocations(header: SDK.CSSStyleSheetHeader.CSSStyleSheetHeader): Promise<void[]>;
@@ -54,10 +47,8 @@ export declare class ModelInfo {
     dispose(): void;
 }
 export declare class LiveLocation extends LiveLocationWithPool {
+    #private;
     readonly url: string;
-    private readonly lineNumber;
-    private readonly columnNumber;
-    private readonly info;
     headerInternal: SDK.CSSStyleSheetHeader.CSSStyleSheetHeader | null;
     constructor(rawLocation: SDK.CSSModel.CSSLocation, info: ModelInfo, updateDelegate: (arg0: LiveLocationInterface) => Promise<void>, locationPool: LiveLocationPool);
     header(): SDK.CSSStyleSheetHeader.CSSStyleSheetHeader | null;

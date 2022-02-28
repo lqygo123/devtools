@@ -138,7 +138,7 @@ export class NetworkItemView extends UI.TabbedPane.TabbedPane {
         this.headersView = new RequestHeadersView(request);
         this.appendTab(NetworkForward.UIRequestLocation.UIRequestTabs.Headers, i18nString(UIStrings.headers), this.headersView, i18nString(UIStrings.headers));
         this.payloadView = null;
-        this.maybeAppendPayloadPanel();
+        void this.maybeAppendPayloadPanel();
         this.addEventListener(UI.TabbedPane.Events.TabSelected, this.tabSelected, this);
         if (request.resourceType() === Common.ResourceType.resourceTypes.WebSocket) {
             const frameView = new ResourceWebSocketFrameView(request);
@@ -192,7 +192,7 @@ export class NetworkItemView extends UI.TabbedPane.TabbedPane {
     }
     async requestHeadersChanged() {
         this.maybeAppendCookiesPanel();
-        this.maybeAppendPayloadPanel();
+        void this.maybeAppendPayloadPanel();
     }
     maybeAppendCookiesPanel() {
         const cookiesPresent = this.requestInternal.hasRequestCookies() || this.requestInternal.responseCookies.length > 0;
@@ -203,10 +203,13 @@ export class NetworkItemView extends UI.TabbedPane.TabbedPane {
         }
     }
     async maybeAppendPayloadPanel() {
+        if (this.hasTab('payload')) {
+            return;
+        }
         if (this.requestInternal.queryParameters || await this.requestInternal.requestFormData()) {
             this.payloadView = new RequestPayloadView(this.requestInternal);
             this.appendTab(NetworkForward.UIRequestLocation.UIRequestTabs.Payload, i18nString(UIStrings.payload), this.payloadView, i18nString(UIStrings.payload), /* userGesture=*/ void 0, 
-            /* isCloseable=*/ void 0, /* index=*/ 1);
+            /* isCloseable=*/ void 0, /* isPreviewFeature=*/ void 0, /* index=*/ 1);
         }
     }
     maybeShowErrorIconInTrustTokenTabHeader() {
@@ -218,7 +221,13 @@ export class NetworkItemView extends UI.TabbedPane.TabbedPane {
     }
     selectTabInternal(tabId) {
         if (!this.selectTab(tabId)) {
-            this.selectTab('headers');
+            // maybeAppendPayloadPanel might cause payload tab to appear asynchronously, so
+            // it makes sense to retry on the next tick
+            window.setTimeout(() => {
+                if (!this.selectTab(tabId)) {
+                    this.selectTab('headers');
+                }
+            }, 0);
         }
     }
     tabSelected(event) {

@@ -34,21 +34,21 @@ import { ContentProviderBasedProject } from './ContentProviderBasedProject.js';
 const uiSourceCodeToScriptsMap = new WeakMap();
 const scriptToUISourceCodeMap = new WeakMap();
 export class DefaultScriptMapping {
-    debuggerModel;
-    debuggerWorkspaceBinding;
-    project;
-    eventListeners;
-    uiSourceCodeToScriptsMap;
+    #debuggerModel;
+    #debuggerWorkspaceBinding;
+    #project;
+    #eventListeners;
+    #uiSourceCodeToScriptsMap;
     constructor(debuggerModel, workspace, debuggerWorkspaceBinding) {
-        this.debuggerModel = debuggerModel;
-        this.debuggerWorkspaceBinding = debuggerWorkspaceBinding;
-        this.project = new ContentProviderBasedProject(workspace, 'debugger:' + debuggerModel.target().id(), Workspace.Workspace.projectTypes.Debugger, '', true /* isServiceProject */);
-        this.eventListeners = [
+        this.#debuggerModel = debuggerModel;
+        this.#debuggerWorkspaceBinding = debuggerWorkspaceBinding;
+        this.#project = new ContentProviderBasedProject(workspace, 'debugger:' + debuggerModel.target().id(), Workspace.Workspace.projectTypes.Debugger, '', true /* isServiceProject */);
+        this.#eventListeners = [
             debuggerModel.addEventListener(SDK.DebuggerModel.Events.GlobalObjectCleared, this.debuggerReset, this),
             debuggerModel.addEventListener(SDK.DebuggerModel.Events.ParsedScriptSource, this.parsedScriptSource, this),
             debuggerModel.addEventListener(SDK.DebuggerModel.Events.DiscardedAnonymousScriptSource, this.discardedScriptSource, this),
         ];
-        this.uiSourceCodeToScriptsMap = new WeakMap();
+        this.#uiSourceCodeToScriptsMap = new WeakMap();
     }
     static scriptForUISourceCode(uiSourceCode) {
         const scripts = uiSourceCodeToScriptsMap.get(uiSourceCode);
@@ -63,29 +63,22 @@ export class DefaultScriptMapping {
         if (!uiSourceCode) {
             return null;
         }
-        const lineNumber = rawLocation.lineNumber - (script.isInlineScriptWithSourceURL() ? script.lineOffset : 0);
-        let columnNumber = rawLocation.columnNumber || 0;
-        if (script.isInlineScriptWithSourceURL() && !lineNumber && columnNumber) {
-            columnNumber -= script.columnOffset;
-        }
+        const { lineNumber, columnNumber = 0 } = rawLocation;
         return uiSourceCode.uiLocation(lineNumber, columnNumber);
     }
     uiLocationToRawLocations(uiSourceCode, lineNumber, columnNumber) {
-        const script = this.uiSourceCodeToScriptsMap.get(uiSourceCode);
+        const script = this.#uiSourceCodeToScriptsMap.get(uiSourceCode);
         if (!script) {
             return [];
         }
-        if (script.isInlineScriptWithSourceURL()) {
-            return [this.debuggerModel.createRawLocation(script, lineNumber + script.lineOffset, lineNumber ? columnNumber : columnNumber + script.columnOffset)];
-        }
-        return [this.debuggerModel.createRawLocation(script, lineNumber, columnNumber)];
+        return [this.#debuggerModel.createRawLocation(script, lineNumber, columnNumber)];
     }
     parsedScriptSource(event) {
         const script = event.data;
         const name = Common.ParsedURL.ParsedURL.extractName(script.sourceURL);
         const url = 'debugger:///VM' + script.scriptId + (name ? ' ' + name : '');
-        const uiSourceCode = this.project.createUISourceCode(url, Common.ResourceType.resourceTypes.Script);
-        this.uiSourceCodeToScriptsMap.set(uiSourceCode, script);
+        const uiSourceCode = this.#project.createUISourceCode(url, Common.ResourceType.resourceTypes.Script);
+        this.#uiSourceCodeToScriptsMap.set(uiSourceCode, script);
         const scriptSet = uiSourceCodeToScriptsMap.get(uiSourceCode);
         if (!scriptSet) {
             uiSourceCodeToScriptsMap.set(uiSourceCode, new Set([script]));
@@ -94,8 +87,8 @@ export class DefaultScriptMapping {
             scriptSet.add(script);
         }
         scriptToUISourceCodeMap.set(script, uiSourceCode);
-        this.project.addUISourceCodeWithProvider(uiSourceCode, script, null, 'text/javascript');
-        this.debuggerWorkspaceBinding.updateLocations(script);
+        this.#project.addUISourceCodeWithProvider(uiSourceCode, script, null, 'text/javascript');
+        void this.#debuggerWorkspaceBinding.updateLocations(script);
     }
     discardedScriptSource(event) {
         const script = event.data;
@@ -104,7 +97,7 @@ export class DefaultScriptMapping {
             return;
         }
         scriptToUISourceCodeMap.delete(script);
-        this.uiSourceCodeToScriptsMap.delete(uiSourceCode);
+        this.#uiSourceCodeToScriptsMap.delete(uiSourceCode);
         const scripts = uiSourceCodeToScriptsMap.get(uiSourceCode);
         if (scripts) {
             scripts.delete(script);
@@ -112,15 +105,15 @@ export class DefaultScriptMapping {
                 uiSourceCodeToScriptsMap.delete(uiSourceCode);
             }
         }
-        this.project.removeUISourceCode(uiSourceCode.url());
+        this.#project.removeUISourceCode(uiSourceCode.url());
     }
     debuggerReset() {
-        this.project.reset();
+        this.#project.reset();
     }
     dispose() {
-        Common.EventTarget.removeEventListeners(this.eventListeners);
+        Common.EventTarget.removeEventListeners(this.#eventListeners);
         this.debuggerReset();
-        this.project.dispose();
+        this.#project.dispose();
     }
 }
 //# sourceMappingURL=DefaultScriptMapping.js.map

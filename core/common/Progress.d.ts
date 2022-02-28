@@ -7,19 +7,15 @@ export declare class Progress {
     isCanceled(): boolean;
 }
 export declare class CompositeProgress {
+    #private;
     readonly parent: Progress;
-    private readonly children;
-    private childrenDone;
     constructor(parent: Progress);
     childDone(): void;
     createSubProgress(weight?: number): SubProgress;
     update(): void;
 }
 export declare class SubProgress implements Progress {
-    private readonly composite;
-    private weight;
-    private worked;
-    private totalWork;
+    #private;
     constructor(composite: CompositeProgress, weight?: number);
     isCanceled(): boolean;
     setTitle(title: string): void;
@@ -32,8 +28,7 @@ export declare class SubProgress implements Progress {
     getTotalWork(): number;
 }
 export declare class ProgressProxy implements Progress {
-    private readonly delegate;
-    private readonly doneCallback;
+    #private;
     constructor(delegate?: Progress | null, doneCallback?: (() => void));
     isCanceled(): boolean;
     setTitle(title: string): void;

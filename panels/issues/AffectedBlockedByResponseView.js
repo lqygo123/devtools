@@ -26,7 +26,7 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/issues/AffectedBlockedByResponseView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class AffectedBlockedByResponseView extends AffectedResourcesView {
-    appendDetails(details) {
+    #appendDetails(details) {
         const header = document.createElement('tr');
         this.appendColumnTitle(header, i18nString(UIStrings.requestC));
         this.appendColumnTitle(header, i18nString(UIStrings.parentFrame));
@@ -34,7 +34,7 @@ export class AffectedBlockedByResponseView extends AffectedResourcesView {
         this.affectedResources.appendChild(header);
         let count = 0;
         for (const detail of details) {
-            this.appendDetail(detail);
+            this.#appendDetail(detail);
             count++;
         }
         this.updateAffectedResourceCount(count);
@@ -42,7 +42,7 @@ export class AffectedBlockedByResponseView extends AffectedResourcesView {
     getResourceNameWithCount(count) {
         return i18nString(UIStrings.nRequests, { n: count });
     }
-    appendDetail(details) {
+    #appendDetail(details) {
         const element = document.createElement('tr');
         element.classList.add('affected-resource-row');
         const requestCell = this.createRequestCell(details.request, {
@@ -69,7 +69,7 @@ export class AffectedBlockedByResponseView extends AffectedResourcesView {
     }
     update() {
         this.clear();
-        this.appendDetails(this.issue.getBlockedByResponseDetails());
+        this.#appendDetails(this.issue.getBlockedByResponseDetails());
     }
 }
 //# sourceMappingURL=AffectedBlockedByResponseView.js.map

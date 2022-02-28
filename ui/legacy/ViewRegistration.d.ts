@@ -49,6 +49,10 @@ export interface ViewRegistration {
      */
     persistence?: ViewPersistence;
     /**
+     * Whether the view is a preview feature (a corresponding icon is shown then).
+     */
+    isPreviewFeature?: boolean;
+    /**
      * Unique identifier of the view.
      */
     id: string;

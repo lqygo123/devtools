@@ -7,18 +7,16 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as ColorPicker from '../../ui/legacy/components/color_picker/color_picker.js';
 import { CSSOverviewUnusedDeclarations } from './CSSOverviewUnusedDeclarations.js';
 export class CSSOverviewModel extends SDK.SDKModel.SDKModel {
-    runtimeAgent;
-    cssAgent;
-    domAgent;
-    domSnapshotAgent;
-    overlayAgent;
+    #runtimeAgent;
+    #cssAgent;
+    #domSnapshotAgent;
+    #overlayAgent;
     constructor(target) {
         super(target);
-        this.runtimeAgent = target.runtimeAgent();
-        this.cssAgent = target.cssAgent();
-        this.domAgent = target.domAgent();
-        this.domSnapshotAgent = target.domsnapshotAgent();
-        this.overlayAgent = target.overlayAgent();
+        this.#runtimeAgent = target.runtimeAgent();
+        this.#cssAgent = target.cssAgent();
+        this.#domSnapshotAgent = target.domsnapshotAgent();
+        this.#overlayAgent = target.overlayAgent();
     }
     highlightNode(node) {
         const highlightConfig = {
@@ -27,8 +25,8 @@ export class CSSOverviewModel extends SDK.SDKModel.SDKModel {
             contrastAlgorithm: Root.Runtime.experiments.isEnabled('APCA') ? "apca" /* Apca */ :
                 "aa" /* Aa */,
         };
-        this.overlayAgent.invoke_hideHighlight();
-        this.overlayAgent.invoke_highlightNode({ backendNodeId: node, highlightConfig });
+        void this.#overlayAgent.invoke_hideHighlight();
+        void this.#overlayAgent.invoke_highlightNode({ backendNodeId: node, highlightConfig });
     }
     async getNodeStyleStats() {
         const backgroundColors = new Map();
@@ -122,7 +120,7 @@ export class CSSOverviewModel extends SDK.SDKModel.SDKModel {
             return validNodes.has(nodeName.toLowerCase()) && display.startsWith('table');
         };
         let elementCount = 0;
-        const { documents, strings } = await this.domSnapshotAgent.invoke_captureSnapshot(snapshotConfig);
+        const { documents, strings } = await this.#domSnapshotAgent.invoke_captureSnapshot(snapshotConfig);
         for (const { nodes, layout } of documents) {
             // Track the number of elements in the documents.
             elementCount += layout.nodeIndex.length;
@@ -280,10 +278,10 @@ export class CSSOverviewModel extends SDK.SDKModel.SDKModel {
         };
     }
     getComputedStyleForNode(nodeId) {
-        return this.cssAgent.invoke_getComputedStyleForNode({ nodeId });
+        return this.#cssAgent.invoke_getComputedStyleForNode({ nodeId });
     }
     async getMediaQueries() {
-        const queries = await this.cssAgent.invoke_getMediaQueries();
+        const queries = await this.#cssAgent.invoke_getMediaQueries();
         const queryMap = new Map();
         if (!queries) {
             return queryMap;
@@ -386,7 +384,7 @@ export class CSSOverviewModel extends SDK.SDKModel.SDKModel {
         }
       }
     })()`;
-        const { result } = await this.runtimeAgent.invoke_evaluate({ expression, returnByValue: true });
+        const { result } = await this.#runtimeAgent.invoke_evaluate({ expression, returnByValue: true });
         // TODO(paullewis): Handle errors properly.
         if (result.type !== 'object') {
             return;

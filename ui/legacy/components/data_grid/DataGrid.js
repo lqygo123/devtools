@@ -28,6 +28,7 @@ import * as Common from '../../../../core/common/common.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as UI from '../../legacy.js';
+import dataGridStyles from './dataGrid.css.js';
 const UIStrings = {
     /**
     *@description Accessible text label for expandible nodes in datagrids
@@ -153,7 +154,6 @@ export class DataGridImpl extends Common.ObjectWrapper.ObjectWrapper {
         const { displayName, columns: columnsArray, editCallback, deleteCallback, refreshCallback } = dataGridParameters;
         this.element = document.createElement('div');
         this.element.classList.add('data-grid');
-        UI.Utils.appendStyle(this.element, 'ui/legacy/components/data_grid/dataGrid.css');
         this.element.tabIndex = 0;
         this.element.addEventListener('keydown', this.keyDown.bind(this), false);
         this.element.addEventListener('contextmenu', this.contextMenu.bind(this), true);
@@ -172,8 +172,6 @@ export class DataGridImpl extends Common.ObjectWrapper.ObjectWrapper {
         this.refreshCallback = refreshCallback;
         const headerContainer = this.element.createChild('div', 'header-container');
         this.headerTable = headerContainer.createChild('table', 'header');
-        // Hide the header table from screen readers since titles are also added to data table.
-        UI.ARIAUtils.markAsHidden(this.headerTable);
         this.headerTableHeaders = {};
         this.scrollContainerInternal = this.element.createChild('div', 'data-container');
         this.dataTable = this.scrollContainerInternal.createChild('table', 'data');
@@ -197,7 +195,7 @@ export class DataGridImpl extends Common.ObjectWrapper.ObjectWrapper {
         this.dataTableBody = this.dataTable.createChild('tbody');
         this.topFillerRow = this.dataTableBody.createChild('tr', 'data-grid-filler-row revealed');
         this.bottomFillerRow = this.dataTableBody.createChild('tr', 'data-grid-filler-row revealed');
-        this.setVerticalPadding(0, 0);
+        this.setVerticalPadding(0, 0, true);
         this.refreshHeader();
         this.editing = false;
         this.selectedNode = null;
@@ -399,7 +397,7 @@ export class DataGridImpl extends Common.ObjectWrapper.ObjectWrapper {
         this.headerTableColumnGroup.createChild('col', 'corner');
         this.dataTableColumnGroup.createChild('col', 'corner');
     }
-    setVerticalPadding(top, bottom) {
+    setVerticalPadding(top, bottom, isConstructorTime = false) {
         const topPx = top + 'px';
         const bottomPx = (top || bottom) ? bottom + 'px' : 'auto';
         if (this.topFillerRow.style.height === topPx && this.bottomFillerRow.style.height === bottomPx) {
@@ -407,7 +405,9 @@ export class DataGridImpl extends Common.ObjectWrapper.ObjectWrapper {
         }
         this.topFillerRow.style.height = topPx;
         this.bottomFillerRow.style.height = bottomPx;
-        this.dispatchEventToListeners(Events.PaddingChanged);
+        if (!isConstructorTime) {
+            this.dispatchEventToListeners(Events.PaddingChanged);
+        }
     }
     setRootNode(rootNode) {
         if (this.rootNodeInternal) {
@@ -1126,7 +1126,7 @@ export class DataGridImpl extends Common.ObjectWrapper.ObjectWrapper {
         if (columnId && this.columns[columnId].nonSelectable) {
             return;
         }
-        if ( /** @type {!MouseEvent} */event.metaKey) {
+        if (event.metaKey) {
             if (gridNode.selected) {
                 gridNode.deselect();
             }
@@ -1168,7 +1168,7 @@ export class DataGridImpl extends Common.ObjectWrapper.ObjectWrapper {
                 this.headerContextMenuCallback(contextMenu);
             }
             contextMenu.defaultSection().appendItem(i18nString(UIStrings.resetColumns), this.resetColumnWeights.bind(this));
-            contextMenu.show();
+            void contextMenu.show();
             return;
         }
         // Add header context menu to a subsection available from the body
@@ -1222,7 +1222,7 @@ export class DataGridImpl extends Common.ObjectWrapper.ObjectWrapper {
                 this.rowContextMenuCallback(contextMenu, gridNode);
             }
         }
-        contextMenu.show();
+        void contextMenu.show();
     }
     clickInDataTable(event) {
         const gridNode = this.dataGridNodeFromNode(event.target);
@@ -1230,7 +1230,7 @@ export class DataGridImpl extends Common.ObjectWrapper.ObjectWrapper {
             return;
         }
         if (gridNode.expanded) {
-            if ( /** @type {!MouseEvent}*/event.altKey) {
+            if (event.altKey) {
                 gridNode.collapseRecursively();
             }
             else {
@@ -1238,7 +1238,7 @@ export class DataGridImpl extends Common.ObjectWrapper.ObjectWrapper {
             }
         }
         else {
-            if ( /** @type {!MouseEvent}*/event.altKey) {
+            if (event.altKey) {
                 gridNode.expandRecursively();
             }
             else {
@@ -1307,6 +1307,7 @@ export class DataGridImpl extends Common.ObjectWrapper.ObjectWrapper {
             rightColumn.weight = (rightEdgeOfNextColumn - dragPoint) * sumOfWeights / delta;
         }
         this.positionResizers();
+        this.updateWidths();
         event.preventDefault();
     }
     setPreferredWidth(columnIndex, width) {
@@ -1383,7 +1384,7 @@ export var ResizeMethod;
     ResizeMethod["First"] = "first";
     ResizeMethod["Last"] = "last";
 })(ResizeMethod || (ResizeMethod = {}));
-export class DataGridNode extends Common.ObjectWrapper.ObjectWrapper {
+export class DataGridNode {
     elementInternal;
     expandedInternal;
     selectedInternal;
@@ -1409,7 +1410,6 @@ export class DataGridNode extends Common.ObjectWrapper.ObjectWrapper {
     cellAccessibleTextMap;
     isCreationNode;
     constructor(data, hasChildren) {
-        super();
         this.elementInternal = null;
         this.expandedInternal = false;
         this.selectedInternal = false;
@@ -2046,6 +2046,7 @@ export class DataGridWidget extends UI.Widget.VBox {
         this.setDefaultFocusedElement(dataGrid.element);
     }
     wasShown() {
+        this.registerCSSFiles([dataGridStyles]);
         this.dataGrid.wasShown();
     }
     willHide() {

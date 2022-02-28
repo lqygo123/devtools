@@ -19,8 +19,6 @@ const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined
 let loadedWebauthnModule;
 async function loadWebauthnModule() {
     if (!loadedWebauthnModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/webauthn');
         loadedWebauthnModule = await import('./webauthn.js');
     }
     return loadedWebauthnModule;

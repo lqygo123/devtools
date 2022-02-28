@@ -13,17 +13,17 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('models/issues_manager/TrustedWebActivityIssue.ts', UIStrings);
 const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined, str_);
 export class TrustedWebActivityIssue extends Issue {
-    issueDetails;
+    #issueDetails;
     constructor(issueDetails) {
         const issueCode = ["TrustedWebActivityIssue" /* TrustedWebActivityIssue */, issueDetails.violationType].join('::');
         super(issueCode);
-        this.issueDetails = issueDetails;
+        this.#issueDetails = issueDetails;
     }
     details() {
-        return this.issueDetails;
+        return this.#issueDetails;
     }
     getDescription() {
-        const description = issueDescriptions.get(this.issueDetails.violationType);
+        const description = issueDescriptions.get(this.#issueDetails.violationType);
         if (!description) {
             return null;
         }
@@ -33,7 +33,7 @@ export class TrustedWebActivityIssue extends Issue {
         return IssueCategory.TrustedWebActivity;
     }
     primaryKey() {
-        return `${"TrustedWebActivityIssue" /* TrustedWebActivityIssue */}-${JSON.stringify(this.issueDetails)}`;
+        return `${"TrustedWebActivityIssue" /* TrustedWebActivityIssue */}-${JSON.stringify(this.#issueDetails)}`;
     }
     getKind() {
         return IssueKind.PageError;

@@ -167,8 +167,13 @@ export class DebuggerPausedMessage {
         else if (details.reason === "EventListener" /* EventListener */) {
             let eventNameForUI = '';
             if (details.auxData) {
-                eventNameForUI =
-                    SDK.DOMDebuggerModel.DOMDebuggerManager.instance().resolveEventListenerBreakpointTitle(details.auxData);
+                const maybeNonDomEventNameForUI = SDK.EventBreakpointsModel.EventBreakpointsManager.instance().resolveEventListenerBreakpointTitle(details.auxData);
+                if (maybeNonDomEventNameForUI) {
+                    eventNameForUI = maybeNonDomEventNameForUI;
+                }
+                else {
+                    eventNameForUI = SDK.DOMDebuggerModel.DOMDebuggerManager.instance().resolveEventListenerBreakpointTitle(details.auxData);
+                }
             }
             messageWrapper = buildWrapper(i18nString(UIStrings.pausedOnEventListener), eventNameForUI);
         }

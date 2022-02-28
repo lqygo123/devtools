@@ -275,7 +275,7 @@ export class LayerDetailsView extends Common.ObjectWrapper.eventMixin(UI.Widget.
         }
         this.paintCountCell.textContent = String(layer.paintCount());
         this.memoryEstimateCell.textContent = Platform.NumberUtilities.bytesToString(layer.gpuMemoryUsage());
-        layer.requestCompositingReasonIds().then(this.updateCompositingReasons.bind(this));
+        void layer.requestCompositingReasonIds().then(this.updateCompositingReasons.bind(this));
         this.scrollRectsCell.removeChildren();
         layer.scrollRects().forEach(this.createScrollRectElement.bind(this));
         this.populateStickyPositionConstraintCell(layer.stickyPositionConstraint());

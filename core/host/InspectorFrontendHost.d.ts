@@ -1,9 +1,8 @@
 import * as Common from '../common/common.js';
-import type { CanShowSurveyResult, ContextMenuDescriptor, EnumeratedHistogram, ExtensionDescriptor, InspectorFrontendHostAPI, LoadNetworkResourceResult, ShowSurveyResult } from './InspectorFrontendHostAPI.js';
+import type { CanShowSurveyResult, ContextMenuDescriptor, EnumeratedHistogram, EventTypes, ExtensionDescriptor, InspectorFrontendHostAPI, LoadNetworkResourceResult, ShowSurveyResult, SyncInformation } from './InspectorFrontendHostAPI.js';
 export declare class InspectorFrontendHostStub implements InspectorFrontendHostAPI {
-    private readonly urlsBeingSaved;
-    events: Common.EventTarget.EventTarget<any>;
-    private windowVisible?;
+    #private;
+    events: Common.EventTarget.EventTarget<EventTypes>;
     recordedEnumeratedHistograms: {
         actionName: EnumeratedHistogram;
         actionCode: number;
@@ -47,12 +46,17 @@ export declare class InspectorFrontendHostStub implements InspectorFrontendHostA
     removeFileSystem(fileSystemPath: string): void;
     isolatedFileSystem(fileSystemId: string, registeredName: string): FileSystem | null;
     loadNetworkResource(url: string, headers: string, streamId: number, callback: (arg0: LoadNetworkResourceResult) => void): void;
+    registerPreference(name: string, options: {
+        synced?: boolean;
+    }): void;
     getPreferences(callback: (arg0: {
         [x: string]: string;
     }) => void): void;
+    getPreference(name: string, callback: (arg0: string) => void): void;
     setPreference(name: string, value: string): void;
     removePreference(name: string): void;
     clearPreferences(): void;
+    getSyncInformation(callback: (arg0: SyncInformation) => void): void;
     upgradeDraggedFileSystemPermissions(fileSystem: FileSystem): void;
     indexPath(requestId: number, fileSystemPath: string, excludedFolders: string): void;
     stopIndexing(requestId: number): void;

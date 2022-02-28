@@ -4,6 +4,7 @@ import type * as Protocol from '../../generated/protocol.js';
 import { Insets } from './DeviceModeModel.js';
 export declare function computeRelativeImageURL(cssURLValue: string): string;
 export declare class EmulatedDevice {
+    #private;
     title: string;
     type: string;
     order: number;
@@ -17,8 +18,6 @@ export declare class EmulatedDevice {
     isDualScreen: boolean;
     verticalSpanned: Orientation;
     horizontalSpanned: Orientation;
-    private showInternal;
-    private showByDefault;
     constructor();
     static fromJSONV1(json: any): EmulatedDevice | null;
     static deviceComparator(device1: EmulatedDevice, device2: EmulatedDevice): number;
@@ -57,10 +56,7 @@ export declare const _Show: {
     Never: string;
 };
 export declare class EmulatedDevicesList extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
-    private readonly standardSetting;
-    private standardInternal;
-    private readonly customSetting;
-    private readonly customInternal;
+    #private;
     constructor();
     static instance(): EmulatedDevicesList;
     private updateStandardDevices;

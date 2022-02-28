@@ -73,17 +73,17 @@ export class InplaceFormatterEditorAction {
         }
         return uiSourceCode.contentType().isStyleSheet();
     }
-    formatSourceInPlace(_event) {
+    formatSourceInPlace() {
         const uiSourceCode = this.sourcesView.currentUISourceCode();
         if (!uiSourceCode || !this.isFormattable(uiSourceCode)) {
             return;
         }
         if (uiSourceCode.isDirty()) {
-            this.contentLoaded(uiSourceCode, uiSourceCode.workingCopy());
+            void this.contentLoaded(uiSourceCode, uiSourceCode.workingCopy());
         }
         else {
-            uiSourceCode.requestContent().then(deferredContent => {
-                this.contentLoaded(uiSourceCode, deferredContent.content || '');
+            void uiSourceCode.requestContent().then(deferredContent => {
+                void this.contentLoaded(uiSourceCode, deferredContent.content || '');
             });
         }
     }
@@ -102,11 +102,11 @@ export class InplaceFormatterEditorAction {
         const sourceFrame = this.sourcesView.viewForFile(uiSourceCode);
         let start = [0, 0];
         if (sourceFrame) {
-            const selection = sourceFrame.selection();
-            start = formatterMapping.originalToFormatted(selection.startLine, selection.startColumn);
+            const selection = sourceFrame.textEditor.toLineColumn(sourceFrame.textEditor.state.selection.main.head);
+            start = formatterMapping.originalToFormatted(selection.lineNumber, selection.columnNumber);
         }
         uiSourceCode.setWorkingCopy(formattedContent);
-        this.sourcesView.showSourceLocation(uiSourceCode, start[0], start[1]);
+        this.sourcesView.showSourceLocation(uiSourceCode, { lineNumber: start[0], columnNumber: start[1] });
     }
 }
 registerEditorAction(InplaceFormatterEditorAction.instance);

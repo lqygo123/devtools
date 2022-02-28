@@ -192,7 +192,7 @@ export class IDBDatabaseView extends UI.Widget.VBox {
     async deleteDatabase() {
         const ok = await UI.UIUtils.ConfirmDialog.show(i18nString(UIStrings.pleaseConfirmDeleteOfSDatabase, { PH1: this.database.databaseId.name }), this.element);
         if (ok) {
-            this.model.deleteDatabase(this.database.databaseId);
+            void this.model.deleteDatabase(this.database.databaseId);
         }
     }
     wasShown() {
@@ -237,11 +237,11 @@ export class IDBDataView extends UI.View.SimpleView {
         this.refreshButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.refreshButtonClicked, this);
         this.deleteSelectedButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.deleteSelected), 'largeicon-delete');
         this.deleteSelectedButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, _event => {
-            this.deleteButtonClicked(null);
+            void this.deleteButtonClicked(null);
         });
         this.clearButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.clearObjectStore), 'largeicon-clear');
-        this.clearButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, event => {
-            this.clearButtonClicked(event);
+        this.clearButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, () => {
+            void this.clearButtonClicked();
         }, this);
         this.needsRefresh = new UI.Toolbar.ToolbarItem(UI.UIUtils.createIconLabel(i18nString(UIStrings.dataMayBeStale), 'smallicon-warning'));
         this.needsRefresh.setVisible(false);
@@ -299,7 +299,7 @@ export class IDBDataView extends UI.View.SimpleView {
             editCallback: undefined,
         });
         dataGrid.setStriped(true);
-        dataGrid.addEventListener(DataGrid.DataGrid.Events.SelectedNode, _vent => this.updateToolbarEnablement(), this);
+        dataGrid.addEventListener(DataGrid.DataGrid.Events.SelectedNode, () => this.updateToolbarEnablement(), this);
         return dataGrid;
     }
     // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
@@ -355,11 +355,11 @@ export class IDBDataView extends UI.View.SimpleView {
         editorToolbar.appendToolbarItem(this.deleteSelectedButton);
         editorToolbar.appendToolbarItem(this.needsRefresh);
     }
-    pageBackButtonClicked(_event) {
+    pageBackButtonClicked() {
         this.skipCount = Math.max(0, this.skipCount - this.pageSize);
         this.updateData(false);
     }
-    pageForwardButtonClicked(_event) {
+    pageForwardButtonClicked() {
         this.skipCount = this.skipCount + this.pageSize;
         this.updateData(false);
     }
@@ -370,7 +370,7 @@ export class IDBDataView extends UI.View.SimpleView {
                 if (!node.valueObjectPresentation) {
                     return;
                 }
-                node.valueObjectPresentation.objectTreeElement().expandRecursively();
+                void node.valueObjectPresentation.objectTreeElement().expandRecursively();
             });
             contextMenu.revealSection().appendItem(i18nString(UIStrings.collapse), () => {
                 if (!node.valueObjectPresentation) {
@@ -458,7 +458,7 @@ export class IDBDataView extends UI.View.SimpleView {
         else {
             this.model.loadObjectStoreData(this.databaseId, this.objectStore.name, idbKeyRange, skipCount, pageSize, callback.bind(this));
         }
-        this.model.getMetadata(this.databaseId, this.objectStore).then(this.updateSummaryBar.bind(this));
+        void this.model.getMetadata(this.databaseId, this.objectStore).then(this.updateSummaryBar.bind(this));
     }
     updateSummaryBar(metadata) {
         if (!this.summaryBarElement) {
@@ -479,10 +479,10 @@ export class IDBDataView extends UI.View.SimpleView {
     updatedDataForTests() {
         // Sniffed in tests.
     }
-    refreshButtonClicked(_event) {
+    refreshButtonClicked() {
         this.updateData(true);
     }
-    async clearButtonClicked(_event) {
+    async clearButtonClicked() {
         this.clearButton.setEnabled(false);
         this.clearingObjectStore = true;
         await this.model.clearObjectStore(this.databaseId, this.objectStore.name);

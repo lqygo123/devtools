@@ -3,11 +3,7 @@ import * as Protocol from '../../generated/protocol.js';
 import type { Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export declare class ServiceWorkerManager extends SDKModel<EventTypes> {
-    private readonly lastAnonymousTargetId;
-    private readonly agent;
-    private readonly registrationsInternal;
-    private enabled;
-    private readonly forceUpdateSetting;
+    #private;
     serviceWorkerNetworkRequestsPanelStatus: {
         isOpen: boolean;
         openedAt: number;
@@ -113,7 +109,7 @@ export declare namespace ServiceWorkerVersion {
     }
 }
 export declare class ServiceWorkerRegistration {
-    private fingerprintInternal;
+    #private;
     id: Protocol.ServiceWorker.RegistrationID;
     scopeURL: string;
     securityOrigin: string;

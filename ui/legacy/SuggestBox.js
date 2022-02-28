@@ -37,6 +37,7 @@ import { Icon } from './Icon.js';
 import { ListControl, ListMode } from './ListControl.js';
 import { ListModel } from './ListModel.js';
 import { measurePreferredSize } from './UIUtils.js';
+import suggestBoxStyles from './suggestBox.css.legacy.js';
 const UIStrings = {
     /**
     *@description Aria alert to read the suggestion for the suggestion box when typing in text editor
@@ -80,7 +81,7 @@ export class SuggestBox {
         this.glassPane = new GlassPane();
         this.glassPane.setAnchorBehavior("PreferBottom" /* PreferBottom */);
         this.glassPane.setOutsideClickCallback(this.hide.bind(this));
-        const shadowRoot = Utils.createShadowRootWithCoreStyles(this.glassPane.contentElement, { cssFile: 'ui/legacy/suggestBox.css', delegatesFocus: undefined });
+        const shadowRoot = Utils.createShadowRootWithCoreStyles(this.glassPane.contentElement, { cssFile: suggestBoxStyles, delegatesFocus: undefined });
         shadowRoot.appendChild(this.element);
     }
     visible() {

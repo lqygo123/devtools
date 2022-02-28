@@ -2,51 +2,23 @@ export declare function getRemoteBase(location?: string): {
     base: string;
     version: string;
 } | null;
-export declare const mappingForLayoutTests: Map<string, string>;
 export declare class Runtime {
-    private readonly modules;
-    modulesMap: {
-        [x: string]: Module;
-    };
-    private readonly descriptorsMap;
     private constructor();
     static instance(opts?: {
         forceNew: boolean | null;
-        moduleDescriptors: Array<ModuleDescriptor> | null;
     } | undefined): Runtime;
     static removeInstance(): void;
-    /**
-     * http://tools.ietf.org/html/rfc3986#section-5.2.4
-     */
-    static normalizePath(path: string): string;
     static queryParam(name: string): string | null;
     static experimentsSetting(): {
         [x: string]: boolean;
     };
-    static assert(value: boolean | undefined, message: string): void;
     static setPlatform(platform: string): void;
     static platform(): string;
     static isDescriptorEnabled(descriptor: {
         experiment: ((string | undefined) | null);
         condition: ((string | undefined) | null);
     }): boolean;
-    static resolveSourceURL(path: string): string;
-    module(moduleName: string): Module;
-    private registerModule;
-    loadModulePromise(moduleName: string): Promise<boolean>;
-    loadAutoStartModules(moduleNames: string[]): Promise<boolean[]>;
-    getModulesMap(): {
-        [x: string]: Module;
-    };
-}
-export declare class ModuleDescriptor {
-    name: string;
-    dependencies: string[] | undefined;
-    modules: string[];
-    resources: string[];
-    condition: string | undefined;
-    experiment: string | null;
-    constructor();
+    loadLegacyModule(modulePath: string): Promise<void>;
 }
 export interface Option {
     title: string;
@@ -54,27 +26,8 @@ export interface Option {
     raw?: boolean;
     text?: string;
 }
-export declare class Module {
-    private readonly manager;
-    readonly descriptor: ModuleDescriptor;
-    private readonly nameInternal;
-    private loadedForTest;
-    private pendingLoadPromise?;
-    constructor(manager: Runtime, descriptor: ModuleDescriptor);
-    name(): string;
-    enabled(): boolean;
-    resource(name: string): string;
-    loadPromise(): Promise<boolean>;
-    private loadModules;
-    private modularizeURL;
-    fetchResource(resourceName: string): Promise<string>;
-}
 export declare class ExperimentsSupport {
-    private experiments;
-    private experimentNames;
-    private enabledTransiently;
-    private readonly enabledByDefault;
-    private readonly serverEnabled;
+    #private;
     constructor();
     allConfigurableExperiments(): Experiment[];
     enabledExperiments(): Experiment[];
@@ -91,20 +44,16 @@ export declare class ExperimentsSupport {
     private checkExperiment;
 }
 export declare class Experiment {
+    #private;
     name: string;
     title: string;
     unstable: boolean;
     docLink?: string;
-    private readonly experiments;
     constructor(experiments: ExperimentsSupport, name: string, title: string, unstable: boolean, docLink: string);
     isEnabled(): boolean;
     setEnabled(enabled: boolean): void;
 }
-export declare function loadResourcePromise(url: string): Promise<string>;
 export declare const experiments: ExperimentsSupport;
-export declare const cachedResources: Map<string, string>;
-export declare let appStartedPromiseCallback: () => void;
-export declare const appStarted: Promise<void>;
 export declare enum ExperimentName {
     CAPTURE_NODE_CREATION_STACKS = "captureNodeCreationStacks",
     CSS_OVERVIEW = "cssOverview",
@@ -116,7 +65,8 @@ export declare enum ExperimentName {
     ALL = "*",
     PROTOCOL_MONITOR = "protocolMonitor",
     WEBAUTHN_PANE = "webauthnPane",
-    LOCALIZED_DEVTOOLS = "localizedDevTools"
+    SYNC_SETTINGS = "syncSettings",
+    FULL_ACCESSIBILITY_TREE = "fullAccessibilityTree"
 }
 export declare enum ConditionName {
     CAN_DOCK = "can_dock",

@@ -26,17 +26,15 @@ export class AccessibilitySidebarView extends UI.ThrottledWidget.ThrottledWidget
         this.axNodeInternal = null;
         this.skipNextPullNode = false;
         this.sidebarPaneStack = UI.ViewManager.ViewManager.instance().createStackLocation();
-        if (!Root.Runtime.experiments.isEnabled('fullAccessibilityTree')) {
-            this.breadcrumbsSubPane = new AXBreadcrumbsPane(this);
-            this.sidebarPaneStack.showView(this.breadcrumbsSubPane);
-        }
+        this.breadcrumbsSubPane = new AXBreadcrumbsPane(this);
+        void this.sidebarPaneStack.showView(this.breadcrumbsSubPane);
         this.ariaSubPane = new ARIAAttributesPane();
-        this.sidebarPaneStack.showView(this.ariaSubPane);
+        void this.sidebarPaneStack.showView(this.ariaSubPane);
         this.axNodeSubPane = new AXNodeSubPane();
-        this.sidebarPaneStack.showView(this.axNodeSubPane);
+        void this.sidebarPaneStack.showView(this.axNodeSubPane);
         if (this.sourceOrderViewerExperimentEnabled) {
             this.sourceOrderSubPane = new SourceOrderPane();
-            this.sidebarPaneStack.showView(this.sourceOrderSubPane);
+            void this.sidebarPaneStack.showView(this.sourceOrderSubPane);
         }
         this.sidebarPaneStack.widget().show(this.element);
         UI.Context.Context.instance().addFlavorChangeListener(SDK.DOMModel.DOMNode, this.pullNode, this);
@@ -65,7 +63,7 @@ export class AccessibilitySidebarView extends UI.ThrottledWidget.ThrottledWidget
         }
         this.axNodeInternal = axNode;
         if (axNode.isDOMNode()) {
-            this.sidebarPaneStack.showView(this.ariaSubPane, this.axNodeSubPane);
+            void this.sidebarPaneStack.showView(this.ariaSubPane, this.axNodeSubPane);
         }
         else {
             this.sidebarPaneStack.removeView(this.ariaSubPane);
@@ -85,7 +83,7 @@ export class AccessibilitySidebarView extends UI.ThrottledWidget.ThrottledWidget
             this.breadcrumbsSubPane.setNode(node);
         }
         if (this.sourceOrderViewerExperimentEnabled && this.sourceOrderSubPane) {
-            this.sourceOrderSubPane.setNodeAsync(node);
+            void this.sourceOrderSubPane.setNodeAsync(node);
         }
         if (!node) {
             return;
@@ -94,14 +92,16 @@ export class AccessibilitySidebarView extends UI.ThrottledWidget.ThrottledWidget
         if (!accessibilityModel) {
             return;
         }
-        accessibilityModel.clear();
+        if (!Root.Runtime.experiments.isEnabled('fullAccessibilityTree')) {
+            accessibilityModel.clear();
+        }
         await accessibilityModel.requestPartialAXTree(node);
         this.accessibilityNodeCallback(accessibilityModel.axNodeForDOMNode(node));
     }
     wasShown() {
         super.wasShown();
         // Pull down the latest date for this node.
-        this.doUpdate();
+        void this.doUpdate();
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DOMModel.DOMModel, SDK.DOMModel.Events.AttrModified, this.onAttrChange, this);
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DOMModel.DOMModel, SDK.DOMModel.Events.AttrRemoved, this.onAttrChange, this);
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DOMModel.DOMModel, SDK.DOMModel.Events.CharacterDataModified, this.onNodeChange, this);

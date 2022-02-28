@@ -37,8 +37,6 @@ export declare class PersistenceImpl extends Common.ObjectWrapper.ObjectWrapper<
     private notifyBindingEvent;
     fileSystem(uiSourceCode: Workspace.UISourceCode.UISourceCode): Workspace.UISourceCode.UISourceCode | null;
     network(uiSourceCode: Workspace.UISourceCode.UISourceCode): Workspace.UISourceCode.UISourceCode | null;
-    private addFilePathBindingPrefixes;
-    private removeFilePathBindingPrefixes;
     filePathHasBindings(filePath: string): boolean;
 }
 export declare const NodePrefix = "(function (exports, require, module, __filename, __dirname) { ";

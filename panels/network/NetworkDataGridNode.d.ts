@@ -1,4 +1,6 @@
+import * as Common from '../../core/common/common.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import * as NetworkForward from '../../panels/network/forward/forward.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
@@ -7,10 +9,19 @@ export declare enum Events {
     RequestSelected = "RequestSelected",
     RequestActivated = "RequestActivated"
 }
-export declare abstract class NetworkLogViewInterface {
+export interface RequestActivatedEvent {
+    showPanel: boolean;
+    takeFocus?: boolean;
+    tab?: NetworkForward.UIRequestLocation.UIRequestTabs;
+}
+export declare type EventTypes = {
+    [Events.RequestSelected]: SDK.NetworkRequest.NetworkRequest;
+    [Events.RequestActivated]: RequestActivatedEvent;
+};
+export interface NetworkLogViewInterface extends Common.EventTarget.EventTarget<EventTypes> {
     onLoadFromFile(file: File): Promise<void>;
-    abstract nodeForRequest(request: SDK.NetworkRequest.NetworkRequest): NetworkRequestNode | null;
-    abstract headerHeight(): number;
+    nodeForRequest(request: SDK.NetworkRequest.NetworkRequest): NetworkRequestNode | null;
+    headerHeight(): number;
     setRecording(recording: boolean): void;
     setWindow(start: number, end: number): void;
     resetFocus(): void;

@@ -64,6 +64,11 @@ const UIStrings = {
     *@description Text for the adorner of the page
     */
     adorner: 'Adorner',
+    /**
+     * @description Header for the "Sync" section in the settings UI. The "Sync"
+     * section allows users to configure which DevTools data is synced via Chrome Sync.
+     */
+    sync: 'Sync',
 };
 const str_ = i18n.i18n.registerUIStrings('core/common/SettingRegistration.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -125,6 +130,7 @@ export var SettingCategory;
     SettingCategory["MEMORY"] = "MEMORY";
     SettingCategory["EXTENSIONS"] = "EXTENSIONS";
     SettingCategory["ADORNER"] = "ADORNER";
+    SettingCategory["SYNC"] = "SYNC";
 })(SettingCategory || (SettingCategory = {}));
 export function getLocalizedSettingsCategory(category) {
     switch (category) {
@@ -162,6 +168,8 @@ export function getLocalizedSettingsCategory(category) {
             return i18nString(UIStrings.adorner);
         case SettingCategory.NONE:
             return '';
+        case SettingCategory.SYNC:
+            return i18nString(UIStrings.sync);
     }
 }
 // TODO(crbug.com/1167717): Make this a const enum again

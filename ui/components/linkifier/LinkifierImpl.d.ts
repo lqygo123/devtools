@@ -13,8 +13,6 @@ export declare class Linkifier extends HTMLElement {
     static readonly litTagName: import("../../lit-html/static.js").Static;
     set data(data: LinkifierData);
     connectedCallback(): void;
-    private onLinkActivation;
-    private render;
 }
 declare global {
     interface HTMLElementTagNameMap {

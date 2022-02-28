@@ -313,7 +313,7 @@ export class ContrastDetails extends Common.ObjectWrapper.ObjectWrapper {
     element() {
         return this.elementInternal;
     }
-    expandButtonClicked(_event) {
+    expandButtonClicked() {
         const selection = this.contrastValueBubble.getComponentSelection();
         if (selection) {
             selection.empty();
@@ -377,8 +377,7 @@ export class ContrastDetails extends Common.ObjectWrapper.ObjectWrapper {
             Host.InspectorFrontendHost.InspectorFrontendHostInstance.events.removeEventListener(Host.InspectorFrontendHostAPI.Events.EyeDropperPickedColor, this.bgColorPickedBound);
         }
     }
-    bgColorPicked(event) {
-        const rgbColor = event.data;
+    bgColorPicked({ data: rgbColor, }) {
         const rgba = [rgbColor.r, rgbColor.g, rgbColor.b, (rgbColor.a / 2.55 | 0) / 100];
         const color = Common.Color.Color.fromRGBA(rgba);
         this.contrastInfo.setBgColor(color);

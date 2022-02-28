@@ -5,12 +5,10 @@ import type * as TextUtils from '../text_utils/text_utils.js';
 import * as Workspace from '../workspace/workspace.js';
 import { DebuggerWorkspaceBinding } from './DebuggerWorkspaceBinding.js';
 export declare class BreakpointManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
+    #private;
     readonly storage: Storage;
-    private readonly workspace;
     readonly targetManager: SDK.TargetManager.TargetManager;
     readonly debuggerWorkspaceBinding: DebuggerWorkspaceBinding;
-    private readonly breakpointsForUISourceCode;
-    private readonly breakpointByStorageId;
     private constructor();
     static instance(opts?: {
         forceNew: boolean | null;
@@ -44,17 +42,12 @@ export declare type EventTypes = {
     [Events.BreakpointRemoved]: BreakpointLocation;
 };
 export declare class Breakpoint implements SDK.TargetManager.SDKModelObserver<SDK.DebuggerModel.DebuggerModel> {
+    #private;
     readonly breakpointManager: BreakpointManager;
     urlInternal: string;
-    private readonly lineNumberInternal;
-    private readonly columnNumberInternal;
-    private readonly uiLocations;
     uiSourceCodes: Set<Workspace.UISourceCode.UISourceCode>;
-    private conditionInternal;
-    private enabledInternal;
     isRemoved: boolean;
     currentState: Breakpoint.State | null;
-    private readonly modelBreakpoints;
     constructor(breakpointManager: BreakpointManager, primaryUISourceCode: Workspace.UISourceCode.UISourceCode, url: string, lineNumber: number, columnNumber: number | undefined, condition: string, enabled: boolean);
     refreshInDebugger(): Promise<void>;
     modelAdded(debuggerModel: SDK.DebuggerModel.DebuggerModel): void;
@@ -85,19 +78,10 @@ export declare class Breakpoint implements SDK.TargetManager.SDKModelObserver<SD
     getIsRemoved(): boolean;
 }
 export declare class ModelBreakpoint {
-    private debuggerModel;
-    private breakpoint;
-    private readonly debuggerWorkspaceBinding;
-    private readonly liveLocations;
-    private readonly uiLocations;
-    private hasPendingUpdate;
-    private isUpdating;
-    private cancelCallback;
-    private currentState;
-    private breakpointIds;
+    #private;
     constructor(debuggerModel: SDK.DebuggerModel.DebuggerModel, breakpoint: Breakpoint, debuggerWorkspaceBinding: DebuggerWorkspaceBinding);
     resetLocations(): void;
-    scheduleUpdateInDebugger(): void;
+    scheduleUpdateInDebugger(): Promise<void>;
     private scriptDiverged;
     private updateInDebugger;
     refreshBreakpoint(): Promise<void>;
@@ -124,10 +108,9 @@ export declare namespace Breakpoint {
     }
 }
 declare class Storage {
-    private readonly setting;
-    private readonly breakpoints;
-    private muted;
+    #private;
     constructor();
+    get setting(): Common.Settings.Setting<Storage.Item[]>;
     mute(): void;
     unmute(): void;
     breakpointItems(url: string): Storage.Item[];

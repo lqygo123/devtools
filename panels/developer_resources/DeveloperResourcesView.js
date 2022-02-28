@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
+import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { DeveloperResourcesListView } from './DeveloperResourcesListView.js';
@@ -78,7 +79,7 @@ export class DeveloperResourcesView extends UI.Widget.VBox {
         return developerResourcesViewInstance;
     }
     onUpdate() {
-        this.throttler.schedule(this.update.bind(this));
+        void this.throttler.schedule(this.update.bind(this));
     }
     async update() {
         this.listView.reset();
@@ -107,7 +108,7 @@ export class DeveloperResourcesView extends UI.Widget.VBox {
             return;
         }
         const text = this.filterInput.value();
-        this.textFilterRegExp = text ? createPlainTextSearchRegex(text, 'i') : null;
+        this.textFilterRegExp = text ? Platform.StringUtilities.createPlainTextSearchRegex(text, 'i') : null;
         this.listView.updateFilterAndHighlight(this.textFilterRegExp);
         this.updateStats();
     }

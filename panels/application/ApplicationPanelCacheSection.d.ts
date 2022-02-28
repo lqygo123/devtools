@@ -1,14 +1,6 @@
 import * as SDK from '../../core/sdk/sdk.js';
-import type * as Protocol from '../../generated/protocol.js';
-import type { ApplicationPanelSidebar } from './ApplicationPanelSidebar.js';
 import { ApplicationPanelTreeElement, ExpandableApplicationPanelTreeElement } from './ApplicationPanelTreeElement.js';
 import type { ResourcesPanel } from './ResourcesPanel.js';
-export declare class ApplicationCacheManifestTreeElement extends ApplicationPanelTreeElement {
-    private readonly manifestURL;
-    constructor(resourcesPanel: ResourcesPanel, manifestURL: string);
-    get itemURL(): string;
-    onselect(selectedByUser: boolean | undefined): boolean;
-}
 export declare class ServiceWorkerCacheTreeElement extends ExpandableApplicationPanelTreeElement {
     private swCacheModel;
     private swCacheTreeElements;
@@ -34,16 +26,6 @@ export declare class SWCacheTreeElement extends ApplicationPanelTreeElement {
     update(cache: SDK.ServiceWorkerCacheModel.Cache): void;
     onselect(selectedByUser: boolean | undefined): boolean;
     hasModelAndCache(model: SDK.ServiceWorkerCacheModel.ServiceWorkerCacheModel, cache: SDK.ServiceWorkerCacheModel.Cache): boolean;
-}
-export declare class ApplicationCacheFrameTreeElement extends ApplicationPanelTreeElement {
-    private readonly sidebar;
-    readonly frameId: Protocol.Page.FrameId;
-    readonly manifestURL: string;
-    constructor(sidebar: ApplicationPanelSidebar, frame: SDK.ResourceTreeModel.ResourceTreeFrame, manifestURL: string);
-    get itemURL(): string;
-    private refreshTitles;
-    frameNavigated(frame: SDK.ResourceTreeModel.ResourceTreeFrame): void;
-    onselect(selectedByUser: boolean | undefined): boolean;
 }
 export declare class BackForwardCacheTreeElement extends ApplicationPanelTreeElement {
     private view?;

@@ -5,17 +5,17 @@ import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
 import { AffectedElementsView } from './AffectedElementsView.js';
 export class AffectedElementsWithLowContrastView extends AffectedElementsView {
-    runningUpdatePromise = Promise.resolve();
+    #runningUpdatePromise = Promise.resolve();
     update() {
         // Ensure that doUpdate is invoked atomically by serializing the update calls
         // because it's not re-entrace safe.
-        this.runningUpdatePromise = this.runningUpdatePromise.then(this.doUpdate.bind(this));
+        this.#runningUpdatePromise = this.#runningUpdatePromise.then(this.#doUpdate.bind(this));
     }
-    async doUpdate() {
+    async #doUpdate() {
         this.clear();
-        await this.appendLowContrastElements(this.issue.getLowContrastIssues());
+        await this.#appendLowContrastElements(this.issue.getLowContrastIssues());
     }
-    async appendLowContrastElement(issue) {
+    async #appendLowContrastElement(issue) {
         const row = document.createElement('tr');
         row.classList.add('affected-resource-low-contrast');
         const details = issue.details();
@@ -28,7 +28,7 @@ export class AffectedElementsWithLowContrastView extends AffectedElementsView {
         this.appendIssueDetailCell(row, details.fontWeight);
         this.affectedResources.appendChild(row);
     }
-    async appendLowContrastElements(issues) {
+    async #appendLowContrastElements(issues) {
         const header = document.createElement('tr');
         this.appendColumnTitle(header, i18nString(UIStrings.element));
         this.appendColumnTitle(header, i18nString(UIStrings.contrastRatio));
@@ -40,7 +40,7 @@ export class AffectedElementsWithLowContrastView extends AffectedElementsView {
         let count = 0;
         for (const lowContrastIssue of issues) {
             count++;
-            await this.appendLowContrastElement(lowContrastIssue);
+            await this.#appendLowContrastElement(lowContrastIssue);
         }
         this.updateAffectedResourceCount(count);
     }

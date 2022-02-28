@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
-import * as Root from '../../core/root/root.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import * as i18n from '../../core/i18n/i18n.js';
 const UIStrings = {
@@ -77,8 +76,6 @@ let loadedTimelineModule;
 let loadedProfilerModule;
 async function loadTimelineModule() {
     if (!loadedTimelineModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('panels/timeline');
         loadedTimelineModule = await import('./timeline.js');
     }
     return loadedTimelineModule;
@@ -92,8 +89,6 @@ async function loadTimelineModule() {
 // js_profiler/ so that the tab is available only in the apps it belongs to.
 async function loadProfilerModule() {
     if (!loadedProfilerModule) {
-        // Side-effect import resources in module.json
-        await Root.Runtime.Runtime.instance().loadModulePromise('profiler');
         loadedProfilerModule = await import('../profiler/profiler.js');
     }
     return loadedProfilerModule;
@@ -363,6 +358,7 @@ UI.ActionRegistration.registerActionExtension({
 });
 Common.Settings.registerSettingExtension({
     category: Common.Settings.SettingCategory.PERFORMANCE,
+    storageType: Common.Settings.SettingStorageType.Synced,
     title: i18nLazyString(UIStrings.hideChromeFrameInLayersView),
     settingName: 'frameViewerHideChromeWindow',
     settingType: Common.Settings.SettingType.BOOLEAN,

@@ -82,7 +82,7 @@ export class CSSVarSwatch extends HTMLElement {
         const title = isDefined ? this.computedValue : i18nString(UIStrings.sIsNotDefined, { PH1: variableName });
         // The this.variableName's space must be removed, otherwise it cannot be triggered when clicked.
         const onActivate = isDefined ? this.onLinkActivate.bind(this, this.variableName.trim()) : null;
-        return html `<span class="${classes}" title="${title}" @mousedown=${onActivate} @keydown=${onActivate} role="link" tabindex="-1">${variableName}</span>`;
+        return html `<span class=${classes} title=${title} @mousedown=${onActivate} @keydown=${onActivate} role="link" tabindex="-1">${variableName}</span>`;
     }
     render() {
         const functionParts = this.parseVariableFunctionParts();
@@ -93,7 +93,7 @@ export class CSSVarSwatch extends HTMLElement {
         const link = this.renderLink(functionParts.name);
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
-        render(html `<span title="${this.computedValue || ''}">${functionParts.pre}${link}${functionParts.post}</span>`, this.shadow, { host: this });
+        render(html `<span title=${this.computedValue || ''}>${functionParts.pre}${link}${functionParts.post}</span>`, this.shadow, { host: this });
         // clang-format on
     }
 }

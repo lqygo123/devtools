@@ -15,26 +15,11 @@ export declare enum StepMode {
     StepOver = "StepOver"
 }
 export declare class DebuggerModel extends SDKModel<EventTypes> {
+    #private;
     readonly agent: ProtocolProxyApi.DebuggerApi;
     runtimeModelInternal: RuntimeModel;
-    private readonly sourceMapManagerInternal;
-    private readonly sourceMapIdToScript;
-    private debuggerPausedDetailsInternal;
-    private readonly scriptsInternal;
-    private readonly scriptsBySourceURL;
-    private discardableScripts;
     continueToLocationCallback: ((arg0: DebuggerPausedDetails) => boolean) | null;
-    private selectedCallFrameInternal;
-    private debuggerEnabledInternal;
-    private debuggerId;
-    private skipAllPausesTimeout;
-    private beforePausedCallback;
-    private computeAutoStepRangesCallback;
-    private expandCallFramesCallback;
     evaluateOnCallFrameCallback: ((arg0: CallFrame, arg1: EvaluationOptions) => Promise<EvaluationResult | null>) | null;
-    private readonly breakpointResolvedEventTarget;
-    private autoStepOver;
-    private isPausingInternal;
     constructor(target: Target);
     static sourceMapId(executionContextId: number, sourceURL: string, sourceMapURL: string | undefined): string | null;
     sourceMapManager(): SourceMapManager<Script>;
@@ -105,8 +90,8 @@ export declare class DebuggerModel extends SDKModel<EventTypes> {
     evaluateOnSelectedCallFrame(options: EvaluationOptions): Promise<EvaluationResult>;
     functionDetailsPromise(remoteObject: RemoteObject): Promise<FunctionDetails | null>;
     setVariableValue(scopeNumber: number, variableName: string, newValue: Protocol.Runtime.CallArgument, callFrameId: Protocol.Debugger.CallFrameId): Promise<string | undefined>;
-    addBreakpointListener(breakpointId: string, listener: (arg0: Common.EventTarget.EventTargetEvent) => void, thisObject?: Object): void;
-    removeBreakpointListener(breakpointId: string, listener: (arg0: Common.EventTarget.EventTargetEvent) => void, thisObject?: Object): void;
+    addBreakpointListener(breakpointId: string, listener: (arg0: Common.EventTarget.EventTargetEvent<Location>) => void, thisObject?: Object): void;
+    removeBreakpointListener(breakpointId: string, listener: (arg0: Common.EventTarget.EventTargetEvent<Location>) => void, thisObject?: Object): void;
     setBlackboxPatterns(patterns: string[]): Promise<boolean>;
     dispose(): void;
     suspendModel(): Promise<void>;
@@ -184,16 +169,9 @@ export declare class BreakLocation extends Location {
     static fromPayload(debuggerModel: DebuggerModel, payload: Protocol.Debugger.BreakLocation): BreakLocation;
 }
 export declare class CallFrame {
+    #private;
     debuggerModel: DebuggerModel;
-    private readonly scriptInternal;
     payload: Protocol.Debugger.CallFrame;
-    private readonly locationInternal;
-    private readonly scopeChainInternal;
-    private readonly localScopeInternal;
-    private readonly inlineFrameIndexInternal;
-    private readonly functionNameInternal;
-    private readonly functionLocationInternal;
-    private returnValueInternal;
     readonly warnings: string[];
     constructor(debuggerModel: DebuggerModel, script: Script, payload: Protocol.Debugger.CallFrame, inlineFrameIndex?: number, functionName?: string);
     static fromPayloadArray(debuggerModel: DebuggerModel, callFrames: Protocol.Debugger.CallFrame[]): CallFrame[];
@@ -225,14 +203,7 @@ export interface ScopeChainEntry {
     icon(): string | undefined;
 }
 export declare class Scope implements ScopeChainEntry {
-    private callFrameInternal;
-    private payload;
-    private readonly typeInternal;
-    private readonly nameInternal;
-    private ordinal;
-    private readonly startLocationInternal;
-    private readonly endLocationInternal;
-    private objectInternal;
+    #private;
     constructor(callFrame: CallFrame, ordinal: number);
     callFrame(): CallFrame;
     type(): string;

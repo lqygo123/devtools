@@ -5,9 +5,9 @@ import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
-import * as TextUtils from '../../models/text_utils/text_utils.js';
+import * as CodeMirror from '../../third_party/codemirror.next/codemirror.next.js';
+import * as TextEditor from '../../ui/components/text_editor/text_editor.js';
 import * as ObjectUI from '../../ui/legacy/components/object_ui/object_ui.js';
-import * as TextEditor from '../../ui/legacy/components/text_editor/text_editor.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { ConsolePanel } from './ConsolePanel.js';
 import consolePromptStyles from './consolePrompt.css.js';
@@ -28,19 +28,18 @@ export class ConsolePrompt extends Common.ObjectWrapper.eventMixin(UI.Widget.Wid
     textChangeThrottler;
     formatter;
     requestPreviewBound;
+    requestPreviewCurrent = 0;
     innerPreviewElement;
     promptIcon;
     iconThrottler;
     eagerEvalSetting;
     previewRequestForTest;
-    defaultAutocompleteConfig;
     highlightingNode;
     constructor() {
         super();
         this.addCompletionsFromHistory = true;
         this.historyInternal = new ConsoleHistoryManager();
         this.initialText = '';
-        this.editor = null;
         this.eagerPreviewElement = document.createElement('div');
         this.eagerPreviewElement.classList.add('console-eager-preview');
         this.textChangeThrottler = new Common.Throttler.Throttler(150);
@@ -58,35 +57,37 @@ export class ConsolePrompt extends Common.ObjectWrapper.eventMixin(UI.Widget.Wid
         this.eagerPreviewElement.classList.toggle('hidden', !this.eagerEvalSetting.get());
         this.element.tabIndex = 0;
         this.previewRequestForTest = null;
-        this.defaultAutocompleteConfig = null;
         this.highlightingNode = false;
-        const factory = TextEditor.CodeMirrorTextEditor.CodeMirrorTextEditorFactory.instance();
-        const options = {
-            devtoolsAccessibleName: i18nString(UIStrings.consolePrompt),
-            lineNumbers: false,
-            lineWrapping: true,
-            mimeType: 'javascript',
-            autoHeight: true,
-        };
-        this.editor = factory.createEditor(options);
-        this.defaultAutocompleteConfig =
-            ObjectUI.JavaScriptAutocomplete.JavaScriptAutocompleteConfig.createConfigForEditor(this.editor);
-        this.editor.configureAutocomplete(Object.assign({}, this.defaultAutocompleteConfig, {
-            suggestionsCallback: this.wordsWithQuery.bind(this),
-            anchorBehavior: "PreferTop" /* PreferTop */,
-        }));
-        this.editor.widget().element.addEventListener('keydown', this.editorKeyDown.bind(this), true);
-        this.editor.widget().show(editorContainerElement);
-        this.editor.addEventListener(UI.TextEditor.Events.CursorChanged, this.updatePromptIcon, this);
-        this.editor.addEventListener(UI.TextEditor.Events.TextChanged, this.onTextChanged, this);
-        this.editor.addEventListener(UI.TextEditor.Events.SuggestionChanged, this.onTextChanged, this);
-        this.setText(this.initialText);
-        this.initialText = '';
+        const editorState = CodeMirror.EditorState.create({
+            doc: this.initialText,
+            extensions: [
+                CodeMirror.keymap.of(this.editorKeymap()),
+                CodeMirror.EditorView.updateListener.of(update => this.editorUpdate(update)),
+                TextEditor.JavaScript.argumentHints(),
+                TextEditor.JavaScript.completion(),
+                TextEditor.Config.showCompletionHint,
+                CodeMirror.javascript.javascript(),
+                TextEditor.Config.baseConfiguration(this.initialText),
+                TextEditor.Config.autocompletion,
+                CodeMirror.javascript.javascriptLanguage.data.of({
+                    autocomplete: (context) => this.historyCompletions(context),
+                }),
+                CodeMirror.EditorView.contentAttributes.of({ 'aria-label': i18nString(UIStrings.consolePrompt) }),
+                CodeMirror.EditorView.lineWrapping,
+                CodeMirror.autocompletion({ aboveCursor: true }),
+            ],
+        });
+        this.editor = new TextEditor.TextEditor.TextEditor(editorState);
+        this.editor.addEventListener('keydown', (event) => {
+            if (event.defaultPrevented) {
+                event.stopPropagation();
+            }
+        });
+        editorContainerElement.appendChild(this.editor);
         if (this.hasFocus()) {
             this.focus();
         }
         this.element.removeAttribute('tabindex');
-        this.editor.widget().element.tabIndex = -1;
         this.editorSetForTest();
         // Record the console tool load time after the console prompt constructor is complete.
         Host.userMetrics.panelLoaded('console', 'DevTools.Launch.Console');
@@ -95,7 +96,7 @@ export class ConsolePrompt extends Common.ObjectWrapper.eventMixin(UI.Widget.Wid
         const enabled = this.eagerEvalSetting.get();
         this.eagerPreviewElement.classList.toggle('hidden', !enabled);
         if (enabled) {
-            this.requestPreview();
+            void this.requestPreview();
         }
     }
     belowEditorElement() {
@@ -105,21 +106,22 @@ export class ConsolePrompt extends Common.ObjectWrapper.eventMixin(UI.Widget.Wid
         // ConsoleView and prompt both use a throttler, so we clear the preview
         // ASAP to avoid inconsistency between a fresh viewport and stale preview.
         if (this.eagerEvalSetting.get()) {
-            const asSoonAsPossible = !this.editor || !this.editor.textWithCurrentSuggestion();
+            const asSoonAsPossible = !TextEditor.Config.contentIncludingHint(this.editor.editor);
             this.previewRequestForTest = this.textChangeThrottler.schedule(this.requestPreviewBound, asSoonAsPossible);
         }
         this.updatePromptIcon();
         this.dispatchEventToListeners("TextChanged" /* TextChanged */);
     }
     async requestPreview() {
-        if (!this.editor) {
-            return;
-        }
-        const text = this.editor.textWithCurrentSuggestion().trim();
+        const id = ++this.requestPreviewCurrent;
+        const text = TextEditor.Config.contentIncludingHint(this.editor.editor).trim();
         const executionContext = UI.Context.Context.instance().flavor(SDK.RuntimeModel.ExecutionContext);
         const { preview, result } = await ObjectUI.JavaScriptREPL.JavaScriptREPL.evaluateAndBuildPreview(text, true /* throwOnSideEffect */, true /* replMode */, 500 /* timeout */);
+        if (this.requestPreviewCurrent !== id) {
+            return;
+        }
         this.innerPreviewElement.removeChildren();
-        if (preview.deepTextContent() !== this.editor.textWithCurrentSuggestion().trim()) {
+        if (preview.deepTextContent() !== TextEditor.Config.contentIncludingHint(this.editor.editor).trim()) {
             this.innerPreviewElement.appendChild(preview);
         }
         if (result && 'object' in result && result.object && result.object.subtype === 'node') {
@@ -148,152 +150,120 @@ export class ConsolePrompt extends Common.ObjectWrapper.eventMixin(UI.Widget.Wid
         return this.historyInternal;
     }
     clearAutocomplete() {
-        if (this.editor) {
-            this.editor.clearAutocomplete();
-        }
+        CodeMirror.closeCompletion(this.editor.editor);
     }
     isCaretAtEndOfPrompt() {
-        return this.editor !== null &&
-            this.editor.selection().collapseToEnd().equal(this.editor.fullRange().collapseToEnd());
+        return this.editor.state.selection.main.head === this.editor.state.doc.length;
     }
     moveCaretToEndOfPrompt() {
-        if (this.editor) {
-            this.editor.setSelection(TextUtils.TextRange.TextRange.createFromLocation(Infinity, Infinity));
-        }
+        this.editor.dispatch({
+            selection: CodeMirror.EditorSelection.cursor(this.editor.state.doc.length),
+        });
     }
-    setText(text) {
-        if (this.editor) {
-            this.editor.setText(text);
-        }
-        else {
-            this.initialText = text;
-        }
-        this.dispatchEventToListeners("TextChanged" /* TextChanged */);
+    clear() {
+        this.editor.dispatch({
+            changes: { from: 0, to: this.editor.state.doc.length },
+        });
     }
     text() {
-        return this.editor ? this.editor.text() : this.initialText;
+        return this.editor.state.doc.toString();
     }
     setAddCompletionsFromHistory(value) {
         this.addCompletionsFromHistory = value;
     }
-    editorKeyDown(event) {
-        if (!this.editor) {
-            return;
-        }
-        const keyboardEvent = event;
-        let newText;
-        let isPrevious;
-        // Check against visual coordinates in case lines wrap.
-        const selection = this.editor.selection();
-        const cursorY = this.editor.visualCoordinates(selection.endLine, selection.endColumn).y;
-        switch (keyboardEvent.keyCode) {
-            case UI.KeyboardShortcut.Keys.Up.code: {
-                const startY = this.editor.visualCoordinates(0, 0).y;
-                if (keyboardEvent.shiftKey || !selection.isEmpty() || cursorY !== startY) {
-                    break;
-                }
-                newText = this.historyInternal.previous(this.text());
-                isPrevious = true;
-                break;
+    editorKeymap() {
+        return [
+            { key: 'ArrowUp', run: () => this.moveHistory(-1) },
+            { key: 'ArrowDown', run: () => this.moveHistory(1) },
+            { mac: 'Ctrl-p', run: () => this.moveHistory(-1, true) },
+            { mac: 'Ctrl-n', run: () => this.moveHistory(1, true) },
+            {
+                key: 'Enter',
+                run: () => {
+                    void this.handleEnter();
+                    return true;
+                },
+                shift: CodeMirror.insertNewlineAndIndent,
+            },
+        ];
+    }
+    moveHistory(dir, force = false) {
+        const { editor } = this.editor, { main } = editor.state.selection;
+        if (!force) {
+            if (!main.empty) {
+                return false;
             }
-            case UI.KeyboardShortcut.Keys.Down.code: {
-                const fullRange = this.editor.fullRange();
-                const endY = this.editor.visualCoordinates(fullRange.endLine, fullRange.endColumn).y;
-                if (keyboardEvent.shiftKey || !selection.isEmpty() || cursorY !== endY) {
-                    break;
-                }
-                newText = this.historyInternal.next();
-                break;
-            }
-            case UI.KeyboardShortcut.Keys.P.code: { // Ctrl+P = Previous
-                if (Host.Platform.isMac() && keyboardEvent.ctrlKey && !keyboardEvent.metaKey && !keyboardEvent.altKey &&
-                    !keyboardEvent.shiftKey) {
-                    newText = this.historyInternal.previous(this.text());
-                    isPrevious = true;
-                }
-                break;
-            }
-            case UI.KeyboardShortcut.Keys.N.code: { // Ctrl+N = Next
-                if (Host.Platform.isMac() && keyboardEvent.ctrlKey && !keyboardEvent.metaKey && !keyboardEvent.altKey &&
-                    !keyboardEvent.shiftKey) {
-                    newText = this.historyInternal.next();
-                }
-                break;
-            }
-            case UI.KeyboardShortcut.Keys.Enter.code: {
-                this.enterKeyPressed(keyboardEvent);
-                break;
-            }
-            case UI.KeyboardShortcut.Keys.Tab.code: {
-                if (!this.text()) {
-                    keyboardEvent.consume();
-                }
-                break;
+            const cursorCoords = editor.coordsAtPos(main.head);
+            const endCoords = editor.coordsAtPos(dir < 0 ? 0 : editor.state.doc.length);
+            // Check if there are wrapped lines in this direction, and let
+            // the cursor move normally if there are.
+            if (cursorCoords && endCoords &&
+                (dir < 0 ? cursorCoords.top > endCoords.top + 5 : cursorCoords.bottom < endCoords.bottom - 5)) {
+                return false;
             }
         }
+        const history = this.historyInternal;
+        const newText = dir < 0 ? history.previous(this.text()) : history.next();
         if (newText === undefined) {
-            return;
+            return false;
         }
-        keyboardEvent.consume(true);
-        this.setText(newText);
-        if (isPrevious) {
-            this.editor.setSelection(TextUtils.TextRange.TextRange.createFromLocation(0, Infinity));
-        }
-        else {
-            this.moveCaretToEndOfPrompt();
-        }
+        const cursorPos = dir < 0 ? newText.search(/\n|$/) : newText.length;
+        this.editor.dispatch({
+            changes: { from: 0, to: this.editor.state.doc.length, insert: newText },
+            selection: CodeMirror.EditorSelection.cursor(cursorPos),
+            scrollIntoView: true,
+        });
+        return true;
     }
     async enterWillEvaluate() {
-        if (!this.isCaretAtEndOfPrompt()) {
-            return true;
+        const { state } = this.editor;
+        return state.doc.length > 0 && await TextEditor.JavaScript.isExpressionComplete(state.doc.toString());
+    }
+    async handleEnter() {
+        if (await this.enterWillEvaluate()) {
+            this.appendCommand(this.text(), true);
+            this.editor.dispatch({
+                changes: { from: 0, to: this.editor.state.doc.length },
+                scrollIntoView: true,
+            });
         }
-        return await ObjectUI.JavaScriptAutocomplete.JavaScriptAutocomplete.isExpressionComplete(this.text());
+        else if (this.editor.state.doc.length) {
+            CodeMirror.insertNewlineAndIndent(this.editor.editor);
+        }
+        else {
+            this.editor.dispatch({ scrollIntoView: true });
+        }
     }
     updatePromptIcon() {
-        this.iconThrottler.schedule(async () => {
-            const canComplete = await this.enterWillEvaluate();
-            this.promptIcon.classList.toggle('console-prompt-incomplete', !canComplete);
+        void this.iconThrottler.schedule(async () => {
+            this.promptIcon.classList.toggle('console-prompt-incomplete', !(await this.enterWillEvaluate()));
         });
     }
-    async enterKeyPressed(event) {
-        if (event.altKey || event.ctrlKey || event.shiftKey) {
-            return;
-        }
-        event.consume(true);
-        // Since we prevent default, manually emulate the native "scroll on key input" behavior.
-        this.element.scrollIntoView();
-        this.clearAutocomplete();
-        const str = this.text();
-        if (!str.length) {
-            return;
-        }
-        if (await this.enterWillEvaluate()) {
-            await this.appendCommand(str, true);
-        }
-        else if (this.editor) {
-            this.editor.newlineAndIndent();
-        }
-        this.enterProcessedForTest();
-    }
-    async appendCommand(text, useCommandLineAPI) {
-        this.setText('');
+    appendCommand(text, useCommandLineAPI) {
         const currentExecutionContext = UI.Context.Context.instance().flavor(SDK.RuntimeModel.ExecutionContext);
         if (currentExecutionContext) {
             const executionContext = currentExecutionContext;
             const message = SDK.ConsoleModel.ConsoleModel.instance().addCommandMessage(executionContext, text);
             const expression = ObjectUI.JavaScriptREPL.JavaScriptREPL.preprocessExpression(text);
-            SDK.ConsoleModel.ConsoleModel.instance().evaluateCommandInConsole(executionContext, message, expression, useCommandLineAPI);
+            void SDK.ConsoleModel.ConsoleModel.instance().evaluateCommandInConsole(executionContext, message, expression, useCommandLineAPI);
             if (ConsolePanel.instance().isShowing()) {
                 Host.userMetrics.actionTaken(Host.UserMetrics.Action.CommandEvaluatedInConsolePanel);
             }
         }
     }
-    enterProcessedForTest() {
+    editorUpdate(update) {
+        if (update.docChanged ||
+            CodeMirror.selectedCompletion(update.state) !== CodeMirror.selectedCompletion(update.startState)) {
+            this.onTextChanged();
+        }
+        else if (update.selectionSet) {
+            this.updatePromptIcon();
+        }
     }
-    historyCompletions(prefix, force) {
+    historyCompletions(context) {
         const text = this.text();
-        if (!this.addCompletionsFromHistory || !this.isCaretAtEndOfPrompt() || (!text && !force)) {
-            return [];
+        if (!this.addCompletionsFromHistory || !this.isCaretAtEndOfPrompt() || (!text.length && !context.explicit)) {
+            return null;
         }
         const result = [];
         const set = new Set();
@@ -307,26 +277,17 @@ export class ConsolePrompt extends Common.ObjectWrapper.eventMixin(UI.Widget.Wid
                 continue;
             }
             set.add(item);
-            result.push({ text: item.substring(text.length - prefix.length), iconType: 'smallicon-text-prompt', isSecondary: true });
+            result.push({ label: item, type: 'secondary', boost: -1e5 });
         }
-        return result;
+        return result.length ? {
+            from: 0,
+            to: text.length,
+            options: result,
+        } :
+            null;
     }
     focus() {
-        if (this.editor) {
-            this.editor.widget().focus();
-        }
-        else {
-            this.element.focus();
-        }
-    }
-    async wordsWithQuery(queryRange, substituteRange, force) {
-        if (!this.editor || !this.defaultAutocompleteConfig || !this.defaultAutocompleteConfig.suggestionsCallback) {
-            return [];
-        }
-        const query = this.editor.text(queryRange);
-        const words = await this.defaultAutocompleteConfig.suggestionsCallback(queryRange, substituteRange, force);
-        const historyWords = this.historyCompletions(query, force);
-        return words ? words.concat(historyWords) : historyWords;
+        this.editor.focus();
     }
     editorSetForTest() {
     }

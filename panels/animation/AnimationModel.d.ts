@@ -1,15 +1,12 @@
 import * as SDK from '../../core/sdk/sdk.js';
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
 import * as Protocol from '../../generated/protocol.js';
-export declare class AnimationModel extends SDK.SDKModel.SDKModel {
+export declare class AnimationModel extends SDK.SDKModel.SDKModel<EventTypes> {
+    #private;
     readonly runtimeModel: SDK.RuntimeModel.RuntimeModel;
     readonly agent: ProtocolProxyApi.AnimationApi;
-    private animationsById;
     readonly animationGroups: Map<string, AnimationGroup>;
-    private pendingAnimations;
     playbackRate: number;
-    private readonly screenshotCapture?;
-    private enabled?;
     constructor(target: SDK.Target.Target);
     private reset;
     animationCreated(id: string): void;
@@ -28,11 +25,12 @@ export declare enum Events {
     AnimationGroupStarted = "AnimationGroupStarted",
     ModelReset = "ModelReset"
 }
+export declare type EventTypes = {
+    [Events.AnimationGroupStarted]: AnimationGroup;
+    [Events.ModelReset]: void;
+};
 export declare class AnimationImpl {
-    private readonly animationModel;
-    private readonly payloadInternal;
-    private sourceInternal;
-    private playStateInternal?;
+    #private;
     constructor(animationModel: AnimationModel, payload: Protocol.Animation.Animation);
     static parsePayload(animationModel: AnimationModel, payload: Protocol.Animation.Animation): AnimationImpl;
     payload(): Protocol.Animation.Animation;
@@ -55,12 +53,9 @@ export declare class AnimationImpl {
     cssId(): string;
 }
 export declare class AnimationEffect {
-    private animationModel;
-    private readonly payload;
-    private readonly keyframesRuleInternal;
+    #private;
     delayInternal: number;
     durationInternal: number;
-    private deferredNodeInternal?;
     constructor(animationModel: AnimationModel, payload: Protocol.Animation.AnimationEffect);
     delay(): number;
     endDelay(): number;
@@ -76,16 +71,14 @@ export declare class AnimationEffect {
     easing(): string;
 }
 export declare class KeyframesRule {
-    private readonly payload;
-    private keyframesInternal;
+    #private;
     constructor(payload: Protocol.Animation.KeyframesRule);
     private setKeyframesPayload;
     name(): string | undefined;
     keyframes(): KeyframeStyle[];
 }
 export declare class KeyframeStyle {
-    private readonly payload;
-    private offsetInternal;
+    #private;
     constructor(payload: Protocol.Animation.KeyframeStyle);
     offset(): string;
     setOffset(offset: number): void;
@@ -93,12 +86,8 @@ export declare class KeyframeStyle {
     easing(): string;
 }
 export declare class AnimationGroup {
-    private readonly animationModel;
-    private readonly idInternal;
-    private animationsInternal;
-    private pausedInternal;
+    #private;
     screenshotsInternal: string[];
-    private readonly screenshotImages;
     constructor(animationModel: AnimationModel, id: string, animations: AnimationImpl[]);
     id(): string;
     animations(): AnimationImpl[];
@@ -115,19 +104,14 @@ export declare class AnimationGroup {
     screenshots(): HTMLImageElement[];
 }
 export declare class AnimationDispatcher implements ProtocolProxyApi.AnimationDispatcher {
-    private readonly animationModel;
+    #private;
     constructor(animationModel: AnimationModel);
     animationCreated({ id }: Protocol.Animation.AnimationCreatedEvent): void;
     animationCanceled({ id }: Protocol.Animation.AnimationCanceledEvent): void;
     animationStarted({ animation }: Protocol.Animation.AnimationStartedEvent): void;
 }
 export declare class ScreenshotCapture {
-    private requests;
-    private readonly screenCaptureModel;
-    private readonly animationModel;
-    private stopTimer?;
-    private endTime?;
-    private capturing?;
+    #private;
     constructor(animationModel: AnimationModel, screenCaptureModel: SDK.ScreenCaptureModel.ScreenCaptureModel);
     captureScreenshots(duration: number, screenshots: string[]): void;
     private screencastFrame;

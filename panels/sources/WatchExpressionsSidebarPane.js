@@ -98,7 +98,7 @@ export class WatchExpressionsSidebarPane extends UI.ThrottledWidget.ThrottledWid
             Common.Settings.Settings.instance().createLocalSetting('watchExpressions', []);
         this.addButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.addWatchExpression), 'largeicon-add');
         this.addButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, _event => {
-            this.addButtonClicked();
+            void this.addButtonClicked();
         });
         this.refreshButton =
             new UI.Toolbar.ToolbarButton(i18nString(UIStrings.refreshWatchExpressions), 'largeicon-refresh');
@@ -192,7 +192,7 @@ export class WatchExpressionsSidebarPane extends UI.ThrottledWidget.ThrottledWid
     contextMenu(event) {
         const contextMenu = new UI.ContextMenu.ContextMenu(event);
         this.populateContextMenu(contextMenu, event);
-        contextMenu.show();
+        void contextMenu.show();
     }
     populateContextMenu(contextMenu, event) {
         let isEditing = false;
@@ -230,8 +230,9 @@ export class WatchExpressionsSidebarPane extends UI.ThrottledWidget.ThrottledWid
         if (!frame) {
             return false;
         }
-        const text = frame.textEditor.text(frame.textEditor.selection());
-        this.focusAndAddExpressionToWatch(text);
+        const { state } = frame.textEditor;
+        const text = state.sliceDoc(state.selection.main.from, state.selection.main.to);
+        void this.focusAndAddExpressionToWatch(text);
         return true;
     }
     appendApplicableItems(event, contextMenu, target) {
@@ -239,7 +240,7 @@ export class WatchExpressionsSidebarPane extends UI.ThrottledWidget.ThrottledWid
             contextMenu.debugSection().appendItem(i18nString(UIStrings.addPropertyPathToWatch), () => this.focusAndAddExpressionToWatch(target.path()));
         }
         const frame = UI.Context.Context.instance().flavor(UISourceCodeFrame);
-        if (!frame || frame.textEditor.selection().isEmpty()) {
+        if (!frame || frame.textEditor.state.selection.main.empty) {
             return;
         }
         contextMenu.debugSection().appendAction('sources.add-to-watch');
@@ -262,6 +263,7 @@ export class WatchExpression extends Common.ObjectWrapper.ObjectWrapper {
     textPrompt;
     result;
     preventClickTimeout;
+    resizeObserver;
     constructor(expression, expandController, linkifier) {
         super();
         this.expressionInternal = expression;
@@ -283,7 +285,7 @@ export class WatchExpression extends Common.ObjectWrapper.ObjectWrapper {
     update() {
         const currentExecutionContext = UI.Context.Context.instance().flavor(SDK.RuntimeModel.ExecutionContext);
         if (currentExecutionContext && this.expressionInternal) {
-            currentExecutionContext
+            void currentExecutionContext
                 .evaluate({
                 expression: this.expressionInternal,
                 objectGroup: WatchExpression.watchObjectGroupId,
@@ -358,6 +360,7 @@ export class WatchExpression extends Common.ObjectWrapper.ObjectWrapper {
         if (this.expressionInternal) {
             this.expandController.stopWatchSectionsWithId(this.expressionInternal);
         }
+        this.resizeObserver?.disconnect();
         this.expressionInternal = newExpression;
         this.update();
         this.dispatchEventToListeners("ExpressionUpdated" /* ExpressionUpdated */, this);
@@ -382,6 +385,20 @@ export class WatchExpression extends Common.ObjectWrapper.ObjectWrapper {
     createWatchExpressionHeader(expressionValue, exceptionDetails) {
         const headerElement = this.element.createChild('div', 'watch-expression-header');
         const deleteButton = UI.Icon.Icon.create('smallicon-cross', 'watch-expression-delete-button');
+        this.resizeObserver = new ResizeObserver(entries => {
+            entries.forEach(entry => {
+                // 55 serves as a width threshold here (in px)
+                if (entry.contentRect.width < 55) {
+                    deleteButton.classList.remove('right-aligned');
+                    deleteButton.classList.add('left-aligned');
+                }
+                else {
+                    deleteButton.classList.remove('left-aligned');
+                    deleteButton.classList.add('right-aligned');
+                }
+            });
+        });
+        this.resizeObserver.observe(headerElement);
         UI.Tooltip.Tooltip.install(deleteButton, i18nString(UIStrings.deleteWatchExpression));
         deleteButton.addEventListener('click', this.deleteWatchExpression.bind(this), false);
         const titleElement = headerElement.createChild('div', 'watch-expression-title tree-element-title');

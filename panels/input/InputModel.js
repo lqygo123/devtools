@@ -93,10 +93,10 @@ export class InputModel extends SDK.SDKModel.SDKModel {
         const eventData = this.dispatchEventDataList[this.dispatchingIndex];
         this.lastEventTime = eventData.timestamp;
         if (MOUSE_EVENT_TYPE_TO_REQUEST_TYPE.has(eventData.type)) {
-            this.dispatchMouseEvent(eventData);
+            void this.dispatchMouseEvent(eventData);
         }
         else if (KEYBOARD_EVENT_TYPE_TO_REQUEST_TYPE.has(eventData.type)) {
-            this.dispatchKeyEvent(eventData);
+            void this.dispatchKeyEvent(eventData);
         }
         ++this.dispatchingIndex;
         if (this.dispatchingIndex < this.dispatchEventDataList.length) {

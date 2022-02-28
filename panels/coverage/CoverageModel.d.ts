@@ -84,7 +84,7 @@ export interface EntryForExport {
     }[];
     text: string | null;
 }
-export declare class URLCoverageInfo extends Common.ObjectWrapper.ObjectWrapper {
+export declare class URLCoverageInfo extends Common.ObjectWrapper.ObjectWrapper<URLCoverageInfo.EventTypes> {
     private readonly urlInternal;
     private coverageInfoByLocation;
     private sizeInternal;
@@ -111,8 +111,11 @@ export declare class URLCoverageInfo extends Common.ObjectWrapper.ObjectWrapper 
     entriesForExport(): Promise<EntryForExport[]>;
 }
 export declare namespace URLCoverageInfo {
-    const Events: {
-        SizesChanged: symbol;
+    enum Events {
+        SizesChanged = "SizesChanged"
+    }
+    type EventTypes = {
+        [Events.SizesChanged]: void;
     };
 }
 export declare const mergeSegments: (segmentsA: CoverageSegment[], segmentsB: CoverageSegment[]) => CoverageSegment[];

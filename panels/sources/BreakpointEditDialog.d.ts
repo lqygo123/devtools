@@ -5,6 +5,7 @@ export declare class BreakpointEditDialog extends UI.Widget.Widget {
     private editor;
     private isLogpoint;
     private readonly typeSelector;
+    private placeholderCompartment;
     constructor(editorLineNumber: number, oldCondition: string, preferLogpoint: boolean, onFinish: (arg0: {
         committed: boolean;
         condition: string;
@@ -12,9 +13,10 @@ export declare class BreakpointEditDialog extends UI.Widget.Widget {
     focusEditor(): void;
     private static conditionForLogpoint;
     private onTypeChanged;
-    private updatePlaceholder;
+    private get breakpointType();
+    private getPlaceholder;
+    private updateTooltip;
     private finishEditing;
-    private onKeyDown;
     wasShown(): void;
 }
 export declare const LogpointPrefix = "/** DEVTOOLS_LOGPOINT */ console.log(";

@@ -9,6 +9,7 @@ import * as Bindings from '../../models/bindings/bindings.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Workspace from '../../models/workspace/workspace.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import { LogpointPrefix } from './BreakpointEditDialog.js';
 import javaScriptBreakpointsSidebarPaneStyles from './javaScriptBreakpointsSidebarPane.css.js';
 const UIStrings = {
     /**
@@ -215,7 +216,7 @@ export class JavaScriptBreakpointsSidebarPane extends UI.ThrottledWidget.Throttl
             breakpoints.push(new BreakpointItem(locations, text, isSelected, showColumn));
         }
         if (breakpoints.some(breakpoint => breakpoint.isSelected)) {
-            UI.ViewManager.ViewManager.instance().showView('sources.jsBreakpoints');
+            void UI.ViewManager.ViewManager.instance().showView('sources.jsBreakpoints');
         }
         this.list.element.classList.toggle('breakpoints-list-deactivated', !Common.Settings.Settings.instance().moduleSetting('breakpointsActive').get());
         this.setBreakpointItems(breakpoints);
@@ -251,6 +252,15 @@ export class JavaScriptBreakpointsSidebarPane extends UI.ThrottledWidget.Throttl
         element.tabIndex = this.list.selectedItem() === item ? 0 : -1;
         element.addEventListener('contextmenu', this.breakpointContextMenu.bind(this), true);
         element.addEventListener('click', this.revealLocation.bind(this, element), false);
+        const hasLogpoint = item.locations.some(location => location.breakpoint.condition().includes(LogpointPrefix));
+        const hasConditional = item.locations.some(location => Boolean(location.breakpoint.condition()));
+        const lineElement = element.createChild('div', 'decoration-and-content');
+        if (hasLogpoint) {
+            lineElement.classList.add('logpoint');
+        }
+        else if (hasConditional) {
+            lineElement.classList.add('breakpoint-conditional');
+        }
         const checkboxLabel = UI.UIUtils.CheckboxLabel.create('');
         const uiLocation = item.locations[0].uiLocation;
         const hasEnabled = item.locations.some(location => location.breakpoint.enabled());
@@ -261,18 +271,18 @@ export class JavaScriptBreakpointsSidebarPane extends UI.ThrottledWidget.Throttl
         checkboxLabel.checkboxElement.indeterminate = hasEnabled && hasDisabled;
         checkboxLabel.checkboxElement.tabIndex = -1;
         checkboxLabel.addEventListener('click', this.breakpointCheckboxClicked.bind(this), false);
-        element.appendChild(checkboxLabel);
+        lineElement.appendChild(checkboxLabel);
         let checkedDescription = hasEnabled ? i18nString(UIStrings.checked) : i18nString(UIStrings.unchecked);
         if (hasEnabled && hasDisabled) {
             checkedDescription = i18nString(UIStrings.mixed);
         }
         if (item.isSelected) {
-            UI.ARIAUtils.setDescription(element, i18nString(UIStrings.sBreakpointHit, { PH1: checkedDescription }));
+            UI.ARIAUtils.setDescription(lineElement, i18nString(UIStrings.sBreakpointHit, { PH1: checkedDescription }));
             element.classList.add('breakpoint-hit');
             this.setDefaultFocusedElement(element);
         }
         else {
-            UI.ARIAUtils.setDescription(element, checkedDescription);
+            UI.ARIAUtils.setDescription(lineElement, checkedDescription);
         }
         element.addEventListener('keydown', event => {
             if (event.key === ' ') {
@@ -280,7 +290,7 @@ export class JavaScriptBreakpointsSidebarPane extends UI.ThrottledWidget.Throttl
                 event.consume(true);
             }
         });
-        const snippetElement = element.createChild('div', 'source-text monospace');
+        const snippetElement = lineElement.createChild('div', 'source-text monospace');
         const lineNumber = uiLocation.lineNumber;
         if (item.text && lineNumber < item.text.lineCount()) {
             const lineText = item.text.lineAt(lineNumber);
@@ -351,7 +361,7 @@ export class JavaScriptBreakpointsSidebarPane extends UI.ThrottledWidget.Throttl
             }
         }
         if (uiLocation) {
-            Common.Revealer.reveal(uiLocation);
+            void Common.Revealer.reveal(uiLocation);
         }
     }
     breakpointContextMenu(event) {
@@ -386,7 +396,7 @@ export class JavaScriptBreakpointsSidebarPane extends UI.ThrottledWidget.Throttl
         contextMenu.defaultSection().appendItem(removeAllTitle, this.removeAllBreakpoints.bind(this));
         const removeOtherTitle = i18nString(UIStrings.removeOtherBreakpoints);
         contextMenu.defaultSection().appendItem(removeOtherTitle, this.removeOtherBreakpoints.bind(this, new Set(breakpoints)));
-        contextMenu.show();
+        void contextMenu.show();
     }
     toggleAllBreakpointsInFile(element, toggleState) {
         const breakpointLocations = this.getBreakpointLocations();

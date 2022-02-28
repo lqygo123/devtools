@@ -9,6 +9,7 @@ import * as UI from '../../ui/legacy/legacy.js';
 import * as EmulationModel from '../../models/emulation/emulation.js';
 import { DeviceModeToolbar } from './DeviceModeToolbar.js';
 import { MediaQueryInspector } from './MediaQueryInspector.js';
+import deviceModeViewStyles from './deviceModeView.css.legacy.js';
 const UIStrings = {
     /**
     *@description Bottom resizer element title in Device Mode View of the Device Toolbar
@@ -87,7 +88,7 @@ export class DeviceModeView extends UI.Widget.VBox {
         this.blockElementToWidth = new WeakMap();
         this.setMinimumSize(150, 150);
         this.element.classList.add('device-mode-view');
-        this.registerRequiredCSS('panels/emulation/deviceModeView.css');
+        this.registerRequiredCSS(deviceModeViewStyles);
         this.model = EmulationModel.DeviceModeModel.DeviceModeModel.instance();
         this.model.addEventListener("Updated" /* Updated */, this.updateUI, this);
         this.mediaInspector =
@@ -481,6 +482,9 @@ export class DeviceModeView extends UI.Widget.VBox {
         const link = document.createElement('a');
         link.download = fileName + '.png';
         canvas.toBlob(blob => {
+            if (blob === null) {
+                return;
+            }
             link.href = URL.createObjectURL(blob);
             link.click();
         });
@@ -508,10 +512,10 @@ export class Ruler extends UI.Widget.VBox {
     }
     render(scale) {
         this.scale = scale;
-        this.throttler.schedule(this.update.bind(this));
+        void this.throttler.schedule(this.update.bind(this));
     }
     onResize() {
-        this.throttler.schedule(this.update.bind(this));
+        void this.throttler.schedule(this.update.bind(this));
     }
     update() {
         const zoomFactor = UI.ZoomManager.ZoomManager.instance().zoomFactor();

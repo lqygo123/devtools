@@ -23,15 +23,17 @@ declare class SettingsTab extends UI.Widget.VBox {
     protected appendSection(name?: string): HTMLElement;
 }
 export declare class GenericSettingsTab extends SettingsTab {
-    private categoryToSection;
+    private readonly syncSection;
     constructor();
     static instance(opts?: {
         forceNew: null;
     }): GenericSettingsTab;
     static isSettingVisible(setting: Common.Settings.SettingRegistration): boolean;
-    private addSettingUI;
+    wasShown(): void;
+    private updateSyncSection;
+    private createExtensionSection;
     private createSectionElement;
-    private sectionElement;
+    private createStandardSectionElement;
 }
 export declare class ExperimentsSettingsTab extends SettingsTab {
     private experimentsSection;

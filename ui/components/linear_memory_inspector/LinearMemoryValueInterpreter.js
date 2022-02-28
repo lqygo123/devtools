@@ -8,7 +8,6 @@ import linearMemoryValueInterpreterStyles from './linearMemoryValueInterpreter.c
 import { ValueInterpreterDisplay } from './ValueInterpreterDisplay.js';
 import { ValueInterpreterSettings } from './ValueInterpreterSettings.js';
 import * as i18n from '../../../core/i18n/i18n.js';
-import inspectorCommonStyles from '../../legacy/inspectorCommon.css.js';
 const UIStrings = {
     /**
     *@description Tooltip text that appears when hovering over the gear button to open and close settings in the Linear Memory Inspector. These settings
@@ -41,38 +40,32 @@ export class ValueTypeToggledEvent extends Event {
 }
 export class LinearMemoryValueInterpreter extends HTMLElement {
     static litTagName = LitHtml.literal `devtools-linear-memory-inspector-interpreter`;
-    shadow = this.attachShadow({ mode: 'open' });
-    endianness = "Little Endian" /* Little */;
-    buffer = new ArrayBuffer(0);
-    valueTypes = new Set();
-    valueTypeModeConfig = new Map();
-    memoryLength = 0;
-    showSettings = false;
-    constructor() {
-        super();
-        this.shadow.adoptedStyleSheets = [
-            inspectorCommonStyles,
-        ];
-    }
+    #shadow = this.attachShadow({ mode: 'open' });
+    #endianness = "Little Endian" /* Little */;
+    #buffer = new ArrayBuffer(0);
+    #valueTypes = new Set();
+    #valueTypeModeConfig = new Map();
+    #memoryLength = 0;
+    #showSettings = false;
     connectedCallback() {
-        this.shadow.adoptedStyleSheets = [linearMemoryValueInterpreterStyles];
+        this.#shadow.adoptedStyleSheets = [linearMemoryValueInterpreterStyles];
     }
     set data(data) {
-        this.endianness = data.endianness;
-        this.buffer = data.value;
-        this.valueTypes = data.valueTypes;
-        this.valueTypeModeConfig = data.valueTypeModes || new Map();
-        this.memoryLength = data.memoryLength;
-        this.render();
+        this.#endianness = data.endianness;
+        this.#buffer = data.value;
+        this.#valueTypes = data.valueTypes;
+        this.#valueTypeModeConfig = data.valueTypeModes || new Map();
+        this.#memoryLength = data.memoryLength;
+        this.#render();
     }
-    render() {
+    #render() {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
         render(html `
       <div class="value-interpreter">
         <div class="settings-toolbar">
-          ${this.renderEndiannessSetting()}
-          <button data-settings="true" class="settings-toolbar-button ${this.showSettings ? 'active' : ''}" title=${i18nString(UIStrings.toggleValueTypeSettings)} @click=${this.onSettingsToggle}>
+          ${this.#renderEndiannessSetting()}
+          <button data-settings="true" class="settings-toolbar-button ${this.#showSettings ? 'active' : ''}" title=${i18nString(UIStrings.toggleValueTypeSettings)} @click=${this.#onSettingsToggle}>
             <${IconButton.Icon.Icon.litTagName}
               .data=${{ iconName: 'settings_14x14_icon', color: 'var(--color-text-secondary)', width: '14px' }}>
             </${IconButton.Icon.Icon.litTagName}>
@@ -80,35 +73,35 @@ export class LinearMemoryValueInterpreter extends HTMLElement {
         </div>
         <span class="divider"></span>
         <div>
-          ${this.showSettings ?
+          ${this.#showSettings ?
             html `
               <${ValueInterpreterSettings.litTagName}
-                .data=${{ valueTypes: this.valueTypes }}
-                @typetoggle=${this.onTypeToggle}>
+                .data=${{ valueTypes: this.#valueTypes }}
+                @typetoggle=${this.#onTypeToggle}>
               </${ValueInterpreterSettings.litTagName}>` :
             html `
               <${ValueInterpreterDisplay.litTagName}
                 .data=${{
-                buffer: this.buffer,
-                valueTypes: this.valueTypes,
-                endianness: this.endianness,
-                valueTypeModes: this.valueTypeModeConfig,
-                memoryLength: this.memoryLength,
+                buffer: this.#buffer,
+                valueTypes: this.#valueTypes,
+                endianness: this.#endianness,
+                valueTypeModes: this.#valueTypeModeConfig,
+                memoryLength: this.#memoryLength,
             }}>
               </${ValueInterpreterDisplay.litTagName}>`}
         </div>
       </div>
-    `, this.shadow, { host: this });
+    `, this.#shadow, { host: this });
         // clang-format on
     }
-    onEndiannessChange(event) {
+    #onEndiannessChange(event) {
         event.preventDefault();
         const select = event.target;
         const endianness = select.value;
         this.dispatchEvent(new EndiannessChangedEvent(endianness));
     }
-    renderEndiannessSetting() {
-        const onEnumSettingChange = this.onEndiannessChange.bind(this);
+    #renderEndiannessSetting() {
+        const onEnumSettingChange = this.#onEndiannessChange.bind(this);
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
         return html `
@@ -117,18 +110,18 @@ export class LinearMemoryValueInterpreter extends HTMLElement {
         style="border: none; background-color: transparent; cursor: pointer;"
         data-endianness="true" @change=${onEnumSettingChange}>
         ${["Little Endian" /* Little */, "Big Endian" /* Big */].map(endianness => {
-            return html `<option value=${endianness} .selected=${this.endianness === endianness}>${i18n.i18n.lockedString(endianness)}</option>`;
+            return html `<option value=${endianness} .selected=${this.#endianness === endianness}>${i18n.i18n.lockedString(endianness)}</option>`;
         })}
       </select>
     </label>
     `;
         // clang-format on
     }
-    onSettingsToggle() {
-        this.showSettings = !this.showSettings;
-        this.render();
+    #onSettingsToggle() {
+        this.#showSettings = !this.#showSettings;
+        this.#render();
     }
-    onTypeToggle(e) {
+    #onTypeToggle(e) {
         this.dispatchEvent(new ValueTypeToggledEvent(e.data.type, e.data.checked));
     }
 }

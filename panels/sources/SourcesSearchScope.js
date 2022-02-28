@@ -116,7 +116,7 @@ export class SourcesSearchScope {
                 .then(this.processMatchingFilesForProject.bind(this, this.searchId, project, searchConfig, filesMathingFileQuery));
             promises.push(promise);
         }
-        Promise.all(promises).then(this.processMatchingFiles.bind(this, this.searchId, searchContentProgress, this.searchFinishedCallback.bind(this, true)));
+        void Promise.all(promises).then(this.processMatchingFiles.bind(this, this.searchId, searchContentProgress, this.searchFinishedCallback.bind(this, true)));
     }
     projectFilesMatchingFileQuery(project, searchConfig, dirtyOnly) {
         const result = [];
@@ -187,7 +187,7 @@ export class SourcesSearchScope {
                 contentLoaded.call(this, uiSourceCode, uiSourceCode.workingCopy());
             }
             else {
-                uiSourceCode.requestContent().then(deferredContent => {
+                void uiSourceCode.requestContent().then(deferredContent => {
                     contentLoaded.call(this, uiSourceCode, deferredContent.content || '');
                 });
             }
@@ -203,7 +203,7 @@ export class SourcesSearchScope {
             }
             ++callbacksLeft;
             const uiSourceCode = files[fileIndex++];
-            setTimeout(searchInNextFile.bind(this, uiSourceCode), 0);
+            window.setTimeout(searchInNextFile.bind(this, uiSourceCode), 0);
         }
         function contentLoaded(uiSourceCode, content) {
             function matchesComparator(a, b) {

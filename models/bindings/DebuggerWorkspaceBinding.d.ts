@@ -5,10 +5,8 @@ import type { LiveLocation, LiveLocationPool } from './LiveLocation.js';
 import { LiveLocationWithPool } from './LiveLocation.js';
 import type { ResourceScriptFile } from './ResourceScriptMapping.js';
 export declare class DebuggerWorkspaceBinding implements SDK.TargetManager.SDKModelObserver<SDK.DebuggerModel.DebuggerModel> {
+    #private;
     readonly workspace: Workspace.Workspace.WorkspaceImpl;
-    private readonly sourceMappings;
-    private readonly debuggerModelToData;
-    private readonly liveLocationPromises;
     pluginManager: DebuggerLanguagePluginManager | null;
     private constructor();
     static instance(opts?: {
@@ -43,24 +41,22 @@ export declare class DebuggerWorkspaceBinding implements SDK.TargetManager.SDKMo
     sourceMapForScript(script: SDK.Script.Script): SDK.SourceMap.SourceMap | null;
     private globalObjectCleared;
     private reset;
-    private resetForTest;
+    resetForTest(target: SDK.Target.Target): void;
     private registerCallFrameLiveLocation;
     removeLiveLocation(location: Location): void;
     private debuggerResumed;
 }
 export declare class Location extends LiveLocationWithPool {
+    #private;
     readonly scriptId: string;
     readonly rawLocation: SDK.DebuggerModel.Location;
-    private readonly binding;
     constructor(scriptId: string, rawLocation: SDK.DebuggerModel.Location, binding: DebuggerWorkspaceBinding, updateDelegate: (arg0: LiveLocation) => Promise<void>, locationPool: LiveLocationPool);
     uiLocation(): Promise<Workspace.UISourceCode.UILocation | null>;
     dispose(): void;
     isIgnoreListed(): Promise<boolean>;
 }
 declare class StackTraceTopFrameLocation extends LiveLocationWithPool {
-    private updateScheduled;
-    private current;
-    private locations;
+    #private;
     constructor(updateDelegate: (arg0: LiveLocation) => Promise<void>, locationPool: LiveLocationPool);
     static createStackTraceTopFrameLocation(rawLocations: SDK.DebuggerModel.Location[], binding: DebuggerWorkspaceBinding, updateDelegate: (arg0: LiveLocation) => Promise<void>, locationPool: LiveLocationPool): Promise<StackTraceTopFrameLocation>;
     uiLocation(): Promise<Workspace.UISourceCode.UILocation | null>;
@@ -69,9 +65,10 @@ declare class StackTraceTopFrameLocation extends LiveLocationWithPool {
     private scheduleUpdate;
     private updateLocation;
 }
-/**
- * @interface
- */
+export interface RawLocationRange {
+    start: SDK.DebuggerModel.Location;
+    end: SDK.DebuggerModel.Location;
+}
 export interface DebuggerSourceMapping {
     rawLocationToUILocation(rawLocation: SDK.DebuggerModel.Location): Workspace.UISourceCode.UILocation | null;
     uiLocationToRawLocations(uiSourceCode: Workspace.UISourceCode.UISourceCode, lineNumber: number, columnNumber?: number): SDK.DebuggerModel.Location[];

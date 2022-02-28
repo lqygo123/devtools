@@ -3,14 +3,7 @@ import type { FrameAssociated } from './FrameAssociated.js';
 import type { Target } from './Target.js';
 import type { SourceMap } from './SourceMap.js';
 export declare class SourceMapManager<T extends FrameAssociated> extends Common.ObjectWrapper.ObjectWrapper<EventTypes<T>> {
-    private readonly target;
-    private isEnabled;
-    private readonly relativeSourceURL;
-    private readonly relativeSourceMapURL;
-    private resolvedSourceMapId;
-    private readonly sourceMapById;
-    private sourceMapIdToLoadingClients;
-    private sourceMapIdToClients;
+    #private;
     constructor(target: Target);
     setEnabled(isEnabled: boolean): void;
     private inspectedURLChanged;

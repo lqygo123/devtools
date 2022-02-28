@@ -49,7 +49,7 @@ export class HeapProfilerPanel extends ProfilesPanel {
             return;
         }
         function revealInView(viewName) {
-            heapProfilerModel.snapshotObjectIdForObjectId(objectId).then(result => {
+            void heapProfilerModel.snapshotObjectIdForObjectId(objectId).then(result => {
                 if (this.isShowing() && result) {
                     this.showObject(result, viewName);
                 }
@@ -83,7 +83,7 @@ export class HeapProfilerPanel extends ProfilesPanel {
             if (profile.maxJSObjectId >= parseInt(snapshotObjectId, 10)) {
                 this.showProfile(profile);
                 const view = this.viewForProfile(profile);
-                view.selectLiveObject(perspectiveName, snapshotObjectId);
+                void view.selectLiveObject(perspectiveName, snapshotObjectId);
                 break;
             }
         }
